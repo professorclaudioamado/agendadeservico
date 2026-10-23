@@ -1,0 +1,1240 @@
+
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <base target="_top">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Agenda de Atendimento - Serviços</title>
+
+  <style>
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: #f1f5f9;
+      color: #1e293b;
+    }
+
+    header {
+      background: #1d4ed8;
+      color: white;
+      padding: 22px;
+      text-align: center;
+    }
+
+    header h1 { margin: 0 0 8px; font-size: 26px; }
+    header p { margin: 0; font-size: 14px; }
+
+    nav {
+      background: white;
+      padding: 12px;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    nav button {
+      border: none;
+      background: #e2e8f0;
+      color: #1e293b;
+      padding: 11px 16px;
+      border-radius: 7px;
+      cursor: pointer;
+    }
+
+    nav button.ativo, nav button:hover {
+      background: #1d4ed8;
+      color: white;
+    }
+
+    main {
+      max-width: 950px;
+      margin: 25px auto;
+      padding: 0 16px 30px;
+    }
+
+    .pagina { display: none; }
+    .pagina.ativa { display: block; }
+
+    .cartao {
+      background: white;
+      padding: 24px;
+      margin-bottom: 20px;
+      border-radius: 12px;
+      box-shadow: 0 3px 12px #0000000d;
+    }
+
+    h2 { margin-top: 0; color: #1d4ed8; }
+
+    .cartoes-inicio, .campos-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 0 16px;
+    }
+
+    .cartoes-inicio { gap: 15px; }
+
+    .cartao-menu {
+      border: 1px solid #e2e8f0;
+      border-radius: 10px;
+      padding: 18px;
+      background: white;
+    }
+
+    .cartao-menu p, .observacao {
+      color: #64748b;
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
+    .campo-completo { grid-column: 1 / -1; }
+
+    label {
+      display: block;
+      margin: 14px 0 6px;
+      font-weight: bold;
+      font-size: 14px;
+    }
+
+    input, select {
+      width: 100%;
+      padding: 11px;
+      border: 1px solid #cbd5e1;
+      border-radius: 7px;
+      font-size: 15px;
+      background: white;
+      color: #1e293b;
+    }
+
+    input:focus, select:focus {
+      outline: 2px solid #93c5fd;
+      border-color: #2563eb;
+    }
+
+    .botao-principal, .botao-menu {
+      border: none;
+      background: #1d4ed8;
+      color: white;
+      padding: 12px 18px;
+      border-radius: 7px;
+      cursor: pointer;
+      margin-top: 18px;
+    }
+
+    .botao-principal:disabled {
+      opacity: 0.6;
+      cursor: wait;
+    }
+
+    .mensagem {
+      margin-top: 16px;
+      padding: 12px;
+      border-radius: 7px;
+      display: none;
+      overflow-wrap: anywhere;
+    }
+
+    .mensagem.sucesso {
+      display: block;
+      background: #dcfce7;
+      color: #166534;
+    }
+
+    .mensagem.erro {
+      display: block;
+      background: #fee2e2;
+      color: #991b1b;
+    }
+
+    .valor-servico {
+      margin-top: 12px;
+      padding: 12px;
+      background: #eff6ff;
+      border-radius: 7px;
+      color: #1d4ed8;
+      font-weight: bold;
+    }
+
+    footer {
+      text-align: center;
+      padding: 18px;
+      color: #64748b;
+      font-size: 13px;
+    }
+
+    @media (max-width: 600px) {
+      header h1 { font-size: 21px; }
+      .cartoes-inicio, .campos-grid { grid-template-columns: 1fr; }
+      .campo-completo { grid-column: auto; }
+      .cartao { padding: 18px; }
+      nav button { flex: 1 1 40%; }
+    }
+
+    /* Dashboard: camada visual. Formulários e contratos JS preservados. */
+    :root { --azul:#4f46e5; --escuro:#0b1223; --cinza:#64748b; --borda:#e6ebf3; }
+    body { font-family: Inter, 'Segoe UI', Arial, sans-serif; background:#f5f7fb; color:#18243b; }
+    header { position:fixed; z-index:20; left:0; top:0; width:254px; height:112px; background:#101b31; padding:28px 21px 18px; text-align:left; border-bottom:1px solid #24314b; }
+    header h1 { font-size:17px; line-height:1.25; letter-spacing:-.3px; margin:0 0 7px; }
+    header p { color:#98abc9; font-size:11px; line-height:1.4; }
+    nav { position:fixed; z-index:19; top:112px; bottom:0; left:0; width:254px; background:#101b31; display:flex; flex-direction:column; align-items:stretch; justify-content:flex-start; flex-wrap:nowrap; padding:20px 12px; gap:5px; overflow-y:auto; }
+    nav:before { content:'MENU PRINCIPAL'; font-size:10px; font-weight:800; letter-spacing:1.7px; color:#7e92b3; margin:3px 13px 10px; }
+    nav button { text-align:left; background:transparent; color:#aabbd7; border-radius:11px; padding:13px 15px; font-weight:600; font-size:14px; transition:background .18s, color .18s; }
+    nav button.ativo, nav button:hover { background:#303b69; color:#fff; }
+    nav button:before { content:'◈'; display:inline-block; color:#8da2ff; width:27px; font-size:18px; vertical-align:-1px; }
+    nav button[data-pagina='inicio']:before {content:'▦'}
+    nav button[data-pagina='funcionarios']:before {content:'♙'}
+    nav button[data-pagina='servicos']:before {content:'✦'}
+    nav button[data-pagina='cidades']:before {content:'◎'}
+    nav button[data-pagina='bairros']:before {content:'⌂'}
+    nav button[data-pagina='clientes']:before {content:'♧'}
+    nav button[data-pagina='agenda']:before {content:'▣'}
+    main { max-width:1330px; margin:0 0 0 254px; padding:42px 40px 30px; min-height:calc(100vh - 55px); }
+    footer { margin-left:254px; padding:15px; font-size:12px; }
+    h2 { color:#192841; }
+    .cartao { border:1px solid var(--borda); box-shadow:0 6px 24px #16264b0a; border-radius:18px; }
+    .botao-principal,.botao-menu { background:#4f46e5; border-radius:10px; font-weight:650; }
+    .botao-principal:hover,.botao-menu:hover {background:#4338ca}
+    .dashboard-heading { display:flex; flex-wrap:wrap; justify-content:space-between; align-items:center; gap:16px; margin-bottom:26px; }
+    .dashboard-eyebrow { color:#6366f1; font-size:11px; font-weight:800; text-transform:uppercase; letter-spacing:2px; margin:0 0 9px; }
+    .dashboard-heading h2 {font-size:30px; letter-spacing:-1px; margin:0 0 7px;}
+    .dashboard-heading p { margin:0; color:#64748b; font-size:14px; }
+    .dashboard-date {background:white; border:1px solid var(--borda); padding:12px 17px; border-radius:12px; color:#44526b; font-size:13px; font-weight:650;}
+    .dashboard-hero { background:linear-gradient(115deg,#4338ca,#5c67db 65%,#7c88ec); border-radius:23px; color:white; padding:34px 35px; display:flex; justify-content:space-between; gap:20px; align-items:center; overflow:hidden; position:relative; box-shadow:0 18px 38px #4f46e52b; }
+    .dashboard-hero:after {content:''; position:absolute; width:260px; height:260px; border:42px solid #ffffff13; border-radius:50%; right:-65px; top:-115px; pointer-events:none;}
+    .dashboard-hero h3 {font-size:25px; line-height:1.25; margin:0 0 10px; max-width:550px; letter-spacing:-.6px;}
+    .dashboard-hero p {color:#e6eaff; line-height:1.6; margin:0; max-width:480px; font-size:14px;}
+    .hero-action {position:relative; z-index:1; background:#fff; border:0; color:#4238bd; padding:14px 20px; border-radius:12px; font-weight:800; white-space:nowrap; cursor:pointer;}
+    .hero-action:hover {background:#f2f2ff}
+    .dashboard-section-title {display:flex; justify-content:space-between; align-items:baseline; gap:12px; margin:31px 0 17px;}
+    .dashboard-section-title h3 {font-size:18px; letter-spacing:-.3px; margin:0;}
+    .dashboard-section-title span {font-size:12px; color:#7a8aa6;}
+    .dashboard-grid {display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:15px;}
+    .dashboard-module {background:white; border:1px solid var(--borda); border-radius:17px; padding:22px; cursor:pointer; text-align:left; color:inherit; min-height:185px; box-shadow:0 3px 12px #17255405; transition:transform .18s,box-shadow .18s,border-color .18s;}
+    .dashboard-module:hover,.dashboard-module:focus-visible {transform:translateY(-3px); box-shadow:0 12px 32px #17255415; border-color:#a5b4fc; outline:0;}
+    .module-icon {display:inline-flex; align-items:center; justify-content:center; width:46px; height:46px; border-radius:14px; font-size:23px; background:#eef2ff; color:#4f46e5; margin-bottom:17px;}
+    .module-icon.teal {background:#e5faf5; color:#0d9488}.module-icon.orange {background:#fff2e7;color:#ea580c}.module-icon.pink {background:#fce7f3;color:#db2777}.module-icon.sky {background:#e0f2fe;color:#0284c7}.module-icon.purple {background:#f3e8ff;color:#9333ea}
+    .dashboard-module strong {display:block; font-size:16px; margin-bottom:7px;}
+    .dashboard-module small {display:block; color:#718096; line-height:1.55; font-size:12px;}
+    .module-link {display:block; color:#4f46e5; font-size:12px; font-weight:800; margin-top:15px;}
+    .dashboard-note {border:1px solid #e0e7ff; background:#eef2ff; border-radius:15px; padding:18px 21px; margin-top:24px; display:flex; gap:14px; align-items:flex-start;}
+    .dashboard-note .note-icon {font-size:23px; color:#4f46e5;}
+    .dashboard-note strong {display:block; font-size:13px; margin-bottom:4px;}
+    .dashboard-note p {font-size:12px; color:#64748b; margin:0; line-height:1.6;}
+    @media (max-width:1050px) {main {padding:30px 24px 25px;} .dashboard-grid {grid-template-columns:repeat(2,minmax(0,1fr));}}
+    @media (max-width:720px) {header {position:static; width:100%; height:auto; padding:19px 22px;} header h1 {font-size:20px} nav {position:static; width:100%; overflow-x:auto; flex-direction:row; padding:10px; gap:5px; background:#101b31;} nav:before {display:none;} nav button {flex:0 0 auto; white-space:nowrap; padding:11px 12px; font-size:12px;} nav button:before {width:19px} main {margin:0; padding:24px 17px;} footer {margin-left:0;} .dashboard-heading h2 {font-size:25px;} .dashboard-hero {padding:27px 23px; align-items:flex-start; flex-direction:column;} .dashboard-hero h3 {font-size:21px;} .dashboard-grid {grid-template-columns:repeat(2,minmax(0,1fr)); gap:11px;} .dashboard-module {padding:16px; min-height:180px;} .cartao {padding:19px;} }
+    @media (max-width:430px) {.dashboard-grid {grid-template-columns:1fr;} .dashboard-module {min-height:unset;} .dashboard-date {width:100%;} }
+
+  
+
+    /* Grades de registros dos cadastros */
+    .grade-registros { margin-top: 24px; }
+    .grade-cabecalho { display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap; margin-bottom:12px; }
+    .grade-cabecalho h3 { margin:0; color:var(--texto, #172033); }
+    .grade-contagem { color:#64748b; font-size:13px; }
+    .grade-tabela-wrap { width:100%; overflow:auto; border:1px solid #e2e8f0; border-radius:12px; }
+    .grade-tabela { width:100%; border-collapse:collapse; min-width:560px; font-size:13px; }
+    .grade-tabela th { background:#f1f5f9; color:#334155; text-align:left; padding:12px; white-space:nowrap; }
+    .grade-tabela td { padding:11px 12px; border-top:1px solid #e2e8f0; color:#334155; vertical-align:top; }
+    .grade-tabela tbody tr:nth-child(even) { background:#f8fafc; }
+    .grade-vazia { padding:18px; color:#64748b; text-align:center; }
+    .botao-atualizar-grade { border:1px solid #cbd5e1; background:#fff; color:#334155; border-radius:8px; padding:8px 12px; cursor:pointer; }
+
+  </style>
+</head>
+
+<body>
+  <header>
+    <h1>Agenda de Atendimento - Serviços</h1>
+    <p>Sistema de cadastros e organização dos atendimentos</p>
+  </header>
+
+  <nav>
+    <button type="button" data-pagina="inicio" class="ativo"
+      onclick="abrirPagina('inicio', this)">Início</button>
+
+    <button type="button" data-pagina="funcionarios"
+      onclick="abrirPagina('funcionarios', this)">Funcionários</button>
+
+    <button type="button" data-pagina="servicos"
+      onclick="abrirPagina('servicos', this)">Serviços</button>
+
+    <button type="button" data-pagina="cidades"
+      onclick="abrirPagina('cidades', this)">Cidades</button>
+
+    <button type="button" data-pagina="bairros"
+      onclick="abrirPagina('bairros', this)">Bairros</button>
+
+    <button type="button" data-pagina="clientes"
+      onclick="abrirPagina('clientes', this)">Clientes</button>
+
+    <button type="button" data-pagina="agenda"
+      onclick="abrirPagina('agenda', this)">Agenda</button>
+  </nav>
+
+  <main>
+    <!-- DASHBOARD INICIAL: apenas navegação; dados reais não são simulados. -->
+    <section id="pagina-inicio" class="pagina ativa">
+      <div class="dashboard-heading">
+        <div>
+          <p class="dashboard-eyebrow">Painel de controle</p>
+          <h2>Visão geral do sistema</h2>
+          <p>Organize sua operação e acesse tudo de um só lugar.</p>
+        </div>
+        <div class="dashboard-date" id="dataDashboard" aria-label="Data atual">Agenda de Serviços</div>
+      </div>
+      <div class="dashboard-hero">
+        <div>
+          <h3>Seu próximo atendimento começa aqui.</h3>
+          <p>Gerencie agendamentos, clientes, profissionais e serviços em uma experiência mais simples e organizada.</p>
+        </div>
+        <button class="hero-action" type="button" onclick="abrirPaginaPorNome('agenda')">+ Novo agendamento →</button>
+      </div>
+      <div class="dashboard-section-title">
+        <h3>Acesso rápido</h3><span>6 módulos disponíveis</span>
+      </div>
+      <div class="dashboard-grid">
+        <button type="button" class="dashboard-module" onclick="abrirPaginaPorNome('agenda')"><span class="module-icon">▣</span><strong>Agenda</strong><small>Organize horários e registre novos atendimentos.</small><span class="module-link">Abrir agenda →</span></button>
+        <button type="button" class="dashboard-module" onclick="abrirPaginaPorNome('clientes')"><span class="module-icon teal">♧</span><strong>Clientes</strong><small>Mantenha os dados dos seus clientes atualizados.</small><span class="module-link">Gerenciar clientes →</span></button>
+        <button type="button" class="dashboard-module" onclick="abrirPaginaPorNome('funcionarios')"><span class="module-icon orange">♙</span><strong>Funcionários</strong><small>Cadastre profissionais e organize sua equipe.</small><span class="module-link">Gerenciar equipe →</span></button>
+        <button type="button" class="dashboard-module" onclick="abrirPaginaPorNome('servicos')"><span class="module-icon pink">✦</span><strong>Serviços</strong><small>Defina os serviços, preços e duração prevista.</small><span class="module-link">Ver serviços →</span></button>
+        <button type="button" class="dashboard-module" onclick="abrirPaginaPorNome('cidades')"><span class="module-icon sky">◎</span><strong>Cidades</strong><small>Organize as cidades atendidas pelo sistema.</small><span class="module-link">Gerenciar cidades →</span></button>
+        <button type="button" class="dashboard-module" onclick="abrirPaginaPorNome('bairros')"><span class="module-icon purple">⌂</span><strong>Bairros</strong><small>Cadastre os bairros utilizados nos endereços.</small><span class="module-link">Gerenciar bairros →</span></button>
+      </div>
+      <div class="dashboard-note"><span class="note-icon">ⓘ</span><div><strong>Pronto para trabalhar</strong><p>Este painel oferece acesso aos módulos existentes. Indicadores de atendimentos, faturamento e gráficos poderão ser adicionados numa próxima etapa, utilizando dados reais do Google Sheets.</p></div></div>
+    </section>
+
+    <!-- FUNCIONÁRIOS -->
+    <section id="pagina-funcionarios" class="pagina">
+      <div class="cartao">
+        <h2>Cadastro de Funcionários</h2>
+
+        <form id="formFuncionario" onsubmit="cadastrarFuncionarioTela(event)">
+          <label for="nomeFuncionario">Nome do funcionário</label>
+          <input type="text" id="nomeFuncionario" required>
+
+          <button type="submit" class="botao-principal" id="btnCadastrarFuncionario">
+            Cadastrar funcionário
+          </button>
+          <div id="mensagemFuncionario" class="mensagem"></div>
+        </form>
+        <div class="grade-registros" id="grade-funcionarios">
+          <div class="grade-cabecalho">
+            <h3>Dados cadastrados</h3>
+            <span class="grade-contagem" id="contagem-funcionarios">Carregando...</span>
+            <button type="button" class="botao-atualizar-grade" onclick="carregarGradeCadastro('funcionarios')">Atualizar</button>
+          </div>
+          <div class="grade-tabela-wrap" id="tabela-funcionarios">
+            <div class="grade-vazia">Carregando registros...</div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- SERVIÇOS -->
+    <section id="pagina-servicos" class="pagina">
+      <div class="cartao">
+        <h2>Cadastro de Serviços</h2>
+
+        <form id="formServico" onsubmit="cadastrarServicoTela(event)">
+          <label for="nomeServico">Nome do serviço</label>
+          <input type="text" id="nomeServico" required>
+
+          <label for="valorServico">Valor do serviço (R$)</label>
+          <input type="text" id="valorServico" inputmode="decimal"
+            placeholder="Ex.: 50,00" required>
+
+          <label for="tempoServico">Tempo em minutos</label>
+          <input type="number" id="tempoServico" min="1" step="1" required>
+
+          <button type="submit" class="botao-principal" id="btnCadastrarServico">
+            Cadastrar serviço
+          </button>
+          <div id="mensagemServico" class="mensagem"></div>
+        </form>
+        <div class="grade-registros" id="grade-servicos">
+          <div class="grade-cabecalho">
+            <h3>Dados cadastrados</h3>
+            <span class="grade-contagem" id="contagem-servicos">Carregando...</span>
+            <button type="button" class="botao-atualizar-grade" onclick="carregarGradeCadastro('servicos')">Atualizar</button>
+          </div>
+          <div class="grade-tabela-wrap" id="tabela-servicos">
+            <div class="grade-vazia">Carregando registros...</div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- CIDADES -->
+    <section id="pagina-cidades" class="pagina">
+      <div class="cartao">
+        <h2>Cadastro de Cidades</h2>
+
+        <form id="formCidade" onsubmit="cadastrarCidadeTela(event)">
+          <label for="nomeCidade">Nome da cidade</label>
+          <input type="text" id="nomeCidade" required>
+
+          <label for="estadoCidade">Estado (UF)</label>
+          <select id="estadoCidade" required>
+            <option value="">Selecione o estado</option>
+            <option value="AC">AC - Acre</option>
+            <option value="AL">AL - Alagoas</option>
+            <option value="AP">AP - Amapá</option>
+            <option value="AM">AM - Amazonas</option>
+            <option value="BA">BA - Bahia</option>
+            <option value="CE">CE - Ceará</option>
+            <option value="DF">DF - Distrito Federal</option>
+            <option value="ES">ES - Espírito Santo</option>
+            <option value="GO">GO - Goiás</option>
+            <option value="MA">MA - Maranhão</option>
+            <option value="MT">MT - Mato Grosso</option>
+            <option value="MS">MS - Mato Grosso do Sul</option>
+            <option value="MG">MG - Minas Gerais</option>
+            <option value="PA">PA - Pará</option>
+            <option value="PB">PB - Paraíba</option>
+            <option value="PR">PR - Paraná</option>
+            <option value="PE">PE - Pernambuco</option>
+            <option value="PI">PI - Piauí</option>
+            <option value="RJ">RJ - Rio de Janeiro</option>
+            <option value="RN">RN - Rio Grande do Norte</option>
+            <option value="RS">RS - Rio Grande do Sul</option>
+            <option value="RO">RO - Rondônia</option>
+            <option value="RR">RR - Roraima</option>
+            <option value="SC">SC - Santa Catarina</option>
+            <option value="SP">SP - São Paulo</option>
+            <option value="SE">SE - Sergipe</option>
+            <option value="TO">TO - Tocantins</option>
+          </select>
+
+          <button type="submit" class="botao-principal" id="btnCadastrarCidade">
+            Cadastrar cidade
+          </button>
+          <div id="mensagemCidade" class="mensagem"></div>
+        </form>
+        <div class="grade-registros" id="grade-cidades">
+          <div class="grade-cabecalho">
+            <h3>Dados cadastrados</h3>
+            <span class="grade-contagem" id="contagem-cidades">Carregando...</span>
+            <button type="button" class="botao-atualizar-grade" onclick="carregarGradeCadastro('cidades')">Atualizar</button>
+          </div>
+          <div class="grade-tabela-wrap" id="tabela-cidades">
+            <div class="grade-vazia">Carregando registros...</div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- BAIRROS -->
+    <section id="pagina-bairros" class="pagina">
+      <div class="cartao">
+        <h2>Cadastro de Bairros</h2>
+
+        <form id="formBairro" onsubmit="cadastrarBairroTela(event)">
+          <label for="nomeBairro">Nome do bairro</label>
+          <input type="text" id="nomeBairro" required>
+
+          <button type="submit" class="botao-principal" id="btnCadastrarBairro">
+            Cadastrar bairro
+          </button>
+          <div id="mensagemBairro" class="mensagem"></div>
+        </form>
+        <div class="grade-registros" id="grade-bairros">
+          <div class="grade-cabecalho">
+            <h3>Dados cadastrados</h3>
+            <span class="grade-contagem" id="contagem-bairros">Carregando...</span>
+            <button type="button" class="botao-atualizar-grade" onclick="carregarGradeCadastro('bairros')">Atualizar</button>
+          </div>
+          <div class="grade-tabela-wrap" id="tabela-bairros">
+            <div class="grade-vazia">Carregando registros...</div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- CLIENTES -->
+    <section id="pagina-clientes" class="pagina">
+      <div class="cartao">
+        <h2>Cadastro de Clientes</h2>
+        <p class="observacao">O código do cliente será gerado automaticamente.</p>
+
+        <form id="formCliente" onsubmit="cadastrarClienteTela(event)">
+          <div class="campos-grid">
+            <div class="campo-completo">
+              <label for="nomeCliente">Nome completo</label>
+              <input type="text" id="nomeCliente" required>
+            </div>
+
+            <div>
+              <label for="cpfCliente">CPF</label>
+              <input type="text" id="cpfCliente" inputmode="numeric"
+                maxlength="14" placeholder="000.000.000-00" required>
+            </div>
+
+            <div>
+              <label for="aniversarioCliente">Data de nascimento</label>
+              <input type="date" id="aniversarioCliente" required>
+            </div>
+
+            <div class="campo-completo">
+              <label for="enderecoCliente">Endereço</label>
+              <input type="text" id="enderecoCliente" required>
+            </div>
+
+            <div>
+              <label for="numeroCliente">Número</label>
+              <input type="text" id="numeroCliente" required>
+            </div>
+
+            <div>
+              <label for="cepCliente">CEP</label>
+              <input type="text" id="cepCliente" maxlength="9"
+                placeholder="00000-000" required>
+            </div>
+
+            <div>
+              <label for="cidadeCliente">Cidade</label>
+              <select id="cidadeCliente" required>
+                <option value="">Carregando cidades...</option>
+              </select>
+            </div>
+
+            <div>
+              <label for="bairroCliente">Bairro</label>
+              <select id="bairroCliente" required>
+                <option value="">Carregando bairros...</option>
+              </select>
+            </div>
+
+            <div>
+              <label for="celularCliente">Celular</label>
+              <input type="tel" id="celularCliente" required>
+            </div>
+
+            <div>
+              <label for="emailCliente">E-mail</label>
+              <input type="email" id="emailCliente" required>
+            </div>
+
+            <div class="campo-completo">
+              <label for="statusFinanceiroCliente">Status financeiro</label>
+              <select id="statusFinanceiroCliente" required>
+                <option value="">Selecione o status</option>
+                <option value="EM DIA">EM DIA</option>
+                <option value="PENDENTE">PENDENTE</option>
+                <option value="EM ATRASO">EM ATRASO</option>
+              </select>
+            </div>
+          </div>
+
+          <button type="submit" class="botao-principal" id="btnCadastrarCliente">
+            Cadastrar cliente
+          </button>
+          <div id="mensagemCliente" class="mensagem"></div>
+        </form>
+        <div class="grade-registros" id="grade-clientes">
+          <div class="grade-cabecalho">
+            <h3>Dados cadastrados</h3>
+            <span class="grade-contagem" id="contagem-clientes">Carregando...</span>
+            <button type="button" class="botao-atualizar-grade" onclick="carregarGradeCadastro('clientes')">Atualizar</button>
+          </div>
+          <div class="grade-tabela-wrap" id="tabela-clientes">
+            <div class="grade-vazia">Carregando registros...</div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- AGENDA -->
+    <section id="pagina-agenda" class="pagina">
+      <div class="cartao">
+        <h2>Cadastro de Agendamento</h2>
+        <p class="observacao">
+          Selecione o funcionário, o cliente e o serviço. O valor será preenchido automaticamente.
+        </p>
+
+        <form id="formAgenda" onsubmit="cadastrarAgendamentoTela(event)">
+          <div class="campos-grid">
+            <div>
+              <label for="dataAgenda">Data</label>
+              <input type="date" id="dataAgenda" required>
+            </div>
+
+            <div>
+              <label for="horaAgenda">Hora</label>
+              <input type="time" id="horaAgenda" required>
+            </div>
+
+            <div class="campo-completo">
+              <label for="funcionarioAgenda">Funcionário</label>
+              <select id="funcionarioAgenda" required>
+                <option value="">Carregando funcionários...</option>
+              </select>
+            </div>
+
+            <div class="campo-completo">
+              <label for="clienteAgenda">Cliente</label>
+              <select id="clienteAgenda" required>
+                <option value="">Carregando clientes...</option>
+              </select>
+            </div>
+
+            <div class="campo-completo">
+              <label for="servicoAgenda">Serviço</label>
+              <select id="servicoAgenda" required onchange="atualizarValorServico()">
+                <option value="">Carregando serviços...</option>
+              </select>
+              <div id="valorServicoAgenda" class="valor-servico">
+                Valor do serviço: selecione um serviço
+              </div>
+            </div>
+
+            <div class="campo-completo">
+              <label for="statusAgenda">Status</label>
+              <select id="statusAgenda" required>
+                <option value="AGENDADO">AGENDADO</option>
+                <option value="CONFIRMADO">CONFIRMADO</option>
+                <option value="CONCLUÍDO">CONCLUÍDO</option>
+                <option value="CANCELADO">CANCELADO</option>
+              </select>
+            </div>
+          </div>
+
+          <button type="submit" class="botao-principal" id="btnCadastrarAgendamento">
+            Cadastrar agendamento
+          </button>
+          <div id="mensagemAgenda" class="mensagem"></div>
+        </form>
+        <div class="grade-registros" id="grade-agenda">
+          <div class="grade-cabecalho">
+            <h3>Dados cadastrados</h3>
+            <span class="grade-contagem" id="contagem-agenda">Carregando...</span>
+            <button type="button" class="botao-atualizar-grade" onclick="carregarGradeCadastro('agenda')">Atualizar</button>
+          </div>
+          <div class="grade-tabela-wrap" id="tabela-agenda">
+            <div class="grade-vazia">Carregando registros...</div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+  </main>
+
+  <footer>Agenda de Atendimento - Serviços</footer>
+
+  <script>
+    // Exibe a data local no dashboard sem acessar dados dos clientes.
+    (function atualizarDataDashboard() {
+      var elemento = document.getElementById('dataDashboard');
+      if (elemento) elemento.textContent = new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+    })();
+
+    // Guarda os serviços carregados, incluindo seus valores.
+    var servicosCarregados = [];
+
+    /**
+     * Navegação entre as telas.
+     */
+    function abrirPagina(nomePagina, botao) {
+      document.querySelectorAll(".pagina").forEach(function(pagina) {
+        pagina.classList.remove("ativa");
+      });
+
+      var pagina = document.getElementById("pagina-" + nomePagina);
+      if (pagina) pagina.classList.add("ativa");
+
+      document.querySelectorAll("nav button[data-pagina]").forEach(function(item) {
+        item.classList.remove("ativo");
+      });
+
+      if (!botao) {
+        botao = document.querySelector(
+          'nav button[data-pagina="' + nomePagina + '"]'
+        );
+      }
+
+      if (botao) botao.classList.add("ativo");
+
+      // Atualiza a grade do cadastro que acabou de ser aberto.
+      if (configuracaoGrades[nomePagina]) {
+        carregarGradeCadastro(nomePagina);
+      }
+
+      if (nomePagina === "clientes") {
+        carregarCidades();
+        carregarBairros();
+      }
+
+      if (nomePagina === "agenda") {
+        carregarFuncionariosAgendaTela();
+        carregarClientesAgendaTela();
+        carregarServicosAgendaTela();
+      }
+    }
+
+    function abrirPaginaPorNome(nomePagina) {
+      abrirPagina(nomePagina, null);
+    }
+
+    function mostrarMensagem(id, texto, tipo) {
+      var elemento = document.getElementById(id);
+      elemento.textContent = texto;
+      elemento.className = "mensagem " + tipo;
+    }
+
+    function limparMensagem(id) {
+      var elemento = document.getElementById(id);
+      elemento.textContent = "";
+      elemento.className = "mensagem";
+    }
+
+    /**
+     * Converte campos de texto em maiúsculas enquanto o usuário digita.
+     */
+    document.querySelectorAll(
+      'input[type="text"], input[type="email"], input[type="tel"]'
+    ).forEach(function(campo) {
+      campo.addEventListener("input", function() {
+        var inicio = this.selectionStart;
+        var fim = this.selectionEnd;
+
+        this.value = this.value.toLocaleUpperCase("pt-BR");
+
+        if (inicio !== null && fim !== null) {
+          this.setSelectionRange(inicio, fim);
+        }
+      });
+    });
+
+    /**
+     * Prepara uma lista suspensa com uma opção inicial.
+     */
+    function prepararLista(id, textoInicial) {
+      var select = document.getElementById(id);
+      select.innerHTML = "";
+
+      var opcao = document.createElement("option");
+      opcao.value = "";
+      opcao.textContent = textoInicial;
+      select.appendChild(opcao);
+
+      return select;
+    }
+
+    /**
+     * Carrega cidades para o cadastro de clientes.
+     */
+    function carregarCidades() {
+      var select = prepararLista("cidadeCliente", "Carregando cidades...");
+      select.disabled = true;
+
+      google.script.run
+        .withSuccessHandler(function(cidades) {
+          select = prepararLista(
+            "cidadeCliente",
+            cidades.length ? "Selecione a cidade" : "Nenhuma cidade cadastrada"
+          );
+
+          select.disabled = cidades.length === 0;
+
+          cidades.forEach(function(cidade) {
+            var opcao = document.createElement("option");
+            opcao.value = cidade.codigo;
+            opcao.textContent = cidade.nome +
+              (cidade.estado ? " - " + cidade.estado : "");
+            select.appendChild(opcao);
+          });
+        })
+        .withFailureHandler(function(erro) {
+          prepararLista("cidadeCliente", "Erro ao carregar cidades");
+          mostrarMensagem("mensagemCliente", erro.message, "erro");
+        })
+        .listarCidadesSelecao();
+    }
+
+    /**
+     * Carrega bairros para o cadastro de clientes.
+     */
+    function carregarBairros() {
+      var select = prepararLista("bairroCliente", "Carregando bairros...");
+      select.disabled = true;
+
+      google.script.run
+        .withSuccessHandler(function(bairros) {
+          select = prepararLista(
+            "bairroCliente",
+            bairros.length ? "Selecione o bairro" : "Nenhum bairro cadastrado"
+          );
+
+          select.disabled = bairros.length === 0;
+
+          bairros.forEach(function(bairro) {
+            var opcao = document.createElement("option");
+            opcao.value = bairro.codigo;
+            opcao.textContent = bairro.nome;
+            select.appendChild(opcao);
+          });
+        })
+        .withFailureHandler(function(erro) {
+          prepararLista("bairroCliente", "Erro ao carregar bairros");
+          mostrarMensagem("mensagemCliente", erro.message, "erro");
+        })
+        .listarBairrosSelecao();
+    }
+
+    /**
+     * Carrega funcionários para a Agenda.
+     */
+    function carregarFuncionariosAgendaTela() {
+      var select = prepararLista(
+        "funcionarioAgenda", "Carregando funcionários..."
+      );
+      select.disabled = true;
+
+      google.script.run
+        .withSuccessHandler(function(lista) {
+          select = prepararLista(
+            "funcionarioAgenda",
+            lista.length ? "Selecione o funcionário" : "Nenhum funcionário cadastrado"
+          );
+          select.disabled = lista.length === 0;
+
+          lista.forEach(function(item) {
+            var opcao = document.createElement("option");
+            opcao.value = item.codigo;
+            opcao.textContent = item.nome;
+            select.appendChild(opcao);
+          });
+        })
+        .withFailureHandler(function(erro) {
+          prepararLista("funcionarioAgenda", "Erro ao carregar funcionários");
+          mostrarMensagem("mensagemAgenda", erro.message, "erro");
+        })
+        .listarFuncionariosAgenda();
+    }
+
+    /**
+     * Carrega clientes para a Agenda.
+     */
+    function carregarClientesAgendaTela() {
+      var select = prepararLista(
+        "clienteAgenda", "Carregando clientes..."
+      );
+      select.disabled = true;
+
+      google.script.run
+        .withSuccessHandler(function(lista) {
+          select = prepararLista(
+            "clienteAgenda",
+            lista.length ? "Selecione o cliente" : "Nenhum cliente cadastrado"
+          );
+          select.disabled = lista.length === 0;
+
+          lista.forEach(function(item) {
+            var opcao = document.createElement("option");
+            opcao.value = item.codigo;
+            opcao.textContent = item.nome;
+            select.appendChild(opcao);
+          });
+        })
+        .withFailureHandler(function(erro) {
+          prepararLista("clienteAgenda", "Erro ao carregar clientes");
+          mostrarMensagem("mensagemAgenda", erro.message, "erro");
+        })
+        .listarClientesAgenda();
+    }
+
+    /**
+     * Carrega serviços e valores para a Agenda.
+     */
+    function carregarServicosAgendaTela() {
+      var select = prepararLista(
+        "servicoAgenda", "Carregando serviços..."
+      );
+      select.disabled = true;
+      servicosCarregados = [];
+      atualizarValorServico();
+
+      google.script.run
+        .withSuccessHandler(function(lista) {
+          servicosCarregados = lista;
+
+          select = prepararLista(
+            "servicoAgenda",
+            lista.length ? "Selecione o serviço" : "Nenhum serviço cadastrado"
+          );
+          select.disabled = lista.length === 0;
+
+          lista.forEach(function(item) {
+            var opcao = document.createElement("option");
+            opcao.value = item.codigo;
+            opcao.textContent = item.nome;
+            select.appendChild(opcao);
+          });
+
+          atualizarValorServico();
+        })
+        .withFailureHandler(function(erro) {
+          prepararLista("servicoAgenda", "Erro ao carregar serviços");
+          mostrarMensagem("mensagemAgenda", erro.message, "erro");
+        })
+        .listarServicosAgenda();
+    }
+
+    /**
+     * Exibe o valor do serviço selecionado.
+     */
+    function atualizarValorServico() {
+      var codigo = document.getElementById("servicoAgenda").value;
+      var caixa = document.getElementById("valorServicoAgenda");
+
+      if (!codigo) {
+        caixa.textContent = "Valor do serviço: selecione um serviço";
+        return;
+      }
+
+      var servico = servicosCarregados.find(function(item) {
+        return item.codigo === codigo;
+      });
+
+      if (!servico) {
+        caixa.textContent = "Valor do serviço indisponível";
+        return;
+      }
+
+      caixa.textContent = "Valor do serviço: " +
+        Number(servico.valor).toLocaleString("pt-BR", {
+          style: "currency",
+          currency: "BRL"
+        });
+    }
+
+
+    // Abas e campos usados para exibir os registros de cada cadastro.
+    var configuracaoGrades = {
+      funcionarios: {aba:"FUNCIONARIOS", titulo:"Funcionários"},
+      servicos: {aba:"SERVICOS", titulo:"Serviços"},
+      cidades: {aba:"CIDADES", titulo:"Cidades"},
+      bairros: {aba:"BAIRROS", titulo:"Bairros"},
+      clientes: {aba:"CLIENTES", titulo:"Clientes"},
+      agenda: {aba:"AGENDA", titulo:"Agendamentos"}
+    };
+
+    /**
+     * Solicita os registros da planilha e desenha uma tabela na tela.
+     * Os dados são lidos da planilha; a grade não guarda cópias locais.
+     */
+    function carregarGradeCadastro(tipo) {
+      var caixa = document.getElementById("tabela-" + tipo);
+      var contagem = document.getElementById("contagem-" + tipo);
+      if (!caixa || !configuracaoGrades[tipo]) return;
+
+      caixa.innerHTML = '<div class="grade-vazia">Carregando registros...</div>';
+      contagem.textContent = "Carregando...";
+
+      google.script.run
+        .withSuccessHandler(function(resultado) {
+          desenharGradeCadastro(tipo, resultado);
+        })
+        .withFailureHandler(function(erro) {
+          caixa.innerHTML = '<div class="grade-vazia"></div>';
+          caixa.firstChild.textContent = erro.message || "Não foi possível carregar os registros.";
+          contagem.textContent = "Erro";
+        })
+        .listarRegistrosCadastro(configuracaoGrades[tipo].aba);
+    }
+
+    // Cria as células usando textContent para não interpretar dados como HTML.
+    function desenharGradeCadastro(tipo, resultado) {
+      var caixa = document.getElementById("tabela-" + tipo);
+      var contagem = document.getElementById("contagem-" + tipo);
+      var cabecalhos = resultado && resultado.cabecalhos ? resultado.cabecalhos : [];
+      var linhas = resultado && resultado.linhas ? resultado.linhas : [];
+
+      contagem.textContent = linhas.length + (linhas.length === 1 ? " registro" : " registros");
+      caixa.innerHTML = "";
+
+      if (!cabecalhos.length || !linhas.length) {
+        var vazio = document.createElement("div");
+        vazio.className = "grade-vazia";
+        vazio.textContent = "Nenhum registro cadastrado.";
+        caixa.appendChild(vazio);
+        return;
+      }
+
+      var tabela = document.createElement("table");
+      tabela.className = "grade-tabela";
+      var thead = document.createElement("thead");
+      var trCab = document.createElement("tr");
+      cabecalhos.forEach(function(cabecalho) {
+        var th = document.createElement("th");
+        th.textContent = cabecalho;
+        trCab.appendChild(th);
+      });
+      thead.appendChild(trCab);
+      tabela.appendChild(thead);
+
+      var tbody = document.createElement("tbody");
+      linhas.forEach(function(linha) {
+        var tr = document.createElement("tr");
+        linha.forEach(function(valor) {
+          var td = document.createElement("td");
+          td.textContent = valor == null ? "" : String(valor);
+          tr.appendChild(td);
+        });
+        tbody.appendChild(tr);
+      });
+      tabela.appendChild(tbody);
+      caixa.appendChild(tabela);
+    }
+
+    // Carrega a grade correspondente sempre que o usuário abre um cadastro.
+    function carregarGradesCadastros() {
+      Object.keys(configuracaoGrades).forEach(function(tipo) {
+        carregarGradeCadastro(tipo);
+      });
+    }
+
+    /**
+     * Cadastro de funcionário.
+     */
+    function cadastrarFuncionarioTela(event) {
+      event.preventDefault();
+
+      var nome = document.getElementById("nomeFuncionario").value.trim();
+      var botao = document.getElementById("btnCadastrarFuncionario");
+
+      limparMensagem("mensagemFuncionario");
+      botao.disabled = true;
+      botao.textContent = "Cadastrando...";
+
+      google.script.run
+        .withSuccessHandler(function(resposta) {
+          mostrarMensagem("mensagemFuncionario", resposta, "sucesso");
+          document.getElementById("formFuncionario").reset();
+          carregarGradeCadastro("funcionarios");
+          carregarFuncionariosAgendaTela();
+          botao.disabled = false;
+          botao.textContent = "Cadastrar funcionário";
+        })
+        .withFailureHandler(function(erro) {
+          mostrarMensagem("mensagemFuncionario", erro.message, "erro");
+          botao.disabled = false;
+          botao.textContent = "Cadastrar funcionário";
+        })
+        .cadastrarFuncionario(nome);
+    }
+
+    /**
+     * Cadastro de serviço.
+     */
+    function cadastrarServicoTela(event) {
+      event.preventDefault();
+
+      var nome = document.getElementById("nomeServico").value.trim();
+      var valor = document.getElementById("valorServico").value.trim();
+      var tempo = document.getElementById("tempoServico").value.trim();
+      var botao = document.getElementById("btnCadastrarServico");
+
+      limparMensagem("mensagemServico");
+      botao.disabled = true;
+      botao.textContent = "Cadastrando...";
+
+      google.script.run
+        .withSuccessHandler(function(resposta) {
+          mostrarMensagem("mensagemServico", resposta, "sucesso");
+          document.getElementById("formServico").reset();
+          carregarGradeCadastro("servicos");
+          carregarServicosAgendaTela();
+          botao.disabled = false;
+          botao.textContent = "Cadastrar serviço";
+        })
+        .withFailureHandler(function(erro) {
+          mostrarMensagem("mensagemServico", erro.message, "erro");
+          botao.disabled = false;
+          botao.textContent = "Cadastrar serviço";
+        })
+        .cadastrarServico(nome, valor, tempo);
+    }
+
+    /**
+     * Cadastro de cidade.
+     */
+    function cadastrarCidadeTela(event) {
+      event.preventDefault();
+
+      var nome = document.getElementById("nomeCidade").value.trim();
+      var estado = document.getElementById("estadoCidade").value;
+      var botao = document.getElementById("btnCadastrarCidade");
+
+      limparMensagem("mensagemCidade");
+      botao.disabled = true;
+      botao.textContent = "Cadastrando...";
+
+      google.script.run
+        .withSuccessHandler(function(resposta) {
+          mostrarMensagem("mensagemCidade", resposta, "sucesso");
+          document.getElementById("formCidade").reset();
+          carregarGradeCadastro("cidades");
+          carregarCidades();
+          botao.disabled = false;
+          botao.textContent = "Cadastrar cidade";
+        })
+        .withFailureHandler(function(erro) {
+          mostrarMensagem("mensagemCidade", erro.message, "erro");
+          botao.disabled = false;
+          botao.textContent = "Cadastrar cidade";
+        })
+        .cadastrarCidade(nome, estado);
+    }
+
+    /**
+     * Cadastro de bairro.
+     */
+    function cadastrarBairroTela(event) {
+      event.preventDefault();
+
+      var nome = document.getElementById("nomeBairro").value.trim();
+      var botao = document.getElementById("btnCadastrarBairro");
+
+      limparMensagem("mensagemBairro");
+      botao.disabled = true;
+      botao.textContent = "Cadastrando...";
+
+      google.script.run
+        .withSuccessHandler(function(resposta) {
+          mostrarMensagem("mensagemBairro", resposta, "sucesso");
+          document.getElementById("formBairro").reset();
+          carregarGradeCadastro("bairros");
+          carregarBairros();
+          botao.disabled = false;
+          botao.textContent = "Cadastrar bairro";
+        })
+        .withFailureHandler(function(erro) {
+          mostrarMensagem("mensagemBairro", erro.message, "erro");
+          botao.disabled = false;
+          botao.textContent = "Cadastrar bairro";
+        })
+        .cadastrarBairro(nome);
+    }
+
+    /**
+     * Cadastro de cliente.
+     */
+    function cadastrarClienteTela(event) {
+      event.preventDefault();
+
+      var botao = document.getElementById("btnCadastrarCliente");
+      limparMensagem("mensagemCliente");
+
+      var dados = {
+        nome: document.getElementById("nomeCliente").value.trim(),
+        cpf: document.getElementById("cpfCliente").value.trim(),
+        dt_aniversario: document.getElementById("aniversarioCliente").value,
+        endereco: document.getElementById("enderecoCliente").value.trim(),
+        numero: document.getElementById("numeroCliente").value.trim(),
+        codigo_cidade: document.getElementById("cidadeCliente").value,
+        codigo_bairro: document.getElementById("bairroCliente").value,
+        cep: document.getElementById("cepCliente").value.trim(),
+        celular: document.getElementById("celularCliente").value.trim(),
+        email: document.getElementById("emailCliente").value.trim(),
+        status_financeiro: document.getElementById("statusFinanceiroCliente").value
+      };
+
+      for (var campo in dados) {
+        if (dados[campo] === "") {
+          mostrarMensagem(
+            "mensagemCliente",
+            "Preencha todos os campos e selecione cidade e bairro.",
+            "erro"
+          );
+          return;
+        }
+      }
+
+      botao.disabled = true;
+      botao.textContent = "Cadastrando...";
+
+      google.script.run
+        .withSuccessHandler(function(resposta) {
+          mostrarMensagem("mensagemCliente", resposta, "sucesso");
+          document.getElementById("formCliente").reset();
+          carregarGradeCadastro("clientes");
+          carregarClientesAgendaTela();
+          carregarCidades();
+          carregarBairros();
+          botao.disabled = false;
+          botao.textContent = "Cadastrar cliente";
+        })
+        .withFailureHandler(function(erro) {
+          mostrarMensagem("mensagemCliente", erro.message, "erro");
+          botao.disabled = false;
+          botao.textContent = "Cadastrar cliente";
+        })
+        .cadastrarCliente(dados);
+    }
+
+    /**
+     * Cadastro de agendamento.
+     */
+    function cadastrarAgendamentoTela(event) {
+      event.preventDefault();
+
+      var botao = document.getElementById("btnCadastrarAgendamento");
+      limparMensagem("mensagemAgenda");
+
+      var dados = {
+        data: document.getElementById("dataAgenda").value,
+        hora: document.getElementById("horaAgenda").value,
+        codigo_funcionario: document.getElementById("funcionarioAgenda").value,
+        codigo_cliente: document.getElementById("clienteAgenda").value,
+        codigo_servico: document.getElementById("servicoAgenda").value,
+        status: document.getElementById("statusAgenda").value
+      };
+
+      for (var campo in dados) {
+        if (dados[campo] === "") {
+          mostrarMensagem(
+            "mensagemAgenda",
+            "Preencha todos os campos do agendamento.",
+            "erro"
+          );
+          return;
+        }
+      }
+
+      botao.disabled = true;
+      botao.textContent = "Cadastrando...";
+
+      google.script.run
+        .withSuccessHandler(function(resposta) {
+          mostrarMensagem("mensagemAgenda", resposta, "sucesso");
+          document.getElementById("formAgenda").reset();
+          carregarGradeCadastro("agenda");
+          document.getElementById("statusAgenda").value = "AGENDADO";
+          atualizarValorServico();
+
+          botao.disabled = false;
+          botao.textContent = "Cadastrar agendamento";
+        })
+        .withFailureHandler(function(erro) {
+          mostrarMensagem(
+            "mensagemAgenda",
+            erro.message || "Não foi possível cadastrar o agendamento.",
+            "erro"
+          );
+
+          botao.disabled = false;
+          botao.textContent = "Cadastrar agendamento";
+        })
+        .cadastrarAgendamento(dados);
+    }
+  </script>
+</body>
+</html>

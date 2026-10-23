@@ -1,0 +1,1011 @@
+
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <base target="_top">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Agenda de Atendimento - Serviços</title>
+
+  <style>
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: #f1f5f9;
+      color: #1e293b;
+    }
+
+    header {
+      background: #1d4ed8;
+      color: white;
+      padding: 22px;
+      text-align: center;
+    }
+
+    header h1 { margin: 0 0 8px; font-size: 26px; }
+    header p { margin: 0; font-size: 14px; }
+
+    nav {
+      background: white;
+      padding: 12px;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    nav button {
+      border: none;
+      background: #e2e8f0;
+      color: #1e293b;
+      padding: 11px 16px;
+      border-radius: 7px;
+      cursor: pointer;
+    }
+
+    nav button.ativo, nav button:hover {
+      background: #1d4ed8;
+      color: white;
+    }
+
+    main {
+      max-width: 950px;
+      margin: 25px auto;
+      padding: 0 16px 30px;
+    }
+
+    .pagina { display: none; }
+    .pagina.ativa { display: block; }
+
+    .cartao {
+      background: white;
+      padding: 24px;
+      margin-bottom: 20px;
+      border-radius: 12px;
+      box-shadow: 0 3px 12px #0000000d;
+    }
+
+    h2 { margin-top: 0; color: #1d4ed8; }
+
+    .cartoes-inicio, .campos-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 0 16px;
+    }
+
+    .cartoes-inicio { gap: 15px; }
+
+    .cartao-menu {
+      border: 1px solid #e2e8f0;
+      border-radius: 10px;
+      padding: 18px;
+      background: white;
+    }
+
+    .cartao-menu p, .observacao {
+      color: #64748b;
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
+    .campo-completo { grid-column: 1 / -1; }
+
+    label {
+      display: block;
+      margin: 14px 0 6px;
+      font-weight: bold;
+      font-size: 14px;
+    }
+
+    input, select {
+      width: 100%;
+      padding: 11px;
+      border: 1px solid #cbd5e1;
+      border-radius: 7px;
+      font-size: 15px;
+      background: white;
+      color: #1e293b;
+    }
+
+    input:focus, select:focus {
+      outline: 2px solid #93c5fd;
+      border-color: #2563eb;
+    }
+
+    .botao-principal, .botao-menu {
+      border: none;
+      background: #1d4ed8;
+      color: white;
+      padding: 12px 18px;
+      border-radius: 7px;
+      cursor: pointer;
+      margin-top: 18px;
+    }
+
+    .botao-principal:disabled {
+      opacity: 0.6;
+      cursor: wait;
+    }
+
+    .mensagem {
+      margin-top: 16px;
+      padding: 12px;
+      border-radius: 7px;
+      display: none;
+      overflow-wrap: anywhere;
+    }
+
+    .mensagem.sucesso {
+      display: block;
+      background: #dcfce7;
+      color: #166534;
+    }
+
+    .mensagem.erro {
+      display: block;
+      background: #fee2e2;
+      color: #991b1b;
+    }
+
+    .valor-servico {
+      margin-top: 12px;
+      padding: 12px;
+      background: #eff6ff;
+      border-radius: 7px;
+      color: #1d4ed8;
+      font-weight: bold;
+    }
+
+    footer {
+      text-align: center;
+      padding: 18px;
+      color: #64748b;
+      font-size: 13px;
+    }
+
+    @media (max-width: 600px) {
+      header h1 { font-size: 21px; }
+      .cartoes-inicio, .campos-grid { grid-template-columns: 1fr; }
+      .campo-completo { grid-column: auto; }
+      .cartao { padding: 18px; }
+      nav button { flex: 1 1 40%; }
+    }
+  </style>
+</head>
+
+<body>
+  <header>
+    <h1>Agenda de Atendimento - Serviços</h1>
+    <p>Sistema de cadastros e organização dos atendimentos</p>
+  </header>
+
+  <nav>
+    <button type="button" data-pagina="inicio" class="ativo"
+      onclick="abrirPagina('inicio', this)">Início</button>
+
+    <button type="button" data-pagina="funcionarios"
+      onclick="abrirPagina('funcionarios', this)">Funcionários</button>
+
+    <button type="button" data-pagina="servicos"
+      onclick="abrirPagina('servicos', this)">Serviços</button>
+
+    <button type="button" data-pagina="cidades"
+      onclick="abrirPagina('cidades', this)">Cidades</button>
+
+    <button type="button" data-pagina="bairros"
+      onclick="abrirPagina('bairros', this)">Bairros</button>
+
+    <button type="button" data-pagina="clientes"
+      onclick="abrirPagina('clientes', this)">Clientes</button>
+
+    <button type="button" data-pagina="agenda"
+      onclick="abrirPagina('agenda', this)">Agenda</button>
+  </nav>
+
+  <main>
+    <!-- INÍCIO -->
+    <section id="pagina-inicio" class="pagina ativa">
+      <div class="cartao">
+        <h2>Bem-vindo!</h2>
+        <p>Utilize o menu para acessar os cadastros do sistema.</p>
+      </div>
+
+      <div class="cartoes-inicio">
+        <div class="cartao-menu">
+          <h3>Funcionários</h3>
+          <p>Cadastre os profissionais.</p>
+          <button class="botao-menu" onclick="abrirPaginaPorNome('funcionarios')">Abrir cadastro</button>
+        </div>
+
+        <div class="cartao-menu">
+          <h3>Serviços</h3>
+          <p>Cadastre serviços, valores e duração.</p>
+          <button class="botao-menu" onclick="abrirPaginaPorNome('servicos')">Abrir cadastro</button>
+        </div>
+
+        <div class="cartao-menu">
+          <h3>Cidades</h3>
+          <p>Cadastre cidades e estados.</p>
+          <button class="botao-menu" onclick="abrirPaginaPorNome('cidades')">Abrir cadastro</button>
+        </div>
+
+        <div class="cartao-menu">
+          <h3>Bairros</h3>
+          <p>Cadastre os bairros.</p>
+          <button class="botao-menu" onclick="abrirPaginaPorNome('bairros')">Abrir cadastro</button>
+        </div>
+
+        <div class="cartao-menu">
+          <h3>Clientes</h3>
+          <p>Cadastre os clientes.</p>
+          <button class="botao-menu" onclick="abrirPaginaPorNome('clientes')">Abrir cadastro</button>
+        </div>
+
+        <div class="cartao-menu">
+          <h3>Agenda</h3>
+          <p>Marque os atendimentos.</p>
+          <button class="botao-menu" onclick="abrirPaginaPorNome('agenda')">Abrir agenda</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- FUNCIONÁRIOS -->
+    <section id="pagina-funcionarios" class="pagina">
+      <div class="cartao">
+        <h2>Cadastro de Funcionários</h2>
+
+        <form id="formFuncionario" onsubmit="cadastrarFuncionarioTela(event)">
+          <label for="nomeFuncionario">Nome do funcionário</label>
+          <input type="text" id="nomeFuncionario" required>
+
+          <button type="submit" class="botao-principal" id="btnCadastrarFuncionario">
+            Cadastrar funcionário
+          </button>
+          <div id="mensagemFuncionario" class="mensagem"></div>
+        </form>
+      </div>
+    </section>
+
+    <!-- SERVIÇOS -->
+    <section id="pagina-servicos" class="pagina">
+      <div class="cartao">
+        <h2>Cadastro de Serviços</h2>
+
+        <form id="formServico" onsubmit="cadastrarServicoTela(event)">
+          <label for="nomeServico">Nome do serviço</label>
+          <input type="text" id="nomeServico" required>
+
+          <label for="valorServico">Valor do serviço (R$)</label>
+          <input type="text" id="valorServico" inputmode="decimal"
+            placeholder="Ex.: 50,00" required>
+
+          <label for="tempoServico">Tempo em minutos</label>
+          <input type="number" id="tempoServico" min="1" step="1" required>
+
+          <button type="submit" class="botao-principal" id="btnCadastrarServico">
+            Cadastrar serviço
+          </button>
+          <div id="mensagemServico" class="mensagem"></div>
+        </form>
+      </div>
+    </section>
+
+    <!-- CIDADES -->
+    <section id="pagina-cidades" class="pagina">
+      <div class="cartao">
+        <h2>Cadastro de Cidades</h2>
+
+        <form id="formCidade" onsubmit="cadastrarCidadeTela(event)">
+          <label for="nomeCidade">Nome da cidade</label>
+          <input type="text" id="nomeCidade" required>
+
+          <label for="estadoCidade">Estado (UF)</label>
+          <select id="estadoCidade" required>
+            <option value="">Selecione o estado</option>
+            <option value="AC">AC - Acre</option>
+            <option value="AL">AL - Alagoas</option>
+            <option value="AP">AP - Amapá</option>
+            <option value="AM">AM - Amazonas</option>
+            <option value="BA">BA - Bahia</option>
+            <option value="CE">CE - Ceará</option>
+            <option value="DF">DF - Distrito Federal</option>
+            <option value="ES">ES - Espírito Santo</option>
+            <option value="GO">GO - Goiás</option>
+            <option value="MA">MA - Maranhão</option>
+            <option value="MT">MT - Mato Grosso</option>
+            <option value="MS">MS - Mato Grosso do Sul</option>
+            <option value="MG">MG - Minas Gerais</option>
+            <option value="PA">PA - Pará</option>
+            <option value="PB">PB - Paraíba</option>
+            <option value="PR">PR - Paraná</option>
+            <option value="PE">PE - Pernambuco</option>
+            <option value="PI">PI - Piauí</option>
+            <option value="RJ">RJ - Rio de Janeiro</option>
+            <option value="RN">RN - Rio Grande do Norte</option>
+            <option value="RS">RS - Rio Grande do Sul</option>
+            <option value="RO">RO - Rondônia</option>
+            <option value="RR">RR - Roraima</option>
+            <option value="SC">SC - Santa Catarina</option>
+            <option value="SP">SP - São Paulo</option>
+            <option value="SE">SE - Sergipe</option>
+            <option value="TO">TO - Tocantins</option>
+          </select>
+
+          <button type="submit" class="botao-principal" id="btnCadastrarCidade">
+            Cadastrar cidade
+          </button>
+          <div id="mensagemCidade" class="mensagem"></div>
+        </form>
+      </div>
+    </section>
+
+    <!-- BAIRROS -->
+    <section id="pagina-bairros" class="pagina">
+      <div class="cartao">
+        <h2>Cadastro de Bairros</h2>
+
+        <form id="formBairro" onsubmit="cadastrarBairroTela(event)">
+          <label for="nomeBairro">Nome do bairro</label>
+          <input type="text" id="nomeBairro" required>
+
+          <button type="submit" class="botao-principal" id="btnCadastrarBairro">
+            Cadastrar bairro
+          </button>
+          <div id="mensagemBairro" class="mensagem"></div>
+        </form>
+      </div>
+    </section>
+
+    <!-- CLIENTES -->
+    <section id="pagina-clientes" class="pagina">
+      <div class="cartao">
+        <h2>Cadastro de Clientes</h2>
+        <p class="observacao">O código do cliente será gerado automaticamente.</p>
+
+        <form id="formCliente" onsubmit="cadastrarClienteTela(event)">
+          <div class="campos-grid">
+            <div class="campo-completo">
+              <label for="nomeCliente">Nome completo</label>
+              <input type="text" id="nomeCliente" required>
+            </div>
+
+            <div>
+              <label for="cpfCliente">CPF</label>
+              <input type="text" id="cpfCliente" inputmode="numeric"
+                maxlength="14" placeholder="000.000.000-00" required>
+            </div>
+
+            <div>
+              <label for="aniversarioCliente">Data de nascimento</label>
+              <input type="date" id="aniversarioCliente" required>
+            </div>
+
+            <div class="campo-completo">
+              <label for="enderecoCliente">Endereço</label>
+              <input type="text" id="enderecoCliente" required>
+            </div>
+
+            <div>
+              <label for="numeroCliente">Número</label>
+              <input type="text" id="numeroCliente" required>
+            </div>
+
+            <div>
+              <label for="cepCliente">CEP</label>
+              <input type="text" id="cepCliente" maxlength="9"
+                placeholder="00000-000" required>
+            </div>
+
+            <div>
+              <label for="cidadeCliente">Cidade</label>
+              <select id="cidadeCliente" required>
+                <option value="">Carregando cidades...</option>
+              </select>
+            </div>
+
+            <div>
+              <label for="bairroCliente">Bairro</label>
+              <select id="bairroCliente" required>
+                <option value="">Carregando bairros...</option>
+              </select>
+            </div>
+
+            <div>
+              <label for="celularCliente">Celular</label>
+              <input type="tel" id="celularCliente" required>
+            </div>
+
+            <div>
+              <label for="emailCliente">E-mail</label>
+              <input type="email" id="emailCliente" required>
+            </div>
+
+            <div class="campo-completo">
+              <label for="statusFinanceiroCliente">Status financeiro</label>
+              <select id="statusFinanceiroCliente" required>
+                <option value="">Selecione o status</option>
+                <option value="EM DIA">EM DIA</option>
+                <option value="PENDENTE">PENDENTE</option>
+                <option value="EM ATRASO">EM ATRASO</option>
+              </select>
+            </div>
+          </div>
+
+          <button type="submit" class="botao-principal" id="btnCadastrarCliente">
+            Cadastrar cliente
+          </button>
+          <div id="mensagemCliente" class="mensagem"></div>
+        </form>
+      </div>
+    </section>
+
+    <!-- AGENDA -->
+    <section id="pagina-agenda" class="pagina">
+      <div class="cartao">
+        <h2>Cadastro de Agendamento</h2>
+        <p class="observacao">
+          Selecione o funcionário, o cliente e o serviço. O valor será preenchido automaticamente.
+        </p>
+
+        <form id="formAgenda" onsubmit="cadastrarAgendamentoTela(event)">
+          <div class="campos-grid">
+            <div>
+              <label for="dataAgenda">Data</label>
+              <input type="date" id="dataAgenda" required>
+            </div>
+
+            <div>
+              <label for="horaAgenda">Hora</label>
+              <input type="time" id="horaAgenda" required>
+            </div>
+
+            <div class="campo-completo">
+              <label for="funcionarioAgenda">Funcionário</label>
+              <select id="funcionarioAgenda" required>
+                <option value="">Carregando funcionários...</option>
+              </select>
+            </div>
+
+            <div class="campo-completo">
+              <label for="clienteAgenda">Cliente</label>
+              <select id="clienteAgenda" required>
+                <option value="">Carregando clientes...</option>
+              </select>
+            </div>
+
+            <div class="campo-completo">
+              <label for="servicoAgenda">Serviço</label>
+              <select id="servicoAgenda" required onchange="atualizarValorServico()">
+                <option value="">Carregando serviços...</option>
+              </select>
+              <div id="valorServicoAgenda" class="valor-servico">
+                Valor do serviço: selecione um serviço
+              </div>
+            </div>
+
+            <div class="campo-completo">
+              <label for="statusAgenda">Status</label>
+              <select id="statusAgenda" required>
+                <option value="AGENDADO">AGENDADO</option>
+                <option value="CONFIRMADO">CONFIRMADO</option>
+                <option value="CONCLUÍDO">CONCLUÍDO</option>
+                <option value="CANCELADO">CANCELADO</option>
+              </select>
+            </div>
+          </div>
+
+          <button type="submit" class="botao-principal" id="btnCadastrarAgendamento">
+            Cadastrar agendamento
+          </button>
+          <div id="mensagemAgenda" class="mensagem"></div>
+        </form>
+      </div>
+    </section>
+  </main>
+
+  <footer>Agenda de Atendimento - Serviços</footer>
+
+  <script>
+    // Guarda os serviços carregados, incluindo seus valores.
+    var servicosCarregados = [];
+
+    /**
+     * Navegação entre as telas.
+     */
+    function abrirPagina(nomePagina, botao) {
+      document.querySelectorAll(".pagina").forEach(function(pagina) {
+        pagina.classList.remove("ativa");
+      });
+
+      var pagina = document.getElementById("pagina-" + nomePagina);
+      if (pagina) pagina.classList.add("ativa");
+
+      document.querySelectorAll("nav button[data-pagina]").forEach(function(item) {
+        item.classList.remove("ativo");
+      });
+
+      if (!botao) {
+        botao = document.querySelector(
+          'nav button[data-pagina="' + nomePagina + '"]'
+        );
+      }
+
+      if (botao) botao.classList.add("ativo");
+
+      if (nomePagina === "clientes") {
+        carregarCidades();
+        carregarBairros();
+      }
+
+      if (nomePagina === "agenda") {
+        carregarFuncionariosAgendaTela();
+        carregarClientesAgendaTela();
+        carregarServicosAgendaTela();
+      }
+    }
+
+    function abrirPaginaPorNome(nomePagina) {
+      abrirPagina(nomePagina, null);
+    }
+
+    function mostrarMensagem(id, texto, tipo) {
+      var elemento = document.getElementById(id);
+      elemento.textContent = texto;
+      elemento.className = "mensagem " + tipo;
+    }
+
+    function limparMensagem(id) {
+      var elemento = document.getElementById(id);
+      elemento.textContent = "";
+      elemento.className = "mensagem";
+    }
+
+    /**
+     * Converte campos de texto em maiúsculas enquanto o usuário digita.
+     */
+    document.querySelectorAll(
+      'input[type="text"], input[type="email"], input[type="tel"]'
+    ).forEach(function(campo) {
+      campo.addEventListener("input", function() {
+        var inicio = this.selectionStart;
+        var fim = this.selectionEnd;
+
+        this.value = this.value.toLocaleUpperCase("pt-BR");
+
+        if (inicio !== null && fim !== null) {
+          this.setSelectionRange(inicio, fim);
+        }
+      });
+    });
+
+    /**
+     * Prepara uma lista suspensa com uma opção inicial.
+     */
+    function prepararLista(id, textoInicial) {
+      var select = document.getElementById(id);
+      select.innerHTML = "";
+
+      var opcao = document.createElement("option");
+      opcao.value = "";
+      opcao.textContent = textoInicial;
+      select.appendChild(opcao);
+
+      return select;
+    }
+
+    /**
+     * Carrega cidades para o cadastro de clientes.
+     */
+    function carregarCidades() {
+      var select = prepararLista("cidadeCliente", "Carregando cidades...");
+      select.disabled = true;
+
+      google.script.run
+        .withSuccessHandler(function(cidades) {
+          select = prepararLista(
+            "cidadeCliente",
+            cidades.length ? "Selecione a cidade" : "Nenhuma cidade cadastrada"
+          );
+
+          select.disabled = cidades.length === 0;
+
+          cidades.forEach(function(cidade) {
+            var opcao = document.createElement("option");
+            opcao.value = cidade.codigo;
+            opcao.textContent = cidade.nome +
+              (cidade.estado ? " - " + cidade.estado : "");
+            select.appendChild(opcao);
+          });
+        })
+        .withFailureHandler(function(erro) {
+          prepararLista("cidadeCliente", "Erro ao carregar cidades");
+          mostrarMensagem("mensagemCliente", erro.message, "erro");
+        })
+        .listarCidadesSelecao();
+    }
+
+    /**
+     * Carrega bairros para o cadastro de clientes.
+     */
+    function carregarBairros() {
+      var select = prepararLista("bairroCliente", "Carregando bairros...");
+      select.disabled = true;
+
+      google.script.run
+        .withSuccessHandler(function(bairros) {
+          select = prepararLista(
+            "bairroCliente",
+            bairros.length ? "Selecione o bairro" : "Nenhum bairro cadastrado"
+          );
+
+          select.disabled = bairros.length === 0;
+
+          bairros.forEach(function(bairro) {
+            var opcao = document.createElement("option");
+            opcao.value = bairro.codigo;
+            opcao.textContent = bairro.nome;
+            select.appendChild(opcao);
+          });
+        })
+        .withFailureHandler(function(erro) {
+          prepararLista("bairroCliente", "Erro ao carregar bairros");
+          mostrarMensagem("mensagemCliente", erro.message, "erro");
+        })
+        .listarBairrosSelecao();
+    }
+
+    /**
+     * Carrega funcionários para a Agenda.
+     */
+    function carregarFuncionariosAgendaTela() {
+      var select = prepararLista(
+        "funcionarioAgenda", "Carregando funcionários..."
+      );
+      select.disabled = true;
+
+      google.script.run
+        .withSuccessHandler(function(lista) {
+          select = prepararLista(
+            "funcionarioAgenda",
+            lista.length ? "Selecione o funcionário" : "Nenhum funcionário cadastrado"
+          );
+          select.disabled = lista.length === 0;
+
+          lista.forEach(function(item) {
+            var opcao = document.createElement("option");
+            opcao.value = item.codigo;
+            opcao.textContent = item.nome;
+            select.appendChild(opcao);
+          });
+        })
+        .withFailureHandler(function(erro) {
+          prepararLista("funcionarioAgenda", "Erro ao carregar funcionários");
+          mostrarMensagem("mensagemAgenda", erro.message, "erro");
+        })
+        .listarFuncionariosAgenda();
+    }
+
+    /**
+     * Carrega clientes para a Agenda.
+     */
+    function carregarClientesAgendaTela() {
+      var select = prepararLista(
+        "clienteAgenda", "Carregando clientes..."
+      );
+      select.disabled = true;
+
+      google.script.run
+        .withSuccessHandler(function(lista) {
+          select = prepararLista(
+            "clienteAgenda",
+            lista.length ? "Selecione o cliente" : "Nenhum cliente cadastrado"
+          );
+          select.disabled = lista.length === 0;
+
+          lista.forEach(function(item) {
+            var opcao = document.createElement("option");
+            opcao.value = item.codigo;
+            opcao.textContent = item.nome;
+            select.appendChild(opcao);
+          });
+        })
+        .withFailureHandler(function(erro) {
+          prepararLista("clienteAgenda", "Erro ao carregar clientes");
+          mostrarMensagem("mensagemAgenda", erro.message, "erro");
+        })
+        .listarClientesAgenda();
+    }
+
+    /**
+     * Carrega serviços e valores para a Agenda.
+     */
+    function carregarServicosAgendaTela() {
+      var select = prepararLista(
+        "servicoAgenda", "Carregando serviços..."
+      );
+      select.disabled = true;
+      servicosCarregados = [];
+      atualizarValorServico();
+
+      google.script.run
+        .withSuccessHandler(function(lista) {
+          servicosCarregados = lista;
+
+          select = prepararLista(
+            "servicoAgenda",
+            lista.length ? "Selecione o serviço" : "Nenhum serviço cadastrado"
+          );
+          select.disabled = lista.length === 0;
+
+          lista.forEach(function(item) {
+            var opcao = document.createElement("option");
+            opcao.value = item.codigo;
+            opcao.textContent = item.nome;
+            select.appendChild(opcao);
+          });
+
+          atualizarValorServico();
+        })
+        .withFailureHandler(function(erro) {
+          prepararLista("servicoAgenda", "Erro ao carregar serviços");
+          mostrarMensagem("mensagemAgenda", erro.message, "erro");
+        })
+        .listarServicosAgenda();
+    }
+
+    /**
+     * Exibe o valor do serviço selecionado.
+     */
+    function atualizarValorServico() {
+      var codigo = document.getElementById("servicoAgenda").value;
+      var caixa = document.getElementById("valorServicoAgenda");
+
+      if (!codigo) {
+        caixa.textContent = "Valor do serviço: selecione um serviço";
+        return;
+      }
+
+      var servico = servicosCarregados.find(function(item) {
+        return item.codigo === codigo;
+      });
+
+      if (!servico) {
+        caixa.textContent = "Valor do serviço indisponível";
+        return;
+      }
+
+      caixa.textContent = "Valor do serviço: " +
+        Number(servico.valor).toLocaleString("pt-BR", {
+          style: "currency",
+          currency: "BRL"
+        });
+    }
+
+    /**
+     * Cadastro de funcionário.
+     */
+    function cadastrarFuncionarioTela(event) {
+      event.preventDefault();
+
+      var nome = document.getElementById("nomeFuncionario").value.trim();
+      var botao = document.getElementById("btnCadastrarFuncionario");
+
+      limparMensagem("mensagemFuncionario");
+      botao.disabled = true;
+      botao.textContent = "Cadastrando...";
+
+      google.script.run
+        .withSuccessHandler(function(resposta) {
+          mostrarMensagem("mensagemFuncionario", resposta, "sucesso");
+          document.getElementById("formFuncionario").reset();
+          botao.disabled = false;
+          botao.textContent = "Cadastrar funcionário";
+        })
+        .withFailureHandler(function(erro) {
+          mostrarMensagem("mensagemFuncionario", erro.message, "erro");
+          botao.disabled = false;
+          botao.textContent = "Cadastrar funcionário";
+        })
+        .cadastrarFuncionario(nome);
+    }
+
+    /**
+     * Cadastro de serviço.
+     */
+    function cadastrarServicoTela(event) {
+      event.preventDefault();
+
+      var nome = document.getElementById("nomeServico").value.trim();
+      var valor = document.getElementById("valorServico").value.trim();
+      var tempo = document.getElementById("tempoServico").value.trim();
+      var botao = document.getElementById("btnCadastrarServico");
+
+      limparMensagem("mensagemServico");
+      botao.disabled = true;
+      botao.textContent = "Cadastrando...";
+
+      google.script.run
+        .withSuccessHandler(function(resposta) {
+          mostrarMensagem("mensagemServico", resposta, "sucesso");
+          document.getElementById("formServico").reset();
+          botao.disabled = false;
+          botao.textContent = "Cadastrar serviço";
+        })
+        .withFailureHandler(function(erro) {
+          mostrarMensagem("mensagemServico", erro.message, "erro");
+          botao.disabled = false;
+          botao.textContent = "Cadastrar serviço";
+        })
+        .cadastrarServico(nome, valor, tempo);
+    }
+
+    /**
+     * Cadastro de cidade.
+     */
+    function cadastrarCidadeTela(event) {
+      event.preventDefault();
+
+      var nome = document.getElementById("nomeCidade").value.trim();
+      var estado = document.getElementById("estadoCidade").value;
+      var botao = document.getElementById("btnCadastrarCidade");
+
+      limparMensagem("mensagemCidade");
+      botao.disabled = true;
+      botao.textContent = "Cadastrando...";
+
+      google.script.run
+        .withSuccessHandler(function(resposta) {
+          mostrarMensagem("mensagemCidade", resposta, "sucesso");
+          document.getElementById("formCidade").reset();
+          botao.disabled = false;
+          botao.textContent = "Cadastrar cidade";
+        })
+        .withFailureHandler(function(erro) {
+          mostrarMensagem("mensagemCidade", erro.message, "erro");
+          botao.disabled = false;
+          botao.textContent = "Cadastrar cidade";
+        })
+        .cadastrarCidade(nome, estado);
+    }
+
+    /**
+     * Cadastro de bairro.
+     */
+    function cadastrarBairroTela(event) {
+      event.preventDefault();
+
+      var nome = document.getElementById("nomeBairro").value.trim();
+      var botao = document.getElementById("btnCadastrarBairro");
+
+      limparMensagem("mensagemBairro");
+      botao.disabled = true;
+      botao.textContent = "Cadastrando...";
+
+      google.script.run
+        .withSuccessHandler(function(resposta) {
+          mostrarMensagem("mensagemBairro", resposta, "sucesso");
+          document.getElementById("formBairro").reset();
+          botao.disabled = false;
+          botao.textContent = "Cadastrar bairro";
+        })
+        .withFailureHandler(function(erro) {
+          mostrarMensagem("mensagemBairro", erro.message, "erro");
+          botao.disabled = false;
+          botao.textContent = "Cadastrar bairro";
+        })
+        .cadastrarBairro(nome);
+    }
+
+    /**
+     * Cadastro de cliente.
+     */
+    function cadastrarClienteTela(event) {
+      event.preventDefault();
+
+      var botao = document.getElementById("btnCadastrarCliente");
+      limparMensagem("mensagemCliente");
+
+      var dados = {
+        nome: document.getElementById("nomeCliente").value.trim(),
+        cpf: document.getElementById("cpfCliente").value.trim(),
+        dt_aniversario: document.getElementById("aniversarioCliente").value,
+        endereco: document.getElementById("enderecoCliente").value.trim(),
+        numero: document.getElementById("numeroCliente").value.trim(),
+        codigo_cidade: document.getElementById("cidadeCliente").value,
+        codigo_bairro: document.getElementById("bairroCliente").value,
+        cep: document.getElementById("cepCliente").value.trim(),
+        celular: document.getElementById("celularCliente").value.trim(),
+        email: document.getElementById("emailCliente").value.trim(),
+        status_financeiro: document.getElementById("statusFinanceiroCliente").value
+      };
+
+      for (var campo in dados) {
+        if (dados[campo] === "") {
+          mostrarMensagem(
+            "mensagemCliente",
+            "Preencha todos os campos e selecione cidade e bairro.",
+            "erro"
+          );
+          return;
+        }
+      }
+
+      botao.disabled = true;
+      botao.textContent = "Cadastrando...";
+
+      google.script.run
+        .withSuccessHandler(function(resposta) {
+          mostrarMensagem("mensagemCliente", resposta, "sucesso");
+          document.getElementById("formCliente").reset();
+          carregarCidades();
+          carregarBairros();
+          botao.disabled = false;
+          botao.textContent = "Cadastrar cliente";
+        })
+        .withFailureHandler(function(erro) {
+          mostrarMensagem("mensagemCliente", erro.message, "erro");
+          botao.disabled = false;
+          botao.textContent = "Cadastrar cliente";
+        })
+        .cadastrarCliente(dados);
+    }
+
+    /**
+     * Cadastro de agendamento.
+     */
+    function cadastrarAgendamentoTela(event) {
+      event.preventDefault();
+
+      var botao = document.getElementById("btnCadastrarAgendamento");
+      limparMensagem("mensagemAgenda");
+
+      var dados = {
+        data: document.getElementById("dataAgenda").value,
+        hora: document.getElementById("horaAgenda").value,
+        codigo_funcionario: document.getElementById("funcionarioAgenda").value,
+        codigo_cliente: document.getElementById("clienteAgenda").value,
+        codigo_servico: document.getElementById("servicoAgenda").value,
+        status: document.getElementById("statusAgenda").value
+      };
+
+      for (var campo in dados) {
+        if (dados[campo] === "") {
+          mostrarMensagem(
+            "mensagemAgenda",
+            "Preencha todos os campos do agendamento.",
+            "erro"
+          );
+          return;
+        }
+      }
+
+      botao.disabled = true;
+      botao.textContent = "Cadastrando...";
+
+      google.script.run
+        .withSuccessHandler(function(resposta) {
+          mostrarMensagem("mensagemAgenda", resposta, "sucesso");
+          document.getElementById("formAgenda").reset();
+          document.getElementById("statusAgenda").value = "AGENDADO";
+          atualizarValorServico();
+
+          botao.disabled = false;
+          botao.textContent = "Cadastrar agendamento";
+        })
+        .withFailureHandler(function(erro) {
+          mostrarMensagem(
+            "mensagemAgenda",
+            erro.message || "Não foi possível cadastrar o agendamento.",
+            "erro"
+          );
+
+          botao.disabled = false;
+          botao.textContent = "Cadastrar agendamento";
+        })
+        .cadastrarAgendamento(dados);
+    }
+  </script>
+</body>
+</html>
