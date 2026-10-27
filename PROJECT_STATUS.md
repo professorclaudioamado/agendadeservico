@@ -58,26 +58,24 @@ A execução real no Google Apps Script com Gmail autorizado ainda não foi real
 
 ### Pendente para ativação
 
-1. Integrar esta etapa à branch `main`.
-2. Ativar a API Google Apps Script, se ainda não estiver ativa.
-3. Gerar a credencial OAuth do `clasp` com a conta Google correta.
-4. Cadastrar o segredo `CLASPRC_JSON` nas configurações do GitHub.
-5. Confirmar que o projeto Apps Script associado ao `.clasp.json` é o destino correto e que o GitHub contém a versão que deve ser considerada oficial.
-6. Ativar a variável `APPS_SCRIPT_DEPLOY_ENABLED=true` somente após essa conferência.
-7. Executar a primeira publicação controlada e conferir o resultado no Apps Script.
+1. Ativar a API Google Apps Script, se ainda não estiver ativa.
+2. Gerar a credencial OAuth do `clasp` com a conta Google correta.
+3. Cadastrar o segredo `CLASPRC_JSON` nas configurações do GitHub.
+4. Confirmar que o projeto Apps Script associado ao `.clasp.json` é o destino correto e que o GitHub contém a versão que deve ser considerada oficial.
+5. Ativar a variável `APPS_SCRIPT_DEPLOY_ENABLED=true` somente após essa conferência.
+6. Executar a primeira publicação controlada e conferir o resultado no Apps Script.
 
-**Importante:** a publicação com `clasp push --force` substitui o código do projeto remoto pelo conteúdo versionado no GitHub. A automação ainda não foi executada contra o projeto real e não há confirmação de publicação até que as credenciais e a configuração sejam validadas.
+**Importante:** a publicação com `clasp push --force` substitui o código do projeto remoto pelo conteúdo versionado no GitHub. A validação do workflow em pull request foi aprovada. A automação ainda não foi executada contra o projeto real e não há confirmação de publicação até que as credenciais e a configuração sejam validadas.
 
 O envio do código ao projeto Apps Script não atualiza automaticamente uma implantação de Web App já publicada; essa etapa requer o ID da implantação e configuração específica caso seja necessária.
 
 ## Próximos passos
 
-1. Concluir e integrar a configuração GitHub Actions.
-2. Completar a autorização inicial e validar a publicação controlada no Apps Script.
-3. Validar a leitura real dos e-mails com `verificarEmailsAgendamento()`.
-4. Mapear clientes e serviços para os códigos utilizados pelo sistema atual.
-5. Implementar prevenção persistente de duplicidade antes de criar agendamentos.
-6. Configurar o processamento automático somente depois dos testes do fluxo completo.
+1. Completar a autorização inicial e validar a publicação controlada no Apps Script.
+2. Validar a leitura real dos e-mails com `verificarEmailsAgendamento()`.
+3. Mapear clientes e serviços para os códigos utilizados pelo sistema atual.
+4. Implementar prevenção persistente de duplicidade antes de criar agendamentos.
+5. Configurar o processamento automático somente depois dos testes do fluxo completo.
 
 ## Arquivos criados na etapa de automação
 
@@ -103,7 +101,7 @@ Nenhum. Não há arquivo obsoleto identificado nesta etapa.
 
 ## Como testar a automação
 
-1. Abrir um pull request para `main`; o workflow deve executar as validações, sem publicar no Apps Script.
-2. Após integrar a configuração, cadastrar o segredo `CLASPRC_JSON` e conferir o destino em `.clasp.json`.
+1. A validação do workflow foi executada com sucesso no pull request #2.
+2. Cadastrar o segredo `CLASPRC_JSON` e conferir o destino em `.clasp.json`.
 3. Fazer a primeira publicação somente após confirmar que o conteúdo do GitHub deve substituir o código remoto.
 4. Conferir a execução em **GitHub → Actions** e verificar os arquivos no editor Google Apps Script.
