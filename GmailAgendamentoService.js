@@ -70,14 +70,23 @@ var GmailAgendamentoService = (function() {
           status: "AGENDADO"
         });
 
-        // Marcar somente depois de a gravação retornar sucesso.
-        GmailAgendamentoRepository.marcarComoProcessada(mensagem);
         resumo.criados++;
+        var avisoRotulo = "";
+
+        // O agendamento já foi salvo. Se a marcação falhar, não ocultamos
+        // esse sucesso: informamos que o e-mail pode precisar de conferência.
+        try {
+          GmailAgendamentoRepository.marcarComoProcessada(mensagem);
+        } catch (erroRotulo) {
+          avisoRotulo = " Atenção: não foi possível marcar o e-mail como processado; " +
+            "verifique a agenda antes de executar novamente.";
+        }
+
         resumo.resultados.push({
           sucesso: true,
           mensagem: "Agendamento criado para " + analise.cliente +
             " — " + analise.servico + ", " + analise.data + " às " +
-            analise.hora + ". " + resposta
+            analise.hora + ". " + resposta + avisoRotulo
         });
       } catch (erro) {
         resumo.comErros++;
