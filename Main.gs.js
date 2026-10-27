@@ -73,3 +73,13 @@ function listarRegistrosCadastro(nomeAba) {
     linhas: linhas
   };
 }
+
+
+/** Consulta um funcionário pelo código. @param {number|string} codigo Código. @return {{codigo:number, nome:string}} Dados do funcionário. */
+function consultarFuncionario(codigo) { return FuncionarioService.consultar(codigo); }
+
+/** Atualiza um funcionário. @param {number|string} codigo Código. @param {string} nome Novo nome. @return {string} Confirmação. */
+function atualizarFuncionario(codigo, nome) { return FuncionarioService.atualizar(codigo, nome); }
+
+/** Exclui um funcionário. @param {number|string} codigo Código. @return {string} Confirmação. */
+function excluirFuncionario(codigo) { return FuncionarioService.excluir(codigo); }
