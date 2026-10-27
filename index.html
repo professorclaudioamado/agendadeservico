@@ -129,7 +129,7 @@
       cursor: wait;
     }
 
-    .mensagem {
+    .mensagem {\n      white-space: pre-line;
       margin-top: 16px;
       padding: 12px;
       border-radius: 7px;
@@ -616,8 +616,15 @@
           <button type="submit" class="botao-principal" id="btnCadastrarAgendamento">
             Cadastrar agendamento
           </button>
-          <div id="mensagemAgenda" class="mensagem"></div>
         </form>
+
+        <div class="acoes-email-agendamento">
+          <button type="button" class="botao-principal" id="btnVerificarEmailAgendamento"
+            onclick="verificarEmailsAgendamentoTela()">
+            Verificar e-mail
+          </button>
+          <div id="mensagemAgenda" class="mensagem" role="status" aria-live="polite"></div>
+        </div>
         <div class="grade-registros" id="grade-agenda">
           <div class="grade-cabecalho">
             <h3>Dados cadastrados</h3>
@@ -1246,6 +1253,50 @@
           botao.textContent = "Cadastrar cliente";
         })
         .cadastrarCliente(dados);
+    }
+
+    /**
+     * Consulta os e-mails de agendamento e mostra o resultado do processamento.
+     * Depois da execução, atualiza a grade para exibir os novos registros.
+     */
+    function verificarEmailsAgendamentoTela() {
+      var botao = document.getElementById("btnVerificarEmailAgendamento");
+      limparMensagem("mensagemAgenda");
+      botao.disabled = true;
+      botao.textContent = "Verificando e-mails...";
+
+      google.script.run
+        .withSuccessHandler(function(resumo) {
+          var linhas = [
+            "Verificação concluída.",
+            "E-mails analisados: " + resumo.mensagensAnalisadas,
+            "Agendamentos criados: " + resumo.criados,
+            "Com problemas: " + resumo.comErros
+          ];
+
+          (resumo.resultados || []).forEach(function(item) {
+            linhas.push((item.sucesso ? "✓ " : "• ") + item.mensagem);
+          });
+
+          mostrarMensagem(
+            "mensagemAgenda",
+            linhas.join("\\n"),
+            resumo.comErros > 0 ? "erro" : "sucesso"
+          );
+          carregarGradeCadastro("agenda");
+          botao.disabled = false;
+          botao.textContent = "Verificar e-mail";
+        })
+        .withFailureHandler(function(erro) {
+          mostrarMensagem(
+            "mensagemAgenda",
+            erro.message || "Não foi possível verificar os e-mails.",
+            "erro"
+          );
+          botao.disabled = false;
+          botao.textContent = "Verificar e-mail";
+        })
+        .verificarEmailsAgendamento();
     }
 
     /**
