@@ -1,0 +1,83 @@
+name: Apps Script - validar e publicar
+
+on:
+  pull_request:
+    branches:
+      - main
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+    inputs:
+      publicar:
+        description: "Confirmo que quero publicar o conteúdo atual da main no Apps Script."
+        required: true
+        default: false
+        type: boolean
+
+permissions:
+  contents: read
+
+jobs:
+  validar:
+    name: Validar arquivos do projeto
+    runs-on: ubuntu-latest
+    steps:
+      - name: Baixar o código do GitHub
+        uses: actions/checkout@v4
+
+      - name: Preparar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Verificar sintaxe JavaScript
+        shell: bash
+        run: |
+          set -euo pipefail
+          while IFS= read -r -d '' arquivo; do
+            echo "Verificando: $arquivo"
+            node --check "$arquivo"
+          done < <(find . -type f -name '*.js' \
+            -not -path './.git/*' \
+            -not -path './node_modules/*' \
+            -print0)
+
+      - name: Validar arquivos de configuração
+        run: |
+          node -e "const fs=require('fs'); JSON.parse(fs.readFileSync('appsscript.json','utf8')); const c=JSON.parse(fs.readFileSync('.clasp.json','utf8')); if (!c.scriptId) { throw new Error('scriptId ausente em .clasp.json'); } console.log('Manifesto e configuração clasp válidos.');"
+
+  publicar:
+    name: Publicar no Google Apps Script
+    runs-on: ubuntu-latest
+    needs: validar
+    if: >-
+      (github.event_name == 'push' && vars.APPS_SCRIPT_DEPLOY_ENABLED == 'true') ||
+      (github.event_name == 'workflow_dispatch' && inputs.publicar == true)
+    steps:
+      - name: Baixar o código do GitHub
+        uses: actions/checkout@v4
+
+      - name: Preparar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Conferir credencial de publicação
+        env:
+          CLASPRC_JSON: ${{ secrets.CLASPRC_JSON }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ -z "${CLASPRC_JSON}" ]; then
+            echo "::error::O segredo CLASPRC_JSON não está configurado nas configurações do repositório."
+            exit 1
+          fi
+          umask 077
+          printf '%s' "${CLASPRC_JSON}" > "$HOME/.clasprc.json"
+
+      - name: Publicar os arquivos no Apps Script
+        run: npx --yes @google/clasp@3.4.1 push --force
+
+      - name: Registrar versão do código publicado
+        run: npx --yes @google/clasp@3.4.1 version "GitHub commit $(git rev-parse --short HEAD)"
