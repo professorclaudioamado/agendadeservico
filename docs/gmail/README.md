@@ -44,15 +44,21 @@ A validação de formato deve produzir os campos Cliente `Maria Silva`, Serviço
 - Nenhuma mensagem é marcada como lida, movida ou alterada.
 - Não há ainda verificação de existência do cliente/serviço nos cadastros, controle de duplicidade ou acionador automático.
 
-## Como validar no Google Apps Script
+## Publicação no Google Apps Script
 
-1. Incorporar os três arquivos ao projeto Apps Script vinculado à aplicação.
-2. Salvar e executar manualmente `verificarEmailsAgendamento()`.
+Os arquivos desta integração ficam versionados no GitHub. A publicação para o Google Apps Script será feita pelo fluxo descrito em [GitHub Actions → Apps Script](../deployment/GITHUB_ACTIONS_APPS_SCRIPT.md), depois da configuração inicial da autenticação e da conferência do projeto de destino.
+
+Não é necessário copiar os arquivos JavaScript individualmente. A publicação automatizada ainda não foi confirmada no projeto Google real.
+
+## Como validar no Google Apps Script após a publicação
+
+1. Confirmar que os três arquivos estão visíveis no projeto Apps Script.
+2. No editor Apps Script, selecionar e executar manualmente `verificarEmailsAgendamento()`.
 3. Autorizar o acesso ao Gmail, caso o Google solicite.
 4. Abrir o registro de execução e conferir o resumo e os registros `DIAGNOSTICO_GMAIL_AGENDAMENTO`.
 5. Confirmar que os e-mails esperados são identificados e que nenhum registro foi criado na aba `AGENDA`.
 
-## Testes locais realizados
+## Testes locais previamente realizados
 
 - Verificação sintática dos três arquivos JavaScript.
 - Extração do exemplo informado.
