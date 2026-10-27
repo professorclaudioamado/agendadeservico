@@ -38,7 +38,7 @@ var GmailAgendamentoRepository = (function() {
         var mensagem = mensagens[j];
         var assunto = String(mensagem.getSubject() || "").trim().toUpperCase();
 
-        if (assunto === ASSUNTO_ESPERADO && mensagem.isInInbox()) {
+        if (assunto === ASSUNTO_ESPERADO) {
           mensagemSelecionada = mensagem;
         }
       }
