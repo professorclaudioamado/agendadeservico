@@ -30,13 +30,21 @@ var GmailAgendamentoRepository = (function() {
     for (var i = 0; i < conversas.length; i++) {
       var mensagens = conversas[i].getMessages();
 
+      // Uma conversa gera no máximo um agendamento nesta execução.
+      // Se houver várias mensagens com o mesmo assunto na conversa, usa a mais recente.
+      var mensagemSelecionada = null;
+
       for (var j = 0; j < mensagens.length; j++) {
         var mensagem = mensagens[j];
         var assunto = String(mensagem.getSubject() || "").trim().toUpperCase();
 
         if (assunto === ASSUNTO_ESPERADO && mensagem.isInInbox()) {
-          mensagensEncontradas.push(mensagem);
+          mensagemSelecionada = mensagem;
         }
+      }
+
+      if (mensagemSelecionada) {
+        mensagensEncontradas.push(mensagemSelecionada);
       }
     }
 
