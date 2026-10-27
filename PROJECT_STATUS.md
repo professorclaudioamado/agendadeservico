@@ -105,3 +105,12 @@ Nenhum. Não há arquivo obsoleto identificado nesta etapa.
 2. Cadastrar o segredo `CLASPRC_JSON` e conferir o destino em `.clasp.json`.
 3. Fazer a primeira publicação somente após confirmar que o conteúdo do GitHub deve substituir o código remoto.
 4. Conferir a execução em **GitHub → Actions** e verificar os arquivos no editor Google Apps Script.
+
+
+## CRUD de Funcionários — implementação em andamento
+
+- A interface de funcionários foi preparada para incluir ações por linha: consultar, editar e excluir.
+- O clique na linha carrega o registro no formulário, mantendo o código original para atualização.
+- O serviço e o repositório passam a oferecer consulta por código, atualização do nome e exclusão por código.
+- A exclusão exige confirmação explícita na interface.
+- Esta etapa deve ser validada pelo workflow do GitHub Actions e revisada antes de integrar à branch principal.
