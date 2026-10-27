@@ -2,7 +2,7 @@
 
 ## Versão atual
 
-Aplicação existente com entidades organizadas em camadas; integração com Gmail preparada em modo de diagnóstico somente leitura; automação de validação e publicação do GitHub para Google Apps Script em configuração.
+Aplicação existente com entidades organizadas em camadas; integração manual por botão para ler solicitações de agendamento do Gmail e encaminhá-las ao fluxo existente, aguardando teste real no Google Apps Script.
 
 ## Arquitetura adotada
 
