@@ -2,13 +2,13 @@
 
 ## Versão atual
 
-Aplicação existente com entidades refatoradas para uma arquitetura em camadas; integração com Gmail em preparação, na etapa de diagnóstico somente leitura.
+Aplicação existente com entidades organizadas em camadas; integração com Gmail preparada em modo de diagnóstico somente leitura; automação de validação e publicação do GitHub para Google Apps Script em configuração.
 
 ## Arquitetura adotada
 
 **Interface → Service → Rules / Validator → Repository → Google Sheets**
 
-A integração de e-mail também separa coordenação, validação e leitura do Gmail. Nesta primeira etapa, ela não grava na planilha.
+O repositório GitHub é a fonte central planejada para o código. O Google Apps Script será atualizado por um fluxo controlado de GitHub Actions após a configuração inicial da autenticação.
 
 ## Concluído anteriormente
 
@@ -33,12 +33,12 @@ A integração de e-mail também separa coordenação, validação e leitura do 
 
 - Não grava agendamentos na planilha.
 - Não modifica, move ou marca mensagens do Gmail como lidas.
-- Não registra o corpo completo do e-mail nos logs.
+- Não registra o corpo completo do e-mail.
 - Não valida ainda se cliente ou serviço existem nos cadastros.
 - Não possui controle persistente de duplicidade nem acionador automático.
 - A pesquisa está limitada a 100 conversas candidatas por execução.
 
-### Testes locais
+### Testes locais previamente realizados
 
 - Sintaxe dos três arquivos verificada.
 - Exemplo `Maria Silva / Consulta / 30/10/2026 / 14:00` validado.
@@ -46,34 +46,64 @@ A integração de e-mail também separa coordenação, validação e leitura do 
 
 A execução real no Google Apps Script com Gmail autorizado ainda não foi realizada.
 
-## Próximo passo
+## Centralização no GitHub e publicação no Apps Script
 
-Validar a integração no ambiente Google Apps Script, executando manualmente `verificarEmailsAgendamento()` e conferindo os logs. Após essa validação, analisar como mapear cliente e serviço para os códigos usados pelo sistema atual antes de implementar a gravação de agendamentos.
+### Preparado nesta etapa
 
-## Arquivos criados nesta etapa
+- `.github/workflows/apps-script.yml`: valida a sintaxe JavaScript e o manifesto/configuração; prevê publicação pelo `clasp` após as validações.
+- `.gitignore`: protege arquivos locais de credenciais e dependências geradas.
+- `docs/deployment/GITHUB_ACTIONS_APPS_SCRIPT.md`: documenta autenticação, segredo do GitHub, ativação da publicação e cuidados de segurança.
+- A publicação automática está protegida pela variável de repositório `APPS_SCRIPT_DEPLOY_ENABLED=true`; por padrão, a automação não publica automaticamente.
+- A publicação manual exige marcar explicitamente a confirmação na execução do workflow.
 
-- `GmailAgendamentoRepository.js`
-- `GmailAgendamentoValidator.js`
-- `GmailAgendamentoService.js`
-- `docs/gmail/README.md`
+### Pendente para ativação
+
+1. Integrar esta etapa à branch `main`.
+2. Ativar a API Google Apps Script, se ainda não estiver ativa.
+3. Gerar a credencial OAuth do `clasp` com a conta Google correta.
+4. Cadastrar o segredo `CLASPRC_JSON` nas configurações do GitHub.
+5. Confirmar que o projeto Apps Script associado ao `.clasp.json` é o destino correto e que o GitHub contém a versão que deve ser considerada oficial.
+6. Ativar a variável `APPS_SCRIPT_DEPLOY_ENABLED=true` somente após essa conferência.
+7. Executar a primeira publicação controlada e conferir o resultado no Apps Script.
+
+**Importante:** a publicação com `clasp push --force` substitui o código do projeto remoto pelo conteúdo versionado no GitHub. A automação ainda não foi executada contra o projeto real e não há confirmação de publicação até que as credenciais e a configuração sejam validadas.
+
+O envio do código ao projeto Apps Script não atualiza automaticamente uma implantação de Web App já publicada; essa etapa requer o ID da implantação e configuração específica caso seja necessária.
+
+## Próximos passos
+
+1. Concluir e integrar a configuração GitHub Actions.
+2. Completar a autorização inicial e validar a publicação controlada no Apps Script.
+3. Validar a leitura real dos e-mails com `verificarEmailsAgendamento()`.
+4. Mapear clientes e serviços para os códigos utilizados pelo sistema atual.
+5. Implementar prevenção persistente de duplicidade antes de criar agendamentos.
+6. Configurar o processamento automático somente depois dos testes do fluxo completo.
+
+## Arquivos criados na etapa de automação
+
+- `.github/workflows/apps-script.yml`
+- `.gitignore`
+- `docs/deployment/GITHUB_ACTIONS_APPS_SCRIPT.md`
 
 ## Arquivos alterados nesta etapa
 
 - `PROJECT_STATUS.md`
+- `docs/gmail/README.md`
 
 ## Arquivos mantidos
 
-- Os arquivos existentes da aplicação, incluindo os repositórios e serviços de Agendamento, Cliente, Funcionário, Serviço, Bairro e Cidade.
+- Os arquivos de aplicação existentes e os três arquivos de diagnóstico Gmail.
+- `.clasp.json`, que contém o identificador e a configuração do projeto Apps Script.
+- `.claspignore`, que continua excluindo o arquivo HTML de backup.
 - `PROJECT_GUIDE.md`, sem alterações.
 
 ## Arquivos removidos
 
 Nenhum. Não há arquivo obsoleto identificado nesta etapa.
 
-## Como testar
+## Como testar a automação
 
-1. Integrar os três arquivos JavaScript ao projeto Apps Script.
-2. Executar manualmente `verificarEmailsAgendamento()`.
-3. Autorizar o acesso ao Gmail se solicitado.
-4. Conferir os logs e verificar que os campos do e-mail de teste foram extraídos corretamente.
-5. Confirmar que a aba `AGENDA` não foi alterada por esta etapa.
+1. Abrir um pull request para `main`; o workflow deve executar as validações, sem publicar no Apps Script.
+2. Após integrar a configuração, cadastrar o segredo `CLASPRC_JSON` e conferir o destino em `.clasp.json`.
+3. Fazer a primeira publicação somente após confirmar que o conteúdo do GitHub deve substituir o código remoto.
+4. Conferir a execução em **GitHub → Actions** e verificar os arquivos no editor Google Apps Script.
