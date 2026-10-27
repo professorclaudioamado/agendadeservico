@@ -229,6 +229,12 @@
 
   
 
+    .linha-selecionavel { cursor:pointer; }
+    .linha-selecionavel:hover { background:#eef2ff !important; }
+    .acoes-grade { display:flex; gap:6px; flex-wrap:wrap; }
+    .botao-acao-grade { border:1px solid #c7d2fe; background:#eef2ff; color:#3730a3; border-radius:7px; padding:6px 9px; cursor:pointer; white-space:nowrap; }
+    .botao-excluir-grade { border-color:#fecaca; background:#fef2f2; color:#b91c1c; }
+
     /* Grades de registros dos cadastros */
     .grade-registros { margin-top: 24px; }
     .grade-cabecalho { display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap; margin-bottom:12px; }
@@ -318,6 +324,7 @@
           <button type="submit" class="botao-principal" id="btnCadastrarFuncionario">
             Cadastrar funcionário
           </button>
+          <button type="button" class="botao-atualizar-grade" id="btnCancelarEdicaoFuncionario" onclick="cancelarEdicaoFuncionario()" hidden>Cancelar edição</button>
           <div id="mensagemFuncionario" class="mensagem"></div>
         </form>
         <div class="grade-registros" id="grade-funcionarios">
@@ -916,6 +923,10 @@
     }
 
 
+    // Estado do formulário de funcionários durante consulta e edição.
+    var funcionarioSelecionadoCodigo = null;
+    var modoConsultaFuncionario = false;
+
     // Abas e campos usados para exibir os registros de cada cadastro.
     var configuracaoGrades = {
       funcionarios: {aba:"FUNCIONARIOS", titulo:"Funcionários"},
@@ -977,6 +988,9 @@
         th.textContent = cabecalho;
         trCab.appendChild(th);
       });
+      if (tipo === "funcionarios") {
+        var thAcoes = document.createElement("th"); thAcoes.textContent = "Ações"; trCab.appendChild(thAcoes);
+      }
       thead.appendChild(trCab);
       tabela.appendChild(thead);
 
@@ -984,14 +998,77 @@
       linhas.forEach(function(linha) {
         var tr = document.createElement("tr");
         linha.forEach(function(valor) {
-          var td = document.createElement("td");
-          td.textContent = valor == null ? "" : String(valor);
-          tr.appendChild(td);
+          var td = document.createElement("td"); td.textContent = valor == null ? "" : String(valor); tr.appendChild(td);
         });
+        if (tipo === "funcionarios") {
+          var codigoFuncionario = linha[0]; tr.className = "linha-selecionavel";
+          tr.title = "Clique na linha para editar este funcionário";
+          tr.addEventListener("click", function() { selecionarFuncionarioParaEdicao(codigoFuncionario); });
+          var tdAcoes = document.createElement("td"); tdAcoes.className = "acoes-grade";
+          [{texto:"Consultar", classe:"botao-acao-grade", acao:consultarFuncionarioTela}, {texto:"Editar", classe:"botao-acao-grade", acao:selecionarFuncionarioParaEdicao}, {texto:"Excluir", classe:"botao-acao-grade botao-excluir-grade", acao:excluirFuncionarioTela}].forEach(function(cfg) {
+            var botao = document.createElement("button"); botao.type = "button"; botao.className = cfg.classe; botao.textContent = cfg.texto;
+            botao.addEventListener("click", function(event) { event.stopPropagation(); cfg.acao(codigoFuncionario); }); tdAcoes.appendChild(botao);
+          });
+          tr.appendChild(tdAcoes);
+        }
         tbody.appendChild(tr);
       });
       tabela.appendChild(tbody);
       caixa.appendChild(tabela);
+    }
+
+    /** Carrega funcionário selecionado no formulário para edição. */
+    function selecionarFuncionarioParaEdicao(codigo) {
+      google.script.run.withSuccessHandler(function(funcionario) {
+        funcionarioSelecionadoCodigo = funcionario.codigo; modoConsultaFuncionario = false;
+        document.getElementById("nomeFuncionario").value = funcionario.nome || "";
+        document.getElementById("nomeFuncionario").readOnly = false;
+        document.getElementById("btnCadastrarFuncionario").disabled = false;
+        document.getElementById("btnCadastrarFuncionario").textContent = "Salvar alterações";
+        document.getElementById("btnCancelarEdicaoFuncionario").hidden = false;
+        mostrarMensagem("mensagemFuncionario", "Editando funcionário código " + funcionario.codigo + ".", "sucesso");
+        document.getElementById("nomeFuncionario").focus();
+      }).withFailureHandler(function(erro) {
+        mostrarMensagem("mensagemFuncionario", erro.message || "Não foi possível consultar o funcionário.", "erro");
+      }).consultarFuncionario(codigo);
+    }
+
+    /** Consulta funcionário em modo somente leitura. */
+    function consultarFuncionarioTela(codigo) {
+      google.script.run.withSuccessHandler(function(funcionario) {
+        funcionarioSelecionadoCodigo = funcionario.codigo; modoConsultaFuncionario = true;
+        document.getElementById("nomeFuncionario").value = funcionario.nome || "";
+        document.getElementById("nomeFuncionario").readOnly = true;
+        document.getElementById("btnCadastrarFuncionario").disabled = true;
+        document.getElementById("btnCadastrarFuncionario").textContent = "Modo consulta";
+        document.getElementById("btnCancelarEdicaoFuncionario").hidden = false;
+        mostrarMensagem("mensagemFuncionario", "Consulta do funcionário código " + funcionario.codigo + ".", "sucesso");
+      }).withFailureHandler(function(erro) {
+        mostrarMensagem("mensagemFuncionario", erro.message || "Não foi possível consultar o funcionário.", "erro");
+      }).consultarFuncionario(codigo);
+    }
+
+    /** Limpa a seleção e retorna o formulário ao modo de cadastro. */
+    function cancelarEdicaoFuncionario() {
+      funcionarioSelecionadoCodigo = null; modoConsultaFuncionario = false;
+      document.getElementById("formFuncionario").reset();
+      document.getElementById("nomeFuncionario").readOnly = false;
+      document.getElementById("btnCadastrarFuncionario").disabled = false;
+      document.getElementById("btnCadastrarFuncionario").textContent = "Cadastrar funcionário";
+      document.getElementById("btnCancelarEdicaoFuncionario").hidden = true;
+      limparMensagem("mensagemFuncionario");
+    }
+
+    /** Exclui após confirmação do usuário. */
+    function excluirFuncionarioTela(codigo) {
+      if (!window.confirm("Deseja realmente excluir o funcionário código " + codigo + "?")) return;
+      google.script.run.withSuccessHandler(function(resposta) {
+        mostrarMensagem("mensagemFuncionario", resposta, "sucesso");
+        if (String(funcionarioSelecionadoCodigo) === String(codigo)) cancelarEdicaoFuncionario();
+        carregarGradeCadastro("funcionarios"); carregarFuncionariosAgendaTela();
+      }).withFailureHandler(function(erro) {
+        mostrarMensagem("mensagemFuncionario", erro.message || "Não foi possível excluir o funcionário.", "erro");
+      }).excluirFuncionario(codigo);
     }
 
     // Carrega a grade correspondente sempre que o usuário abre um cadastro.
@@ -1006,29 +1083,20 @@
      */
     function cadastrarFuncionarioTela(event) {
       event.preventDefault();
-
+      if (modoConsultaFuncionario) { mostrarMensagem("mensagemFuncionario", "Saia do modo consulta antes de salvar.", "erro"); return; }
       var nome = document.getElementById("nomeFuncionario").value.trim();
       var botao = document.getElementById("btnCadastrarFuncionario");
-
-      limparMensagem("mensagemFuncionario");
-      botao.disabled = true;
-      botao.textContent = "Cadastrando...";
-
-      google.script.run
-        .withSuccessHandler(function(resposta) {
-          mostrarMensagem("mensagemFuncionario", resposta, "sucesso");
-          document.getElementById("formFuncionario").reset();
-          carregarGradeCadastro("funcionarios");
-          carregarFuncionariosAgendaTela();
-          botao.disabled = false;
-          botao.textContent = "Cadastrar funcionário";
-        })
-        .withFailureHandler(function(erro) {
-          mostrarMensagem("mensagemFuncionario", erro.message, "erro");
-          botao.disabled = false;
-          botao.textContent = "Cadastrar funcionário";
-        })
-        .cadastrarFuncionario(nome);
+      var codigo = funcionarioSelecionadoCodigo;
+      limparMensagem("mensagemFuncionario"); botao.disabled = true;
+      botao.textContent = codigo ? "Salvando alterações..." : "Cadastrando...";
+      var chamada = google.script.run.withSuccessHandler(function(resposta) {
+        mostrarMensagem("mensagemFuncionario", resposta, "sucesso"); cancelarEdicaoFuncionario();
+        carregarGradeCadastro("funcionarios"); carregarFuncionariosAgendaTela(); botao.disabled = false;
+      }).withFailureHandler(function(erro) {
+        mostrarMensagem("mensagemFuncionario", erro.message || "Não foi possível salvar o funcionário.", "erro");
+        botao.disabled = false; botao.textContent = codigo ? "Salvar alterações" : "Cadastrar funcionário";
+      });
+      if (codigo) chamada.atualizarFuncionario(codigo, nome); else chamada.cadastrarFuncionario(nome);
     }
 
     /**

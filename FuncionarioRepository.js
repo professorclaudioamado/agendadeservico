@@ -96,7 +96,38 @@ var FuncionarioRepository = (function() {
     return maiorCodigo + 1;
   }
 
-  return {
-    salvar: salvar
-  };
+  /** Localiza um funcionário pelo código único. @param {number|string} codigo Código. @return {{codigo:number, nome:string}|null} Registro ou null. */
+  function buscarPorCodigo(codigo) {
+    var aba = obterAba_(); verificarCabecalhos_(aba);
+    var ultimaLinha = aba.getLastRow(); if (ultimaLinha < 2) return null;
+    var registros = aba.getRange(2, 1, ultimaLinha - 1, 2).getDisplayValues();
+    for (var i = 0; i < registros.length; i++) {
+      if (String(registros[i][0]).trim() === String(codigo).trim()) return { codigo: registros[i][0], nome: registros[i][1] };
+    }
+    return null;
+  }
+
+  /** Atualiza o nome mantendo o código. @param {number|string} codigo Código. @param {string} nome Nome validado. @return {boolean} Confirmação. */
+  function atualizar(codigo, nome) {
+    var aba = obterAba_(); verificarCabecalhos_(aba);
+    var ultimaLinha = aba.getLastRow(); if (ultimaLinha < 2) throw new Error("Funcionário não encontrado.");
+    var codigos = aba.getRange(2, 1, ultimaLinha - 1, 1).getDisplayValues();
+    for (var i = 0; i < codigos.length; i++) {
+      if (String(codigos[i][0]).trim() === String(codigo).trim()) { aba.getRange(i + 2, 2).setValue(nome); return true; }
+    }
+    throw new Error("Funcionário não encontrado.");
+  }
+
+  /** Exclui um funcionário pelo código. @param {number|string} codigo Código. @return {boolean} Confirmação. */
+  function excluir(codigo) {
+    var aba = obterAba_(); verificarCabecalhos_(aba);
+    var ultimaLinha = aba.getLastRow(); if (ultimaLinha < 2) throw new Error("Funcionário não encontrado.");
+    var codigos = aba.getRange(2, 1, ultimaLinha - 1, 1).getDisplayValues();
+    for (var i = 0; i < codigos.length; i++) {
+      if (String(codigos[i][0]).trim() === String(codigo).trim()) { aba.deleteRow(i + 2); return true; }
+    }
+    throw new Error("Funcionário não encontrado.");
+  }
+
+  return { salvar: salvar, buscarPorCodigo: buscarPorCodigo, atualizar: atualizar, excluir: excluir };
 })();
