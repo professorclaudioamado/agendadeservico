@@ -25,9 +25,29 @@ var FuncionarioService = (function() {
     return "Funcionário cadastrado com sucesso! Código: " + codigo;
   }
 
-  return {
-    cadastrar: cadastrar
-  };
+  /** Consulta um funcionário pelo código. @param {number|string} codigo Código. @return {{codigo:number, nome:string}} Dados do funcionário. */
+  function consultar(codigo) {
+    if (codigo === null || codigo === undefined || String(codigo).trim() === "") throw new Error("Selecione um funcionário.");
+    var funcionario = FuncionarioRepository.buscarPorCodigo(codigo);
+    if (!funcionario) throw new Error("Funcionário não encontrado.");
+    return funcionario;
+  }
+
+  /** Atualiza funcionário existente após validação. @param {number|string} codigo Código. @param {string} nome Novo nome. @return {string} Confirmação. */
+  function atualizar(codigo, nome) {
+    if (codigo === null || codigo === undefined || String(codigo).trim() === "") throw new Error("Selecione um funcionário para editar.");
+    FuncionarioRepository.atualizar(codigo, FuncionarioValidator.validarCadastro(nome));
+    return "Funcionário atualizado com sucesso!";
+  }
+
+  /** Exclui funcionário pelo código. @param {number|string} codigo Código. @return {string} Confirmação. */
+  function excluir(codigo) {
+    if (codigo === null || codigo === undefined || String(codigo).trim() === "") throw new Error("Selecione um funcionário para excluir.");
+    FuncionarioRepository.excluir(codigo);
+    return "Funcionário excluído com sucesso!";
+  }
+
+  return { cadastrar: cadastrar, consultar: consultar, atualizar: atualizar, excluir: excluir };
 })();
 
 /**
