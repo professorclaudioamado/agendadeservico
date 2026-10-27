@@ -3,28 +3,28 @@
  * Camada: Validator — Validador
  *
  * Responsabilidade:
- * Extrair e validar os campos definidos no formato de e-mail de solicitação
- * de agendamento, sem consultar Gmail ou Google Sheets.
+ * Extrair e validar os campos do e-mail que solicita um agendamento.
+ * Não acessa Gmail nem Google Sheets.
  *
- * Campos esperados no corpo:
- * - Cliente: nome do cliente;
- * - Serviço: nome do serviço;
+ * Campos esperados:
+ * - Cliente: nome exato do cadastro;
+ * - Serviço: nome exato do cadastro;
+ * - Profissional: nome exato do cadastro;
  * - Data: DD/MM/AAAA;
  * - Horário: HH:MM.
  */
 var GmailAgendamentoValidator = (function() {
-
   /**
-   * Extrai e valida os campos do corpo de um e-mail.
+   * Extrai os campos e verifica os formatos básicos da solicitação.
    *
    * @param {string} corpo Texto simples do e-mail.
-   * @return {{cliente:string, servico:string, data:string, hora:string,
-   *           dataISO:string, erros:string[]}} Resultado da análise.
+   * @return {Object} Campos extraídos e lista de erros.
    */
   function analisarCorpo(corpo) {
     var texto = String(corpo || "");
     var cliente = extrairCampo_(texto, "Cliente");
     var servico = extrairCampo_(texto, "Serviço");
+    var profissional = extrairCampo_(texto, "Profissional");
     var data = extrairCampo_(texto, "Data");
     var hora = extrairCampo_(texto, "Horário");
     var erros = [];
@@ -32,80 +32,73 @@ var GmailAgendamentoValidator = (function() {
 
     if (!cliente) erros.push("Campo Cliente ausente ou vazio.");
     if (!servico) erros.push("Campo Serviço ausente ou vazio.");
+    if (!profissional) erros.push("Campo Profissional ausente ou vazio.");
 
     if (!data) {
       erros.push("Campo Data ausente ou vazio.");
     } else {
       dataISO = converterDataParaISO_(data);
-      if (!dataISO) {
-        erros.push("Data inválida. Use o formato DD/MM/AAAA.");
-      }
+      if (!dataISO) erros.push("Data inválida. Use DD/MM/AAAA.");
     }
 
     if (!hora) {
       erros.push("Campo Horário ausente ou vazio.");
     } else if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(hora)) {
-      erros.push("Horário inválido. Use o formato HH:MM.");
+      erros.push("Horário inválido. Use HH:MM.");
     }
 
     return {
       cliente: cliente,
       servico: servico,
+      profissional: profissional,
       data: data,
-      hora: hora,
       dataISO: dataISO,
+      hora: hora,
       erros: erros
     };
   }
 
   /**
-   * Localiza o valor de um campo no corpo, ignorando maiúsculas/minúsculas.
-   * Considera o valor até o final da linha.
+   * Obtém o conteúdo de um campo identificado por "Nome: valor".
    *
-   * @param {string} corpo Corpo do e-mail.
-   * @param {string} nomeCampo Nome do campo esperado.
-   * @return {string} Valor encontrado ou texto vazio.
+   * @param {string} corpo Texto completo do e-mail.
+   * @param {string} nomeCampo Nome do campo.
+   * @return {string} Valor do campo ou vazio.
    * @private
    */
   function extrairCampo_(corpo, nomeCampo) {
     var linhas = String(corpo || "").split(/\r?\n/);
-    var campoEsperado = String(nomeCampo).trim().toLowerCase();
+    var esperado = String(nomeCampo).trim().toLowerCase();
 
     for (var i = 0; i < linhas.length; i++) {
       var correspondencia = linhas[i].match(/^\s*([^:]+)\s*:\s*(.*?)\s*$/);
-
-      if (
-        correspondencia &&
-        correspondencia[1].trim().toLowerCase() === campoEsperado
-      ) {
+      if (correspondencia &&
+          correspondencia[1].trim().toLowerCase() === esperado) {
         return correspondencia[2].trim();
       }
     }
-
     return "";
   }
 
   /**
-   * Converte DD/MM/AAAA para AAAA-MM-DD somente quando a data existe.
+   * Converte DD/MM/AAAA para AAAA-MM-DD e rejeita datas inexistentes.
    *
-   * @param {string} dataTexto Data textual do e-mail.
-   * @return {string} Data ISO ou texto vazio para data inválida.
+   * @param {string} dataTexto Data informada no e-mail.
+   * @return {string} Data ISO ou vazio.
    * @private
    */
   function converterDataParaISO_(dataTexto) {
-    var correspondencia = String(dataTexto).match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
-    if (!correspondencia) return "";
+    var partes = String(dataTexto).match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+    if (!partes) return "";
 
-    var dia = Number(correspondencia[1]);
-    var mes = Number(correspondencia[2]);
-    var ano = Number(correspondencia[3]);
-    var dataTeste = new Date(ano, mes - 1, dia);
+    var dia = Number(partes[1]);
+    var mes = Number(partes[2]);
+    var ano = Number(partes[3]);
+    var teste = new Date(ano, mes - 1, dia);
 
-    if (
-      dataTeste.getFullYear() !== ano ||
-      dataTeste.getMonth() !== mes - 1 ||
-      dataTeste.getDate() !== dia
-    ) {
+    if (teste.getFullYear() !== ano ||
+        teste.getMonth() !== mes - 1 ||
+        teste.getDate() !== dia) {
       return "";
     }
 
@@ -114,7 +107,5 @@ var GmailAgendamentoValidator = (function() {
       String(dia).padStart(2, "0");
   }
 
-  return {
-    analisarCorpo: analisarCorpo
-  };
+  return { analisarCorpo: analisarCorpo };
 })();

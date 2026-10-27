@@ -2,7 +2,7 @@
 
 ## Versão atual
 
-Aplicação existente com entidades organizadas em camadas; integração com Gmail preparada em modo de diagnóstico somente leitura; automação de validação e publicação do GitHub para Google Apps Script em configuração.
+Aplicação existente com entidades organizadas em camadas; integração manual por botão para ler solicitações de agendamento do Gmail e encaminhá-las ao fluxo existente, aguardando teste real no Google Apps Script.
 
 ## Arquitetura adotada
 
@@ -20,31 +20,38 @@ O repositório GitHub é a fonte central planejada para o código. O Google Apps
 - Uso do Google Apps Script na aplicação.
 - Refatoração incremental das entidades existentes, conforme os arquivos e documentos de refatoração presentes no repositório.
 
-## Integração com Gmail — Etapa 1
+## Integração com Gmail — processamento manual de agendamentos
 
-### Preparado no repositório
+### Implementação preparada na branch `feature/gmail-agendamento-manual`
 
-- `GmailAgendamentoRepository.js`: pesquisa conversas candidatas e retorna mensagens cujo assunto é exatamente `AGENDAMENTO`, sem diferenciar maiúsculas de minúsculas.
-- `GmailAgendamentoValidator.js`: extrai e valida Cliente, Serviço, Data e Horário.
-- `GmailAgendamentoService.js`: analisa mensagens e registra um diagnóstico nos logs por meio da função pública `verificarEmailsAgendamento()`.
-- `docs/gmail/README.md`: documenta formato esperado, limites, testes e procedimento de validação.
+- O botão **Verificar e-mail** chama `verificarEmailsAgendamento()` no Apps Script.
+- `GmailAgendamentoRepository.js` consulta a caixa de entrada com `GmailApp`, buscando assunto exato `AGENDAMENTO` e excluindo conversas com o rótulo `AGENDAMENTO_PROCESSADO`.
+- `GmailAgendamentoValidator.js` extrai Cliente, Serviço, Profissional, Data e Horário; valida a data e o formato da hora.
+- `GmailAgendamentoService.js` localiza os três cadastros por nome exato, chama `AgendamentoService.cadastrar()` e define o status `AGENDADO`.
+- Após gravar com sucesso, a conversa recebe o rótulo `AGENDAMENTO_PROCESSADO`; a mensagem não é apagada nem marcada como lida.
+- A interface apresenta quantos e-mails foram analisados, quantos agendamentos foram criados e quais mensagens apresentaram problemas.
 
-### Segurança e limites desta etapa
+### Formato esperado do e-mail
 
-- Não grava agendamentos na planilha.
-- Não modifica, move ou marca mensagens do Gmail como lidas.
-- Não registra o corpo completo do e-mail.
-- Não valida ainda se cliente ou serviço existem nos cadastros.
-- Não possui controle persistente de duplicidade nem acionador automático.
-- A pesquisa está limitada a 100 conversas candidatas por execução.
+Assunto: `AGENDAMENTO`
 
-### Testes locais previamente realizados
+```text
+Cliente: Maria Silva
+Serviço: Consulta
+Profissional: João Santos
+Data: 30/10/2026
+Horário: 14:00
+```
 
-- Sintaxe dos três arquivos verificada.
-- Exemplo `Maria Silva / Consulta / 30/10/2026 / 14:00` validado.
-- Data inexistente, horário inválido e campos ausentes detectados.
+Os nomes precisam corresponder exatamente aos cadastros. A data deve usar `DD/MM/AAAA` e o horário `HH:MM`.
 
-A execução real no Google Apps Script com Gmail autorizado ainda não foi realizada.
+### Limites e cuidados
+
+- Processamento manual por botão; não foi criado acionador automático.
+- Até 100 conversas candidatas por execução; uma conversa gera no máximo um agendamento por execução.
+- Nomes inexistentes ou duplicados, dados inválidos e erros no cadastro não criam agendamentos e são informados na tela.
+- A prevenção de repetição usa o rótulo Gmail `AGENDAMENTO_PROCESSADO`. Como a gravação na planilha e a aplicação do rótulo são duas operações separadas, uma falha exatamente entre elas deve ser considerada durante os testes.
+- A execução real com autorização do Gmail e a confirmação de gravação na planilha ainda precisam ser testadas no projeto Google.
 
 ## Centralização no GitHub e publicação no Apps Script
 

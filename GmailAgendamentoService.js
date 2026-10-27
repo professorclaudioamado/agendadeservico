@@ -3,83 +3,139 @@
  * Camada: Service — Camada de Serviço
  *
  * Responsabilidade:
- * Coordenar a primeira etapa da integração: ler e-mails com assunto exato
- * "AGENDAMENTO", analisar o corpo e registrar um diagnóstico nos logs.
- *
- * Importante:
- * Esta etapa é somente de leitura. Nenhum agendamento é gravado na planilha,
- * nenhuma mensagem é alterada e ainda não há marcação persistente de mensagens
- * processadas. A inclusão automática será desenvolvida após validar este fluxo.
+ * Coordenar a leitura manual de solicitações por e-mail, validar os dados,
+ * localizar os cadastros por nome exato e chamar o fluxo existente de
+ * AgendamentoService para registrar cada agendamento.
  *
  * Dependências principais:
  * - GmailAgendamentoRepository
  * - GmailAgendamentoValidator
+ * - AgendamentoRepository
+ * - AgendamentoService
  */
 var GmailAgendamentoService = (function() {
-
   /**
-   * Analisa as mensagens encontradas e registra resultados sem gravar dados.
+   * Verifica e processa mensagens pendentes encontradas na caixa de entrada.
    *
-   * @return {{mensagensAnalisadas:number, validas:number, comErros:number}}
-   *         Contagem de mensagens analisadas nesta execução.
+   * Cada mensagem é tratada isoladamente. Mensagens inválidas ou com nomes
+   * inexistentes/ambíguos não são marcadas como processadas, permitindo
+   * corrigir o cadastro ou o e-mail e tentar novamente.
+   *
+   * @return {Object} Resumo com contagens e resultados por mensagem.
    */
   function verificarEmailsAgendamento() {
-    var mensagens = GmailAgendamentoRepository
-      .listarMensagensComAssuntoAgendamento();
+    var mensagens = GmailAgendamentoRepository.listarMensagensPendentes();
     var resumo = {
       mensagensAnalisadas: 0,
-      validas: 0,
-      comErros: 0
+      criados: 0,
+      comErros: 0,
+      resultados: []
     };
 
     for (var i = 0; i < mensagens.length; i++) {
       var mensagem = mensagens[i];
-      var analise = GmailAgendamentoValidator.analisarCorpo(
-        mensagem.getPlainBody()
-      );
-
       resumo.mensagensAnalisadas++;
-      if (analise.erros.length === 0) {
-        resumo.validas++;
-      } else {
-        resumo.comErros++;
-      }
 
-      // Não registrar o corpo completo nem outros dados pessoais desnecessários.
-      Logger.log(JSON.stringify({
-        etapa: "DIAGNOSTICO_GMAIL_AGENDAMENTO",
-        messageId: mensagem.getId(),
-        assunto: mensagem.getSubject(),
-        remetente: mensagem.getFrom(),
-        recebidaEm: mensagem.getDate().toISOString(),
-        cliente: analise.cliente,
-        servico: analise.servico,
-        dataOriginal: analise.data,
-        dataISO: analise.dataISO,
-        hora: analise.hora,
-        validaFormatoEmail: analise.erros.length === 0,
-        pendencias: analise.erros,
-        observacao: "Etapa de diagnóstico: nenhum agendamento foi gravado."
-      }));
+      try {
+        var analise = GmailAgendamentoValidator.analisarCorpo(
+          mensagem.getPlainBody()
+        );
+
+        if (analise.erros.length) {
+          throw new Error(analise.erros.join(" "));
+        }
+
+        var funcionario = localizarUnicoPorNome_(
+          AgendamentoRepository.listarFuncionarios(),
+          analise.profissional,
+          "profissional"
+        );
+        var cliente = localizarUnicoPorNome_(
+          AgendamentoRepository.listarClientes(),
+          analise.cliente,
+          "cliente"
+        );
+        var servico = localizarUnicoPorNome_(
+          AgendamentoRepository.listarServicos(),
+          analise.servico,
+          "serviço"
+        );
+
+        var resposta = AgendamentoService.cadastrar({
+          data: analise.dataISO,
+          hora: analise.hora,
+          codigo_funcionario: funcionario.codigo,
+          codigo_cliente: cliente.codigo,
+          codigo_servico: servico.codigo,
+          status: "AGENDADO"
+        });
+
+        resumo.criados++;
+        var avisoRotulo = "";
+
+        // O agendamento já foi salvo. Se a marcação falhar, não ocultamos
+        // esse sucesso: informamos que o e-mail pode precisar de conferência.
+        try {
+          GmailAgendamentoRepository.marcarComoProcessada(mensagem);
+        } catch (erroRotulo) {
+          avisoRotulo = " Atenção: não foi possível marcar o e-mail como processado; " +
+            "verifique a agenda antes de executar novamente.";
+        }
+
+        resumo.resultados.push({
+          sucesso: true,
+          mensagem: "Agendamento criado para " + analise.cliente +
+            " — " + analise.servico + ", " + analise.data + " às " +
+            analise.hora + ". " + resposta + avisoRotulo
+        });
+      } catch (erro) {
+        resumo.comErros++;
+        resumo.resultados.push({
+          sucesso: false,
+          mensagem: "E-mail recebido em " +
+            Utilities.formatDate(mensagem.getDate(), Session.getScriptTimeZone(),
+              "dd/MM/yyyy HH:mm") + ": " +
+            (erro && erro.message ? erro.message : String(erro))
+        });
+      }
     }
 
-    Logger.log("Resumo da verificação de e-mails: " + JSON.stringify(resumo));
     return resumo;
   }
 
-  return {
-    verificarEmailsAgendamento: verificarEmailsAgendamento
-  };
+  /**
+   * Localiza exatamente um cadastro pelo nome, sem aproximações.
+   *
+   * @param {Object[]} registros Registros carregados do repositório.
+   * @param {string} nome Nome informado no e-mail.
+   * @param {string} tipo Tipo de cadastro para a mensagem de erro.
+   * @return {Object} Registro correspondente.
+   * @throws {Error} Quando não há correspondência única.
+   * @private
+   */
+  function localizarUnicoPorNome_(registros, nome, tipo) {
+    var encontrados = registros.filter(function(registro) {
+      return String(registro.nome || "").trim() === String(nome).trim();
+    });
+
+    if (encontrados.length === 0) {
+      throw new Error("Não foi encontrado " + tipo +
+        ' com o nome exato "' + nome + '" na planilha.');
+    }
+    if (encontrados.length > 1) {
+      throw new Error("Há mais de um " + tipo +
+        ' com o nome "' + nome + '". Verifique os cadastros.');
+    }
+    return encontrados[0];
+  }
+
+  return { verificarEmailsAgendamento: verificarEmailsAgendamento };
 })();
 
 /**
- * Ponto de entrada público para execução manual pelo editor do Apps Script.
+ * Ponto de entrada usado pelo botão da tela Agenda e pelo editor Apps Script.
  *
- * Execute esta função na primeira etapa para conferir os resultados nos logs.
- * Ela não cria agendamentos nem modifica mensagens do Gmail.
- *
- * @return {{mensagensAnalisadas:number, validas:number, comErros:number}}
- *         Resumo da análise realizada.
+ * @return {Object} Resultado resumido do processamento de e-mails.
  */
 function verificarEmailsAgendamento() {
   return GmailAgendamentoService.verificarEmailsAgendamento();
