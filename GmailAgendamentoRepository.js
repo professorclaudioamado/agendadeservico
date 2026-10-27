@@ -3,48 +3,39 @@
  * Camada: Repository — Repositório
  *
  * Responsabilidade:
- * Consultar mensagens do Gmail que possam representar solicitações de
- * agendamento e entregar somente mensagens cujo assunto seja exatamente
- * "AGENDAMENTO", desconsiderando diferenças entre maiúsculas e minúsculas.
+ * Consultar mensagens do Gmail com assunto exato "AGENDAMENTO" e marcar
+ * como processada a conversa cuja solicitação foi gravada com sucesso.
  *
- * Nesta primeira etapa, o arquivo apenas lê o Gmail. Não grava na planilha,
- * não altera mensagens e não marca mensagens como lidas ou processadas.
+ * O acesso ao Gmail permanece direto pelo serviço nativo GmailApp do
+ * Google Apps Script. Não depende de plugins ou conectores externos.
  *
  * Dependências principais:
- * - GmailApp, serviço nativo do Google Apps Script.
+ * - GmailApp
  */
 var GmailAgendamentoRepository = (function() {
   var ASSUNTO_ESPERADO = "AGENDAMENTO";
+  var ROTULO_PROCESSADO = "AGENDAMENTO_PROCESSADO";
   var MAX_CONVERSAS_POR_EXECUCAO = 100;
 
   /**
-   * Pesquisa conversas candidatas e retorna mensagens com assunto exato.
+   * Lista mensagens ainda não marcadas como processadas, na caixa de entrada.
    *
-   * O Gmail pesquisa por assunto para reduzir os resultados; em seguida,
-   * cada mensagem é conferida individualmente para excluir assuntos como
-   * "Re: AGENDAMENTO" ou "AGENDAMENTO urgente".
-   *
-   * @return {GoogleAppsScript.Gmail.GmailMessage[]} Mensagens encontradas.
-   * @throws {Error} Quando a consulta ao Gmail falha.
+   * @return {GoogleAppsScript.Gmail.GmailMessage[]} Mensagens candidatas.
    */
-  function listarMensagensComAssuntoAgendamento() {
-    var conversas = GmailApp.search(
-      "subject:AGENDAMENTO",
-      0,
-      MAX_CONVERSAS_POR_EXECUCAO
-    );
+  function listarMensagensPendentes() {
+    var consulta = "in:inbox subject:AGENDAMENTO -label:" + ROTULO_PROCESSADO;
+    var conversas = GmailApp.search(consulta, 0, MAX_CONVERSAS_POR_EXECUCAO);
     var mensagensEncontradas = [];
 
     for (var i = 0; i < conversas.length; i++) {
       var mensagens = conversas[i].getMessages();
 
       for (var j = 0; j < mensagens.length; j++) {
-        var assunto = String(mensagens[j].getSubject() || "")
-          .trim()
-          .toUpperCase();
+        var mensagem = mensagens[j];
+        var assunto = String(mensagem.getSubject() || "").trim().toUpperCase();
 
-        if (assunto === ASSUNTO_ESPERADO) {
-          mensagensEncontradas.push(mensagens[j]);
+        if (assunto === ASSUNTO_ESPERADO && mensagem.isInInbox()) {
+          mensagensEncontradas.push(mensagem);
         }
       }
     }
@@ -52,7 +43,27 @@ var GmailAgendamentoRepository = (function() {
     return mensagensEncontradas;
   }
 
+  /**
+   * Marca a conversa como processada depois que o agendamento foi gravado.
+   *
+   * O rótulo impede que a mesma conversa seja considerada em verificações
+   * futuras. A mensagem não é apagada nem marcada como lida.
+   *
+   * @param {GoogleAppsScript.Gmail.GmailMessage} mensagem Mensagem processada.
+   * @return {void}
+   */
+  function marcarComoProcessada(mensagem) {
+    var rotulo = GmailApp.getUserLabelByName(ROTULO_PROCESSADO);
+
+    if (!rotulo) {
+      rotulo = GmailApp.createLabel(ROTULO_PROCESSADO);
+    }
+
+    mensagem.getThread().addLabel(rotulo);
+  }
+
   return {
-    listarMensagensComAssuntoAgendamento: listarMensagensComAssuntoAgendamento
+    listarMensagensPendentes: listarMensagensPendentes,
+    marcarComoProcessada: marcarComoProcessada
   };
 })();
