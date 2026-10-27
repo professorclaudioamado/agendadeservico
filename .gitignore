@@ -1,0 +1,11 @@
+# Credenciais locais do Google clasp: nunca versionar.
+.clasprc.json
+**/.clasprc.json
+
+# Dependências e arquivos gerados localmente.
+node_modules/
+.env
+.env.*
+!.env.example
+coverage/
+*.log
