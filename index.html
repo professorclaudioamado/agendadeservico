@@ -1471,25 +1471,42 @@
         progresso.status === "executando" ? "Em andamento" : "Aguardando";
 
       var lista = document.getElementById("iaListaEtapas");
-      lista.innerHTML = "";
-      var historico = progresso.historico || [];
-      if (!historico.length && progresso.mensagem) {
-        historico = [{ mensagem: progresso.mensagem, estado: "atual" }];
-      }
+      var historico = progresso.historico;
 
-      historico.forEach(function(item, indice) {
-        var li = document.createElement("li");
-        li.className = "ia-etapa " + (item.estado || "concluida");
-        var icone = document.createElement("span");
-        icone.className = "ia-etapa-icone";
-        icone.textContent = item.estado === "erro" ? "!" :
-          item.estado === "atual" ? "›" : "✓";
-        var texto = document.createElement("span");
-        texto.textContent = item.mensagem || ("Etapa " + (indice + 1));
-        li.appendChild(icone);
-        li.appendChild(texto);
-        lista.appendChild(li);
-      });
+      // Se a resposta final não trouxer o histórico, preserva as etapas
+      // que já chegaram pelas consultas periódicas e acrescenta o resultado.
+      if (Array.isArray(historico)) {
+        lista.innerHTML = "";
+        historico.forEach(function(item, indice) {
+          var li = document.createElement("li");
+          li.className = "ia-etapa " + (item.estado || "concluida");
+          var icone = document.createElement("span");
+          icone.className = "ia-etapa-icone";
+          icone.textContent = item.estado === "erro" ? "!" :
+            item.estado === "atual" ? "›" : "✓";
+          var texto = document.createElement("span");
+          texto.textContent = item.mensagem || ("Etapa " + (indice + 1));
+          li.appendChild(icone);
+          li.appendChild(texto);
+          lista.appendChild(li);
+        });
+      } else if (progresso.mensagem) {
+        var ultimaEtapa = lista.lastElementChild;
+        var ultimoTexto = ultimaEtapa ? ultimaEtapa.textContent : "";
+        if (ultimoTexto.indexOf(progresso.mensagem) === -1) {
+          var etapaFinal = document.createElement("li");
+          etapaFinal.className = "ia-etapa " +
+            (progresso.status === "erro" ? "erro" : "concluida");
+          var iconeFinal = document.createElement("span");
+          iconeFinal.className = "ia-etapa-icone";
+          iconeFinal.textContent = progresso.status === "erro" ? "!" : "✓";
+          var textoFinal = document.createElement("span");
+          textoFinal.textContent = progresso.mensagem;
+          etapaFinal.appendChild(iconeFinal);
+          etapaFinal.appendChild(textoFinal);
+          lista.appendChild(etapaFinal);
+        }
+      }
 
       document.getElementById("iaDetalheAtual").textContent =
         progresso.detalhe || progresso.mensagem || "";
