@@ -51,6 +51,9 @@ jobs:
     name: Publicar no Google Apps Script
     runs-on: ubuntu-latest
     needs: validar
+    env:
+      # ID extraído da URL atual do Web App, não é uma chave secreta.
+      APPS_SCRIPT_DEPLOYMENT_ID: "AKfycbzpQ_HZDfFrc_I8zFKjAtvTqDFF9I_teXUAdiC5KqjNUQVoTnOKny42P7sBguDmnNMV"
     if: >-
       (github.event_name == 'push' && vars.APPS_SCRIPT_DEPLOY_ENABLED == 'true') ||
       (github.event_name == 'workflow_dispatch' && inputs.publicar == true)
@@ -63,19 +66,14 @@ jobs:
         with:
           node-version: "22"
 
-      - name: Conferir credenciais e implantação de produção
+      - name: Conferir credencial de publicação
         env:
           CLASPRC_JSON: ${{ secrets.CLASPRC_JSON }}
-          APPS_SCRIPT_DEPLOYMENT_ID: ${{ vars.APPS_SCRIPT_DEPLOYMENT_ID }}
         shell: bash
         run: |
           set -euo pipefail
           if [ -z "${CLASPRC_JSON}" ]; then
             echo "::error::O segredo CLASPRC_JSON não está configurado nas configurações do repositório."
-            exit 1
-          fi
-          if [ -z "${APPS_SCRIPT_DEPLOYMENT_ID}" ]; then
-            echo "::error::A variável APPS_SCRIPT_DEPLOYMENT_ID não está configurada. Cadastre o ID da implantação existente do Web App em Settings > Secrets and variables > Actions > Variables."
             exit 1
           fi
           umask 077
@@ -85,9 +83,7 @@ jobs:
         run: npx --yes @google/clasp@3.4.1 push --force
 
       - name: Atualizar a implantação existente do Web App
-        env:
-          APPS_SCRIPT_DEPLOYMENT_ID: ${{ vars.APPS_SCRIPT_DEPLOYMENT_ID }}
         run: |
-          npx --yes @google/clasp@3.4.1 deploy \
+          npx --yes @google/clasp@3.4.1 create-deployment \
             --deploymentId "$APPS_SCRIPT_DEPLOYMENT_ID" \
             --description "GitHub commit $(git rev-parse --short HEAD)"
