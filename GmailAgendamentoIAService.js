@@ -3,100 +3,283 @@
  * A chave GROQ_API_KEY deve ficar somente nas Propriedades do Script.
  * A IA extrai os campos; os cadastros e a gravação continuam sob controle
  * dos repositórios e serviços existentes.
+ *
+ * O progresso é salvo temporariamente no CacheService para que a interface
+ * consulte e mostre as etapas enquanto esta execução continua trabalhando.
  */
 var GmailAgendamentoIAService = (function() {
   var URL_GROQ = "https://api.groq.com/openai/v1/chat/completions";
   var MODELO_GROQ = "openai/gpt-oss-20b";
   var MAX_EMAILS_POR_EXECUCAO = 10;
   var TAMANHO_MAXIMO_CORPO = 12000;
+  var TEMPO_CACHE_SEGUNDOS = 21600;
 
-  function verificarEmailsAgendamentoComIA() {
-    var pendentes = GmailAgendamentoRepository.listarMensagensPendentes();
-    var mensagens = pendentes.slice(0, MAX_EMAILS_POR_EXECUCAO);
+  function registrarProgresso_(token, atualizacao) {
+    if (!token) return;
+
+    var cache = CacheService.getScriptCache();
+    var chave = "PROGRESSO_EMAIL_IA_" + String(token).replace(/[^a-zA-Z0-9_-]/g, "");
+    var anterior = {};
+    try {
+      anterior = JSON.parse(cache.get(chave) || "{}");
+    } catch (erro) {
+      anterior = {};
+    }
+
+    var historico = anterior.historico || [];
+    if (atualizacao.mensagem &&
+        (!historico.length ||
+         historico[historico.length - 1].mensagem !== atualizacao.mensagem)) {
+      // A última etapa em andamento passa a constar como concluída no histórico.
+      if (historico.length && historico[historico.length - 1].estado === "atual") {
+        historico[historico.length - 1].estado = "concluida";
+      }
+      historico.push({
+        mensagem: atualizacao.mensagem,
+        estado: atualizacao.status === "erro" ? "erro" : "atual"
+      });
+    }
+
+    var progresso = {};
+    Object.keys(anterior).forEach(function(campo) {
+      progresso[campo] = anterior[campo];
+    });
+    Object.keys(atualizacao).forEach(function(campo) {
+      progresso[campo] = atualizacao[campo];
+    });
+    progresso.historico = historico.slice(-35);
+    progresso.atualizadoEm = new Date().toISOString();
+
+    if (progresso.status === "concluido" ||
+        progresso.status === "concluido_com_alertas" ||
+        progresso.status === "erro") {
+      if (progresso.historico.length &&
+          progresso.historico[progresso.historico.length - 1].estado === "atual") {
+        progresso.historico[progresso.historico.length - 1].estado =
+          progresso.status === "erro" ? "erro" : "concluida";
+      }
+    }
+
+    cache.put(chave, JSON.stringify(progresso), TEMPO_CACHE_SEGUNDOS);
+  }
+
+  function verificarEmailsAgendamentoComIA(token) {
     var resumo = {
       mensagensAnalisadas: 0,
       criados: 0,
       comErros: 0,
       resultados: [],
       limitePorExecucao: MAX_EMAILS_POR_EXECUCAO,
-      pendentesRestantes: Math.max(0, pendentes.length - mensagens.length)
+      pendentesRestantes: 0
     };
 
-    for (var i = 0; i < mensagens.length; i++) {
-      var mensagem = mensagens[i];
-      resumo.mensagensAnalisadas++;
-      try {
-        var corpo = String(mensagem.getPlainBody() || "").trim();
-        if (!corpo) throw new Error("O e-mail não possui texto para analisar.");
-        if (corpo.length > TAMANHO_MAXIMO_CORPO) {
-          throw new Error("O corpo do e-mail ultrapassa o limite de " +
-            TAMANHO_MAXIMO_CORPO + " caracteres.");
-        }
+    try {
+      registrarProgresso_(token, {
+        status: "executando",
+        etapa: "busca",
+        percentual: 3,
+        mensagem: "Consultando a caixa de entrada e procurando e-mails com assunto AGENDAMENTO."
+      });
 
-        var dadosIA = interpretarEmailComGroq_(corpo);
-        if (dadosIA.email_relevante !== true) {
-          throw new Error("A IA não identificou uma solicitação de agendamento.");
-        }
+      var pendentes = GmailAgendamentoRepository.listarMensagensPendentes();
+      var mensagens = pendentes.slice(0, MAX_EMAILS_POR_EXECUCAO);
+      resumo.pendentesRestantes = Math.max(0, pendentes.length - mensagens.length);
 
-        var textoValidacao =
-          "Cliente: " + dadosIA.cliente + "\n" +
-          "Serviço: " + dadosIA.servico + "\n" +
-          "Profissional: " + dadosIA.profissional + "\n" +
-          "Data: " + dadosIA.data + "\n" +
-          "Horário: " + dadosIA.horario;
+      registrarProgresso_(token, {
+        status: "executando",
+        etapa: "busca_concluida",
+        percentual: mensagens.length ? 7 : 100,
+        mensagem: mensagens.length
+          ? "Busca concluída: " + mensagens.length + " e-mail(s) serão analisados nesta execução."
+          : "Busca concluída: nenhum e-mail pendente com assunto AGENDAMENTO foi encontrado."
+      });
 
-        var analise = GmailAgendamentoValidator.analisarCorpo(textoValidacao);
-        if (analise.erros.length) throw new Error(analise.erros.join(" "));
-
-        var funcionario = localizarUnicoPorNome_(
-          AgendamentoRepository.listarFuncionarios(),
-          analise.profissional, "profissional"
-        );
-        var cliente = localizarUnicoPorNome_(
-          AgendamentoRepository.listarClientes(),
-          analise.cliente, "cliente"
-        );
-        var servico = localizarUnicoPorNome_(
-          AgendamentoRepository.listarServicos(),
-          analise.servico, "serviço"
-        );
-
-        var resposta = AgendamentoService.cadastrar({
-          data: analise.dataISO,
-          hora: analise.hora,
-          codigo_funcionario: funcionario.codigo,
-          codigo_cliente: cliente.codigo,
-          codigo_servico: servico.codigo,
-          status: "AGENDADO"
+      if (!mensagens.length) {
+        registrarProgresso_(token, {
+          status: "concluido",
+          etapa: "fim",
+          percentual: 100,
+          mensagem: "Processamento finalizado. Não havia e-mails pendentes."
         });
+        return resumo;
+      }
 
-        resumo.criados++;
-        var avisoRotulo = "";
+      for (var i = 0; i < mensagens.length; i++) {
+        var mensagem = mensagens[i];
+        var numeroEmail = i + 1;
+        var percentualBase = 7 + Math.floor((i / mensagens.length) * 88);
+        resumo.mensagensAnalisadas++;
+
         try {
-          GmailAgendamentoRepository.marcarComoProcessada(mensagem);
-        } catch (erroRotulo) {
-          avisoRotulo = " Atenção: não foi possível marcar o e-mail como " +
-            "processado. Confira a agenda antes de executar novamente.";
-        }
+          registrarProgresso_(token, {
+            status: "executando",
+            etapa: "leitura",
+            percentual: percentualBase + 2,
+            mensagem: "E-mail " + numeroEmail + " de " + mensagens.length + ": lendo o conteúdo da mensagem."
+          });
 
-        resumo.resultados.push({
-          sucesso: true,
-          mensagem: "Agendamento criado para " + analise.cliente +
-            " — " + analise.servico + ", " + analise.data + " às " +
-            analise.hora + ". " + resposta + avisoRotulo
-        });
-      } catch (erro) {
-        resumo.comErros++;
-        resumo.resultados.push({
-          sucesso: false,
-          mensagem: "E-mail recebido em " +
+          var corpo = String(mensagem.getPlainBody() || "").trim();
+          if (!corpo) throw new Error("O e-mail não possui texto para analisar.");
+          if (corpo.length > TAMANHO_MAXIMO_CORPO) {
+            throw new Error("O corpo do e-mail ultrapassa o limite de " +
+              TAMANHO_MAXIMO_CORPO + " caracteres.");
+          }
+
+          registrarProgresso_(token, {
+            status: "executando",
+            etapa: "ia",
+            percentual: percentualBase + 12,
+            mensagem: "E-mail " + numeroEmail + ": enviando o texto para a IA Groq identificar os dados do agendamento."
+          });
+
+          var dadosIA = interpretarEmailComGroq_(corpo);
+          if (dadosIA.email_relevante !== true) {
+            throw new Error("A IA não identificou uma solicitação de agendamento.");
+          }
+
+          registrarProgresso_(token, {
+            status: "executando",
+            etapa: "validacao",
+            percentual: percentualBase + 24,
+            mensagem: "E-mail " + numeroEmail + ": conferindo se cliente, serviço, profissional, data e horário foram identificados."
+          });
+
+          var textoValidacao =
+            "Cliente: " + dadosIA.cliente + "\n" +
+            "Serviço: " + dadosIA.servico + "\n" +
+            "Profissional: " + dadosIA.profissional + "\n" +
+            "Data: " + dadosIA.data + "\n" +
+            "Horário: " + dadosIA.horario;
+
+          var analise = GmailAgendamentoValidator.analisarCorpo(textoValidacao);
+          if (analise.erros.length) throw new Error(analise.erros.join(" "));
+
+          registrarProgresso_(token, {
+            status: "executando",
+            etapa: "cadastros",
+            percentual: percentualBase + 38,
+            mensagem: "E-mail " + numeroEmail + ": procurando os nomes exatos nos cadastros de clientes, serviços e funcionários."
+          });
+
+          var funcionario = localizarUnicoPorNome_(
+            AgendamentoRepository.listarFuncionarios(),
+            analise.profissional, "profissional"
+          );
+          var cliente = localizarUnicoPorNome_(
+            AgendamentoRepository.listarClientes(),
+            analise.cliente, "cliente"
+          );
+          var servico = localizarUnicoPorNome_(
+            AgendamentoRepository.listarServicos(),
+            analise.servico, "serviço"
+          );
+
+          registrarProgresso_(token, {
+            status: "executando",
+            etapa: "gravacao",
+            percentual: percentualBase + 55,
+            mensagem: "E-mail " + numeroEmail + ": dados conferidos. Gravando o agendamento na planilha."
+          });
+
+          var resposta = AgendamentoService.cadastrar({
+            data: analise.dataISO,
+            hora: analise.hora,
+            codigo_funcionario: funcionario.codigo,
+            codigo_cliente: cliente.codigo,
+            codigo_servico: servico.codigo,
+            status: "AGENDADO"
+          });
+
+          resumo.criados++;
+
+          registrarProgresso_(token, {
+            status: "executando",
+            etapa: "rotulo",
+            percentual: percentualBase + 72,
+            mensagem: "E-mail " + numeroEmail + ": agendamento gravado. Aplicando o rótulo de e-mail processado."
+          });
+
+          var avisoRotulo = "";
+          try {
+            GmailAgendamentoRepository.marcarComoProcessada(mensagem);
+          } catch (erroRotulo) {
+            avisoRotulo = " Atenção: não foi possível marcar o e-mail como " +
+              "processado. Confira a agenda antes de executar novamente.";
+          }
+
+          resumo.resultados.push({
+            sucesso: true,
+            mensagem: "Agendamento criado para " + analise.cliente +
+              " — " + analise.servico + ", " + analise.data + " às " +
+              analise.hora + ". " + resposta + avisoRotulo
+          });
+
+          registrarProgresso_(token, {
+            status: "executando",
+            etapa: "email_concluido",
+            percentual: percentualBase + Math.floor(88 / mensagens.length),
+            mensagem: "E-mail " + numeroEmail + ": processamento concluído" +
+              (avisoRotulo ? ", mas houve alerta ao aplicar o rótulo." : " e rótulo aplicado com sucesso.")
+          });
+        } catch (erro) {
+          resumo.comErros++;
+          var mensagemErro = "E-mail recebido em " +
             Utilities.formatDate(mensagem.getDate(),
               Session.getScriptTimeZone(), "dd/MM/yyyy HH:mm") + ": " +
-            (erro && erro.message ? erro.message : String(erro))
-        });
+            (erro && erro.message ? erro.message : String(erro));
+
+          resumo.resultados.push({
+            sucesso: false,
+            mensagem: mensagemErro
+          });
+
+          registrarProgresso_(token, {
+            status: "executando",
+            etapa: "email_com_erro",
+            percentual: percentualBase + Math.floor(88 / mensagens.length),
+            mensagem: "E-mail " + numeroEmail + ": não foi concluído. " +
+              (erro && erro.message ? erro.message : String(erro)),
+            detalhe: "Este e-mail não será marcado como processado porque o agendamento não foi concluído."
+          });
+        }
       }
+
+      registrarProgresso_(token, {
+        status: resumo.comErros > 0 ? "concluido_com_alertas" : "concluido",
+        etapa: "fim",
+        percentual: 100,
+        mensagem: "Rotina finalizada: " + resumo.mensagensAnalisadas +
+          " e-mail(s) analisado(s), " + resumo.criados +
+          " agendamento(s) criado(s) e " + resumo.comErros + " com problema(s)."
+      });
+
+      return resumo;
+    } catch (erroGeral) {
+      registrarProgresso_(token, {
+        status: "erro",
+        etapa: "erro",
+        percentual: 100,
+        mensagem: erroGeral && erroGeral.message
+          ? erroGeral.message
+          : String(erroGeral)
+      });
+      throw erroGeral;
     }
-    return resumo;
+  }
+
+  function consultarProgresso(token) {
+    var chave = "PROGRESSO_EMAIL_IA_" +
+      String(token || "").replace(/[^a-zA-Z0-9_-]/g, "");
+    var conteudo = CacheService.getScriptCache().get(chave);
+    if (!conteudo) {
+      return {
+        status: "executando",
+        percentual: 0,
+        mensagem: "Aguardando o servidor iniciar o processamento...",
+        historico: []
+      };
+    }
+    return JSON.parse(conteudo);
   }
 
   function interpretarEmailComGroq_(corpoEmail) {
@@ -223,11 +406,17 @@ var GmailAgendamentoIAService = (function() {
   }
 
   return {
-    verificarEmailsAgendamentoComIA: verificarEmailsAgendamentoComIA
+    verificarEmailsAgendamentoComIA: verificarEmailsAgendamentoComIA,
+    consultarProgresso: consultarProgresso
   };
 })();
 
 /** Ponto de entrada chamado pelo botão da interface. */
-function verificarEmailsAgendamentoComIA() {
-  return GmailAgendamentoIAService.verificarEmailsAgendamentoComIA();
+function verificarEmailsAgendamentoComIA(token) {
+  return GmailAgendamentoIAService.verificarEmailsAgendamentoComIA(token);
+}
+
+/** Consulta o andamento da rotina para atualizar o painel da interface. */
+function consultarProgressoEmailsAgendamentoIA(token) {
+  return GmailAgendamentoIAService.consultarProgresso(token);
 }
