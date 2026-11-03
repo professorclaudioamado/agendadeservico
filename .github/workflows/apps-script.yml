@@ -63,9 +63,10 @@ jobs:
         with:
           node-version: "22"
 
-      - name: Conferir credencial de publicação
+      - name: Conferir credenciais e implantação de produção
         env:
           CLASPRC_JSON: ${{ secrets.CLASPRC_JSON }}
+          APPS_SCRIPT_DEPLOYMENT_ID: ${{ vars.APPS_SCRIPT_DEPLOYMENT_ID }}
         shell: bash
         run: |
           set -euo pipefail
@@ -73,11 +74,20 @@ jobs:
             echo "::error::O segredo CLASPRC_JSON não está configurado nas configurações do repositório."
             exit 1
           fi
+          if [ -z "${APPS_SCRIPT_DEPLOYMENT_ID}" ]; then
+            echo "::error::A variável APPS_SCRIPT_DEPLOYMENT_ID não está configurada. Cadastre o ID da implantação existente do Web App em Settings > Secrets and variables > Actions > Variables."
+            exit 1
+          fi
           umask 077
           printf '%s' "${CLASPRC_JSON}" > "$HOME/.clasprc.json"
 
-      - name: Publicar os arquivos no Apps Script
+      - name: Enviar os arquivos ao Apps Script
         run: npx --yes @google/clasp@3.4.1 push --force
 
-      - name: Registrar versão do código publicado
-        run: npx --yes @google/clasp@3.4.1 version "GitHub commit $(git rev-parse --short HEAD)"
+      - name: Atualizar a implantação existente do Web App
+        env:
+          APPS_SCRIPT_DEPLOYMENT_ID: ${{ vars.APPS_SCRIPT_DEPLOYMENT_ID }}
+        run: |
+          npx --yes @google/clasp@3.4.1 deploy \
+            --deploymentId "$APPS_SCRIPT_DEPLOYMENT_ID" \
+            --description "GitHub commit $(git rev-parse --short HEAD)"
