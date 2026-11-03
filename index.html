@@ -249,6 +249,28 @@
     .grade-vazia { padding:18px; color:#64748b; text-align:center; }
     .botao-atualizar-grade { border:1px solid #cbd5e1; background:#fff; color:#334155; border-radius:8px; padding:8px 12px; cursor:pointer; }
 
+
+    /* Acompanhamento visual do processamento de e-mails com IA */
+    .painel-processamento-ia { display:none; margin-top:18px; padding:20px; border:1px solid #dbe3f0; border-radius:15px; background:#fbfcff; }
+    .painel-processamento-ia.visivel { display:block; }
+    .ia-cabecalho { display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap; margin-bottom:13px; }
+    .ia-cabecalho h3 { margin:0; font-size:16px; color:#192841; }
+    .ia-status { font-size:12px; font-weight:800; color:#4f46e5; background:#eef2ff; padding:6px 10px; border-radius:20px; }
+    .ia-progresso-trilho { height:10px; overflow:hidden; background:#e8edf5; border-radius:20px; }
+    .ia-progresso-barra { height:100%; width:0; background:linear-gradient(90deg,#4f46e5,#818cf8); border-radius:20px; transition:width .35s ease; }
+    .ia-progresso-resumo { display:flex; justify-content:space-between; gap:10px; margin:8px 0 17px; color:#64748b; font-size:12px; }
+    .ia-etapas { list-style:none; padding:0; margin:0; display:grid; gap:9px; }
+    .ia-etapa { display:flex; gap:10px; align-items:flex-start; color:#64748b; font-size:13px; line-height:1.45; }
+    .ia-etapa-icone { display:inline-flex; flex:0 0 23px; width:23px; height:23px; align-items:center; justify-content:center; border-radius:50%; background:#e9eef6; color:#64748b; font-size:12px; font-weight:800; }
+    .ia-etapa.concluida { color:#166534; }
+    .ia-etapa.concluida .ia-etapa-icone { background:#dcfce7; color:#15803d; }
+    .ia-etapa.atual { color:#3730a3; font-weight:700; }
+    .ia-etapa.atual .ia-etapa-icone { background:#e0e7ff; color:#4338ca; }
+    .ia-etapa.erro { color:#991b1b; }
+    .ia-etapa.erro .ia-etapa-icone { background:#fee2e2; color:#b91c1c; }
+    .ia-detalhe-atual { margin:14px 0 0; padding:11px 13px; background:#f1f5f9; border-radius:9px; color:#475569; font-size:12px; line-height:1.5; white-space:pre-line; }
+    @media (max-width:600px) { .painel-processamento-ia { padding:15px; } }
+
   </style>
 </head>
 
@@ -629,6 +651,24 @@
             Verificar e-mail com IA
           </button>
           <div id="mensagemAgenda" class="mensagem" role="status" aria-live="polite"></div>
+          <section id="painelProcessamentoIA" class="painel-processamento-ia"
+            aria-live="polite" aria-label="Acompanhamento do processamento por IA">
+            <div class="ia-cabecalho">
+              <h3>Etapas do processamento</h3>
+              <span class="ia-status" id="iaStatusGeral">Aguardando início</span>
+            </div>
+            <div class="ia-progresso-trilho">
+              <div class="ia-progresso-barra" id="iaBarraProgresso"></div>
+            </div>
+            <div class="ia-progresso-resumo">
+              <span id="iaTextoProgresso">Aguardando execução...</span>
+              <strong id="iaPercentual">0%</strong>
+            </div>
+            <ol class="ia-etapas" id="iaListaEtapas">
+              <li class="ia-etapa atual"><span class="ia-etapa-icone">1</span><span>Aguardando início da rotina.</span></li>
+            </ol>
+            <p class="ia-detalhe-atual" id="iaDetalheAtual">Quando você iniciar, cada etapa será registrada aqui.</p>
+          </section>
         </div>
         <div class="grade-registros" id="grade-agenda">
           <div class="grade-cabecalho">
@@ -1312,17 +1352,61 @@
      * Processa e-mails com IA sem substituir a rotina tradicional.
      * Os dois botões ficam desabilitados durante a execução nesta tela.
      */
+    /**
+     * Inicia o processamento por IA e consulta o andamento no servidor.
+     * O painel é atualizado enquanto o Apps Script trabalha nos e-mails.
+     */
     function verificarEmailsAgendamentoComIATela() {
       var botaoIA = document.getElementById("btnVerificarEmailIA");
       var botaoTradicional = document.getElementById("btnVerificarEmailAgendamento");
+      var painel = document.getElementById("painelProcessamentoIA");
+      var token = "ia_" + Date.now() + "_" + Math.floor(Math.random() * 1000000);
+      var consultaEmAndamento = false;
+      var rotinaFinalizada = false;
 
       limparMensagem("mensagemAgenda");
+      painel.classList.add("visivel");
       botaoIA.disabled = true;
       botaoTradicional.disabled = true;
-      botaoIA.textContent = "Analisando com IA...";
+      botaoIA.textContent = "Processando com IA...";
+      atualizarPainelProcessamentoIA({
+        status: "executando",
+        etapa: "inicio",
+        mensagem: "Preparando a consulta aos e-mails pendentes...",
+        percentual: 0,
+        historico: []
+      });
+
+      // Consulta o status no servidor sem bloquear a execução principal.
+      function consultarAndamentoIA() {
+        if (rotinaFinalizada || consultaEmAndamento) return;
+        consultaEmAndamento = true;
+
+        google.script.run
+          .withSuccessHandler(function(progresso) {
+            consultaEmAndamento = false;
+            if (progresso) atualizarPainelProcessamentoIA(progresso);
+            if (!rotinaFinalizada) window.setTimeout(consultarAndamentoIA, 900);
+          })
+          .withFailureHandler(function() {
+            consultaEmAndamento = false;
+            if (!rotinaFinalizada) window.setTimeout(consultarAndamentoIA, 1500);
+          })
+          .consultarProgressoEmailsAgendamentoIA(token);
+      }
+
+      consultarAndamentoIA();
 
       google.script.run
         .withSuccessHandler(function(resumo) {
+          rotinaFinalizada = true;
+          atualizarPainelProcessamentoIA({
+            status: resumo.comErros > 0 ? "concluido_com_alertas" : "concluido",
+            etapa: "fim",
+            mensagem: "Rotina finalizada. " + resumo.criados + " agendamento(s) criado(s).",
+            percentual: 100
+          });
+
           var linhas = [
             "Verificação com IA concluída.",
             "E-mails analisados: " + resumo.mensagensAnalisadas,
@@ -1347,12 +1431,18 @@
             resumo.comErros > 0 ? "erro" : "sucesso"
           );
           carregarGradeCadastro("agenda");
-
           botaoIA.disabled = false;
           botaoTradicional.disabled = false;
           botaoIA.textContent = "Verificar e-mail com IA";
         })
         .withFailureHandler(function(erro) {
+          rotinaFinalizada = true;
+          atualizarPainelProcessamentoIA({
+            status: "erro",
+            etapa: "erro",
+            mensagem: erro.message || "A rotina não pôde ser concluída.",
+            percentual: 100
+          });
           mostrarMensagem(
             "mensagemAgenda",
             erro.message || "Não foi possível verificar os e-mails com IA.",
@@ -1362,7 +1452,47 @@
           botaoTradicional.disabled = false;
           botaoIA.textContent = "Verificar e-mail com IA";
         })
-        .verificarEmailsAgendamentoComIA();
+        .verificarEmailsAgendamentoComIA(token);
+    }
+
+    /**
+     * Atualiza barra, status e histórico de etapas do painel.
+     */
+    function atualizarPainelProcessamentoIA(progresso) {
+      var percentual = Math.max(0, Math.min(100, Number(progresso.percentual || 0)));
+      document.getElementById("iaBarraProgresso").style.width = percentual + "%";
+      document.getElementById("iaPercentual").textContent = percentual + "%";
+      document.getElementById("iaTextoProgresso").textContent =
+        progresso.textoProgresso || progresso.mensagem || "Processando...";
+      document.getElementById("iaStatusGeral").textContent =
+        progresso.status === "concluido" ? "Concluído" :
+        progresso.status === "concluido_com_alertas" ? "Concluído com alertas" :
+        progresso.status === "erro" ? "Erro" :
+        progresso.status === "executando" ? "Em andamento" : "Aguardando";
+
+      var lista = document.getElementById("iaListaEtapas");
+      lista.innerHTML = "";
+      var historico = progresso.historico || [];
+      if (!historico.length && progresso.mensagem) {
+        historico = [{ mensagem: progresso.mensagem, estado: "atual" }];
+      }
+
+      historico.forEach(function(item, indice) {
+        var li = document.createElement("li");
+        li.className = "ia-etapa " + (item.estado || "concluida");
+        var icone = document.createElement("span");
+        icone.className = "ia-etapa-icone";
+        icone.textContent = item.estado === "erro" ? "!" :
+          item.estado === "atual" ? "›" : "✓";
+        var texto = document.createElement("span");
+        texto.textContent = item.mensagem || ("Etapa " + (indice + 1));
+        li.appendChild(icone);
+        li.appendChild(texto);
+        lista.appendChild(li);
+      });
+
+      document.getElementById("iaDetalheAtual").textContent =
+        progresso.detalhe || progresso.mensagem || "";
     }
 
     /**
