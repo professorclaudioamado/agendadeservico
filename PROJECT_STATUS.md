@@ -2,7 +2,7 @@
 
 ## Versão atual
 
-A aplicação utiliza Google Apps Script e Google Sheets, com entidades organizadas em camadas. A integração manual de solicitações de agendamento por Gmail foi implementada, integrada à branch `main` e publicada no projeto Apps Script. Falta executar o teste real com uma mensagem Gmail e confirmar a gravação na agenda.
+A aplicação utiliza Google Apps Script e Google Sheets, com entidades organizadas em camadas. A integração manual tradicional por Gmail está implementada na `main`. A integração experimental com IA/Groq está sendo preparada na branch `feature/groq-email-agendamento-ia`; ainda depende de revisão, publicação no Apps Script e teste real.
 
 ## Arquitetura adotada
 
@@ -64,6 +64,31 @@ Os nomes precisam corresponder exatamente aos cadastros. A data deve usar `DD/MM
 - Nomes inexistentes ou duplicados e campos inválidos impedem a gravação e são informados na interface.
 - A gravação na planilha e a aplicação do rótulo são operações separadas. Se houver falha exatamente entre elas, a mensagem pode ser considerada novamente; conferir a agenda antes de repetir uma execução após erro inesperado.
 - A publicação do código e o registro de uma versão no Apps Script não atualizam automaticamente uma implantação Web App já existente. Se a aplicação aberta no navegador continuar mostrando a versão antiga, atualize a implantação existente em **Implantar → Gerenciar implantações → Editar → Nova versão → Implantar**.
+
+## Integração com Gmail usando IA — branch de desenvolvimento
+
+### Implementação preparada
+
+- Novo arquivo `GmailAgendamentoIAService.js`, com chamada no servidor à API Groq.
+- Novo botão **Verificar e-mail com IA**, separado do botão tradicional.
+- Modelo configurado: `openai/gpt-oss-20b`.
+- Resposta solicitada por Structured Outputs com JSON Schema estrito.
+- A chave é lida de `GROQ_API_KEY` nas Propriedades do Script.
+- O fluxo com IA processa até 10 mensagens por execução.
+- Os dados extraídos passam pelo validador existente e pela busca exata dos cadastros.
+- A gravação continua sendo realizada por `AgendamentoService.cadastrar()`.
+- O rótulo Gmail só é aplicado após a gravação bem-sucedida.
+
+### Pendências antes de usar
+
+1. Revisar e integrar a branch de desenvolvimento.
+2. Configurar `GROQ_API_KEY` no projeto Apps Script que executará a integração.
+3. Atualizar a implantação Web App, se aplicável.
+4. Autorizar Gmail e UrlFetchApp quando solicitado.
+5. Executar testes reais com e-mails válidos, inválidos e não relacionados.
+6. Conferir a gravação na aba AGENDA e o rótulo no Gmail.
+
+A chave não deve ser incluída no GitHub nem no código. O conteúdo dos e-mails enviados à IA será compartilhado com o provedor Groq; utilize a função somente para mensagens cujo conteúdo possa ser enviado a esse serviço.
 
 ## GitHub Actions e publicação no Apps Script
 

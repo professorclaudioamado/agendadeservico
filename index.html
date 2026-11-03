@@ -624,6 +624,10 @@
             onclick="verificarEmailsAgendamentoTela()">
             Verificar e-mail
           </button>
+          <button type="button" class="botao-principal" id="btnVerificarEmailIA"
+            onclick="verificarEmailsAgendamentoComIATela()">
+            Verificar e-mail com IA
+          </button>
           <div id="mensagemAgenda" class="mensagem" role="status" aria-live="polite"></div>
         </div>
         <div class="grade-registros" id="grade-agenda">
@@ -1262,8 +1266,10 @@
      */
     function verificarEmailsAgendamentoTela() {
       var botao = document.getElementById("btnVerificarEmailAgendamento");
+      var botaoIA = document.getElementById("btnVerificarEmailIA");
       limparMensagem("mensagemAgenda");
       botao.disabled = true;
+      botaoIA.disabled = true;
       botao.textContent = "Verificando e-mails...";
 
       google.script.run
@@ -1286,6 +1292,7 @@
           );
           carregarGradeCadastro("agenda");
           botao.disabled = false;
+          botaoIA.disabled = false;
           botao.textContent = "Verificar e-mail";
         })
         .withFailureHandler(function(erro) {
@@ -1295,9 +1302,67 @@
             "erro"
           );
           botao.disabled = false;
+          botaoIA.disabled = false;
           botao.textContent = "Verificar e-mail";
         })
         .verificarEmailsAgendamento();
+    }
+
+    /**
+     * Processa e-mails com IA sem substituir a rotina tradicional.
+     * Os dois botões ficam desabilitados durante a execução nesta tela.
+     */
+    function verificarEmailsAgendamentoComIATela() {
+      var botaoIA = document.getElementById("btnVerificarEmailIA");
+      var botaoTradicional = document.getElementById("btnVerificarEmailAgendamento");
+
+      limparMensagem("mensagemAgenda");
+      botaoIA.disabled = true;
+      botaoTradicional.disabled = true;
+      botaoIA.textContent = "Analisando com IA...";
+
+      google.script.run
+        .withSuccessHandler(function(resumo) {
+          var linhas = [
+            "Verificação com IA concluída.",
+            "E-mails analisados: " + resumo.mensagensAnalisadas,
+            "Agendamentos criados: " + resumo.criados,
+            "Com problemas: " + resumo.comErros
+          ];
+
+          if (resumo.pendentesRestantes > 0) {
+            linhas.push(
+              "Ainda há " + resumo.pendentesRestantes +
+              " e-mail(s) pendente(s). Execute novamente para continuar."
+            );
+          }
+
+          (resumo.resultados || []).forEach(function(item) {
+            linhas.push((item.sucesso ? "✓ " : "• ") + item.mensagem);
+          });
+
+          mostrarMensagem(
+            "mensagemAgenda",
+            linhas.join("\n"),
+            resumo.comErros > 0 ? "erro" : "sucesso"
+          );
+          carregarGradeCadastro("agenda");
+
+          botaoIA.disabled = false;
+          botaoTradicional.disabled = false;
+          botaoIA.textContent = "Verificar e-mail com IA";
+        })
+        .withFailureHandler(function(erro) {
+          mostrarMensagem(
+            "mensagemAgenda",
+            erro.message || "Não foi possível verificar os e-mails com IA.",
+            "erro"
+          );
+          botaoIA.disabled = false;
+          botaoTradicional.disabled = false;
+          botaoIA.textContent = "Verificar e-mail com IA";
+        })
+        .verificarEmailsAgendamentoComIA();
     }
 
     /**

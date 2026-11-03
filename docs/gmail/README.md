@@ -1,18 +1,17 @@
-# Integração com Gmail — processamento manual de agendamentos
+# Integração com Gmail — processamento de agendamentos
 
 ## Objetivo
 
-Permitir que o usuário clique em **Verificar e-mail** na tela Agenda. O Google Apps Script lê mensagens da caixa de entrada, localiza os cadastros por nome exato e cria os agendamentos pelo fluxo já existente.
+A tela Agenda oferece dois processamentos manuais:
 
-Não são utilizados plugins ou conectores externos. A integração usa o serviço nativo `GmailApp` do Google Apps Script.
+- **Verificar e-mail:** extrai os campos no formato fixo usando o validador tradicional.
+- **Verificar e-mail com IA:** envia o texto do e-mail à API Groq para extrair os campos e, depois, utiliza as mesmas validações e o mesmo cadastro de agendamento.
 
-## Formato do e-mail
+Nenhum processamento automático é criado. Ambos dependem do clique do usuário.
 
-Assunto exato:
+## Formato recomendado do e-mail
 
-```text
-AGENDAMENTO
-```
+Assunto exato: `AGENDAMENTO`
 
 Corpo:
 
@@ -24,39 +23,73 @@ Data: 30/10/2026
 Horário: 14:00
 ```
 
-Os nomes de cliente, serviço e profissional devem corresponder exatamente aos nomes cadastrados nas respectivas abas. A data deve ser DD/MM/AAAA e o horário deve ser HH:MM no formato de 24 horas.
+Os nomes devem corresponder exatamente aos registros nas abas CLIENTES, SERVICOS e FUNCIONARIOS. A data deve estar explicitamente informada e ser válida. O horário deve usar HH:MM no formato de 24 horas.
+
+A rotina tradicional exige esse formato de campos. A rotina com IA aceita texto mais livre, mas não deve deduzir datas relativas como "amanhã", nem inventar dados ausentes.
 
 ## Arquivos envolvidos
 
-- `GmailAgendamentoRepository.js`: pesquisa mensagens na caixa de entrada e aplica o rótulo de processamento.
-- `GmailAgendamentoValidator.js`: extrai os campos e valida os formatos.
-- `GmailAgendamentoService.js`: coordena o processamento e chama `AgendamentoService.cadastrar()`.
-- `AgendamentoRepository.js`: continua responsável pelo acesso aos cadastros e pela gravação na planilha.
-- `index.html`: contém o botão e apresenta o resumo da execução.
+- `GmailAgendamentoRepository.js`: pesquisa e-mails pendentes e aplica o rótulo de processamento.
+- `GmailAgendamentoValidator.js`: valida os campos, a data e o horário.
+- `GmailAgendamentoService.js`: processamento tradicional.
+- `GmailAgendamentoIAService.js`: processamento com Groq e extração estruturada.
+- `AgendamentoService.js`: gravação oficial do agendamento.
+- `AgendamentoRepository.js`: leitura dos cadastros e gravação na planilha.
+- `index.html`: os dois botões e o resumo dos resultados.
 
-## Comportamento
+## Configuração da Groq
 
-- Procura até 100 conversas candidatas por execução.
-- Considera apenas mensagens cujo assunto seja exatamente `AGENDAMENTO`, dentro da caixa de entrada.
-- Localiza cliente, serviço e profissional por nome exato. Nomes inexistentes ou duplicados geram um erro para aquela mensagem.
-- Cria o agendamento com status `AGENDADO` e valor vindo do cadastro do serviço.
-- Após sucesso, aplica o rótulo `AGENDAMENTO_PROCESSADO` à conversa. Não apaga a mensagem nem a marca como lida.
-- Mensagens com erro não recebem o rótulo, para que possam ser corrigidas e tentadas novamente.
-- Não há acionador automático.
+No editor do Google Apps Script:
 
-A gravação na planilha e a aplicação do rótulo não são uma única transação. Se houver uma falha após a gravação e antes do rótulo, a mensagem pode ser reprocessada; essa situação deve ser verificada no teste.
+1. Abra **Configurações do projeto**.
+2. Localize **Propriedades do script**.
+3. Adicione a propriedade `GROQ_API_KEY`.
+4. Cole o valor da chave Groq como valor da propriedade.
+5. Salve.
+
+A chave é lida no servidor com `PropertiesService.getScriptProperties()`. Ela não deve ser colocada no código, no HTML, no GitHub ou enviada pelo chat.
+
+Endpoint: `https://api.groq.com/openai/v1/chat/completions`
+
+Modelo: `openai/gpt-oss-20b`
+
+A solicitação utiliza Structured Outputs com JSON Schema estrito. O corpo do e-mail é tratado como dado não confiável, nunca como instrução para a IA.
+
+## Comportamento da rotina com IA
+
+1. Busca as conversas pendentes com assunto exato AGENDAMENTO.
+2. Processa no máximo 10 mensagens por execução para reduzir risco de timeout e consumo inesperado.
+3. Envia somente o texto simples da mensagem à Groq.
+4. Recebe cliente, serviço, profissional, data e horário em JSON.
+5. Rejeita mensagens que não sejam solicitações, campos vazios, data/horário inválidos e nomes inexistentes ou duplicados.
+6. Obtém códigos exclusivamente dos cadastros na planilha. A IA não escolhe códigos nem grava diretamente.
+7. Chama `AgendamentoService.cadastrar()`, preservando as regras existentes e o valor do serviço cadastrado.
+8. Aplica `AGENDAMENTO_PROCESSADO` somente depois da gravação bem-sucedida.
+
+Se houver mais de 10 mensagens pendentes, a interface informa que ainda existem mensagens e o usuário pode executar novamente. Mensagens com falha não recebem o rótulo e podem ser tentadas novamente.
+
+O processamento com IA envia o conteúdo do e-mail a um provedor externo (Groq). Não utilize esse fluxo para mensagens que contenham informações que não devam ser compartilhadas com esse provedor.
+
+## Limites e cuidados
+
+- A busca do repositório continua limitada a 100 conversas candidatas.
+- O fluxo com IA processa até 10 mensagens por clique.
+- A rotina tradicional e a rotina com IA compartilham a mesma busca e o mesmo rótulo. Quando uma delas processa uma conversa, a outra deixa de encontrá-la.
+- A interface desabilita os dois botões durante a execução iniciada naquela tela.
+- A gravação na planilha e a aplicação do rótulo Gmail são operações separadas. Se ocorrer falha após gravar e antes de aplicar o rótulo, confira a agenda antes de tentar novamente.
+- A chave Groq deve existir no projeto Apps Script que executará a integração.
+- Não há teste real da API ou do Gmail até que o projeto seja executado com uma chave válida e as permissões do Google autorizadas.
 
 ## Como testar
 
-1. Publique os arquivos desta branch no projeto Google Apps Script de teste.
-2. Confirme que existem nas abas `CLIENTES`, `SERVICOS` e `FUNCIONARIOS` registros para os nomes usados no e-mail.
-3. Envie um e-mail para a conta Gmail usada pelo Apps Script, com o assunto e corpo do exemplo acima, substituindo os nomes por cadastros reais.
-4. Abra a aplicação e acesse a tela Agenda.
-5. Clique em **Verificar e-mail** e autorize o acesso ao Gmail se o Google solicitar.
-6. Confira o resumo na interface e confirme a nova linha na aba `AGENDA`.
-7. Clique novamente em **Verificar e-mail** e confirme que a mesma conversa não cria outro agendamento.
-8. Teste um nome inexistente e confirme que nenhum agendamento é criado para aquela mensagem.
+1. Configure `GROQ_API_KEY` nas Propriedades do Script do projeto de teste.
+2. Publique/atualize o projeto Apps Script com os arquivos desta branch.
+3. Confirme que CLIENTES, SERVICOS e FUNCIONARIOS possuem os nomes usados nos e-mails.
+4. Envie um e-mail para a conta Gmail usada pelo Apps Script, com assunto exato `AGENDAMENTO` e uma solicitação em texto livre, contendo cliente, serviço, profissional, data explícita e horário.
+5. Na tela Agenda, clique em **Verificar e-mail com IA**.
+6. Confira o resumo e a nova linha na aba AGENDA.
+7. Execute novamente e confirme que a conversa rotulada não é processada outra vez.
+8. Teste uma mensagem sem dados obrigatórios e uma mensagem que não seja solicitação; nenhuma delas deve gerar linha na agenda.
+9. Teste separadamente o botão **Verificar e-mail** para confirmar que o fluxo tradicional continua funcionando.
 
-## Limitação do teste atual
-
-A validação de código e a execução real dependem da publicação e autorização no projeto Google Apps Script. Nenhum teste aqui deve usar plugin ou conector do Gmail.
+A validação automatizada de sintaxe não substitui o teste integrado real com Gmail e Groq.
