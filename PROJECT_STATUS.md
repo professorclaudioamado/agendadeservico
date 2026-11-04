@@ -179,3 +179,39 @@ Os testes foram executados com objetos simulados (mocks); ainda não foi realiza
 
 ### Próxima etapa
 Criar `ClienteCepService.js` para consultar a API ViaCEP e integrar o retorno à interface em `index.html`. O fluxo deverá preencher endereço, CEP, bairro e cidade quando houver correspondência, mantendo a seleção manual quando a cidade não existir na lista cadastrada. O bairro deverá utilizar `BairroService.localizarOuCadastrar()` para evitar duplicidade.
+
+## Integração ViaCEP no cadastro de clientes — concluída
+
+### Implementado
+- Criado ClienteCepService.js, responsável por consultar a API ViaCEP no servidor usando UrlFetchApp.
+- A consulta aceita CEP com ou sem hífen e valida os oito dígitos.
+- O serviço trata CEP inexistente, resposta inválida, falha HTTP e falha de comunicação.
+- O formulário de clientes consulta o CEP quando o campo perde o foco, preenche logradouro e CEP e tenta selecionar a cidade somente quando nome e UF correspondem a uma cidade cadastrada.
+- Quando o ViaCEP retorna bairro, a interface chama localizarOuCadastrarBairro() e seleciona o código correspondente na lista.
+- Se a cidade não estiver cadastrada, o usuário deverá selecioná-la manualmente. Se o ViaCEP não retornar logradouro ou bairro, os respectivos campos permanecem disponíveis para preenchimento manual.
+- O número do imóvel e os demais dados do cliente não são alterados pela consulta.
+- O fluxo tradicional de cadastro de cliente e o cadastro manual de bairros foram preservados.
+
+### Testes realizados
+- Consulta simulada com CEP válido sem hífen: aprovada.
+- Consulta simulada com CEP válido com hífen: aprovada.
+- Tratamento de CEP inexistente (erro: true): aprovado.
+- Rejeição de CEP com formato inválido: aprovada.
+- Tratamento de resposta HTTP 503: aprovado.
+- Tratamento de falha de comunicação: aprovado.
+- Sintaxe do JavaScript incorporado em index.html: aprovada.
+- Os testes utilizaram respostas simuladas; não foi executada uma chamada real ao ViaCEP a partir do Apps Script nem um teste real com a planilha.
+
+### Arquivos desta etapa
+- Criados: ClienteCepService.js.
+- Alterados: index.html e BairroService.js (exposição pública da operação localizarOuCadastrarBairro).
+- Mantidos: ClienteService.js, ClienteRepository.js, ClienteValidator.js, ClienteRules.js, BairroRepository.js e BairroValidator.js.
+- Excluídos: nenhum. Nenhum arquivo antigo ficou obsoleto por esta implementação.
+
+### Configuração e primeiro uso
+- Na primeira execução, o Google Apps Script poderá solicitar autorização para realizar chamadas externas por meio de UrlFetchApp.
+- O teste final deve ser realizado na implantação Web App atualizada, com um CEP real, verificando preenchimento do logradouro, seleção de cidade, seleção ou cadastro do bairro e gravação do cliente.
+- O campo de número continua sendo preenchido manualmente.
+
+### Próximo passo
+Testar a funcionalidade na implantação real do Google Apps Script, autorizar a chamada externa quando solicitado e conferir os registros nas abas BAIRROS e CLIENTES.
