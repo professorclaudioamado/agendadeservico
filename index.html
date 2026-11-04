@@ -523,8 +523,9 @@
 
             <div>
               <label for="cepCliente">CEP</label>
-              <input type="text" id="cepCliente" maxlength="9"
-                placeholder="00000-000" required>
+              <input type="text" id="cepCliente" maxlength="9" inputmode="numeric"
+                placeholder="00000-000" onblur="consultarCepClienteTela()" required>
+              <p id="statusCepCliente" class="observacao" role="status">Informe o CEP para preencher o endereço automaticamente.</p>
             </div>
 
             <div>
@@ -807,6 +808,8 @@
             opcao.value = cidade.codigo;
             opcao.textContent = cidade.nome +
               (cidade.estado ? " - " + cidade.estado : "");
+            opcao.dataset.nome = cidade.nome;
+            opcao.dataset.estado = cidade.estado || "";
             select.appendChild(opcao);
           });
         })
@@ -820,7 +823,7 @@
     /**
      * Carrega bairros para o cadastro de clientes.
      */
-    function carregarBairros() {
+    function carregarBairros(callback) {
       var select = prepararLista("bairroCliente", "Carregando bairros...");
       select.disabled = true;
 
@@ -839,6 +842,8 @@
             opcao.textContent = bairro.nome;
             select.appendChild(opcao);
           });
+
+          if (typeof callback === "function") callback();
         })
         .withFailureHandler(function(erro) {
           prepararLista("bairroCliente", "Erro ao carregar bairros");
@@ -1244,6 +1249,138 @@
         .cadastrarBairro(nome);
     }
 
+    var ultimoCepConsultadoCliente = "";
+    var consultaCepClienteEmAndamento = false;
+
+    /**
+     * Normaliza texto para comparar cidades sem diferenças de acento.
+     * @param {string} valor Texto recebido.
+     * @return {string} Texto normalizado.
+     */
+    function normalizarTextoCepCliente(valor) {
+      return String(valor || "").normalize("NFD")
+        .replace(/[\\u0300-\\u036f]/g, "")
+        .trim()
+        .toLocaleLowerCase("pt-BR");
+    }
+
+    /**
+     * Seleciona uma cidade somente quando nome e UF correspondem a uma
+     * opção existente na lista cadastrada.
+     * @param {string} nome Nome da cidade retornado pelo ViaCEP.
+     * @param {string} uf UF retornada pelo ViaCEP.
+     * @return {boolean} Indica se a cidade foi encontrada.
+     */
+    function selecionarCidadeDoCepCliente(nome, uf) {
+      var select = document.getElementById("cidadeCliente");
+      var nomeProcurado = normalizarTextoCepCliente(nome);
+      var ufProcurada = normalizarTextoCepCliente(uf);
+      select.value = "";
+
+      for (var i = 0; i < select.options.length; i++) {
+        var opcao = select.options[i];
+        if (
+          normalizarTextoCepCliente(opcao.dataset.nome) === nomeProcurado &&
+          normalizarTextoCepCliente(opcao.dataset.estado) === ufProcurada &&
+          opcao.value !== ""
+        ) {
+          select.value = opcao.value;
+          return true;
+        }
+      }
+      return false;
+    }
+
+    /**
+     * Consulta o CEP e preenche os campos de endereço disponíveis.
+     * O bairro é localizado/cadastrado antes de ser selecionado.
+     */
+    function consultarCepClienteTela() {
+      var campoCep = document.getElementById("cepCliente");
+      var cep = campoCep.value.replace(/\\D/g, "");
+      var status = document.getElementById("statusCepCliente");
+
+      if (cep.length === 0) {
+        ultimoCepConsultadoCliente = "";
+        status.textContent = "Informe o CEP para preencher o endereço automaticamente.";
+        return;
+      }
+      if (cep.length !== 8) {
+        status.textContent = "O CEP deve conter oito números.";
+        return;
+      }
+      if (consultaCepClienteEmAndamento || cep === ultimoCepConsultadoCliente) return;
+
+      consultaCepClienteEmAndamento = true;
+      status.textContent = "Consultando CEP...";
+      campoCep.disabled = true;
+
+      google.script.run
+        .withSuccessHandler(function(dados) {
+          campoCep.disabled = false;
+          consultaCepClienteEmAndamento = false;
+          ultimoCepConsultadoCliente = cep;
+          campoCep.value = dados.cep || cep;
+
+          if (dados.logradouro) {
+            document.getElementById("enderecoCliente").value = dados.logradouro;
+          }
+
+          var cidadeEncontrada = selecionarCidadeDoCepCliente(
+            dados.localidade, dados.uf
+          );
+
+          if (!dados.bairro) {
+            status.textContent = cidadeEncontrada
+              ? "CEP localizado. Confira o endereço e informe o bairro manualmente."
+              : "CEP localizado. Cidade não cadastrada; selecione-a manualmente e confira o endereço.";
+            return;
+          }
+
+          status.textContent = "CEP localizado. Identificando bairro...";
+          google.script.run
+            .withSuccessHandler(function(bairro) {
+              carregarBairros(function() {
+                var selectBairro = document.getElementById("bairroCliente");
+                var codigoBairro = String(bairro.codigo);
+                var opcaoExiste = Array.prototype.some.call(
+                  selectBairro.options,
+                  function(opcao) { return String(opcao.value) === codigoBairro; }
+                );
+
+                if (!opcaoExiste) {
+                  var opcao = document.createElement("option");
+                  opcao.value = codigoBairro;
+                  opcao.textContent = bairro.nome;
+                  selectBairro.appendChild(opcao);
+                }
+
+                selectBairro.value = codigoBairro;
+                status.textContent = bairro.criado
+                  ? "CEP localizado. Bairro cadastrado automaticamente e selecionado."
+                  : "CEP localizado. Bairro existente selecionado.";
+
+                if (!cidadeEncontrada) {
+                  status.textContent += " A cidade não está cadastrada; selecione-a manualmente.";
+                }
+              });
+            })
+            .withFailureHandler(function(erro) {
+              status.textContent = (erro.message || "Não foi possível localizar o bairro.") +
+                " Selecione o bairro manualmente.";
+            })
+            .localizarOuCadastrarBairro(dados.bairro);
+        })
+        .withFailureHandler(function(erro) {
+          campoCep.disabled = false;
+          consultaCepClienteEmAndamento = false;
+          ultimoCepConsultadoCliente = "";
+          status.textContent = erro.message ||
+            "Não foi possível consultar o CEP. Preencha o endereço manualmente.";
+        })
+        .consultarCepCliente(cep);
+    }
+
     /**
      * Cadastro de cliente.
      */
@@ -1285,6 +1422,9 @@
         .withSuccessHandler(function(resposta) {
           mostrarMensagem("mensagemCliente", resposta, "sucesso");
           document.getElementById("formCliente").reset();
+          ultimoCepConsultadoCliente = "";
+          document.getElementById("statusCepCliente").textContent =
+            "Informe o CEP para preencher o endereço automaticamente.";
           carregarGradeCadastro("clientes");
           carregarClientesAgendaTela();
           carregarCidades();
