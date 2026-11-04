@@ -146,3 +146,36 @@ Nenhum. Não foi identificado arquivo obsoleto nesta etapa.
 - A validação automatizada do workflow foi aprovada.
 - Os testes locais de sintaxe e de fluxo simulado foram aprovados.
 - O próximo teste necessário é o teste integrado real com Gmail autorizado, seguido da conferência da aba `AGENDA` e da prevenção de duplicidade.
+
+## Integração ViaCEP no cadastro de clientes — etapa 1 concluída
+
+### Objetivo
+Preparar a camada de bairros para que a futura consulta de CEP possa localizar um bairro já cadastrado ou incluí-lo automaticamente, sem gerar duplicidades no fluxo de integração.
+
+### Implementado
+- `BairroRepository.buscarPorNome(nome)` consulta a aba `BAIRROS` e compara nomes sem diferenciar maiúsculas/minúsculas ou espaços externos.
+- `BairroService.localizarOuCadastrar(nome)` valida o nome, procura o bairro e cadastra somente quando não encontra.
+- O caso de uso utiliza `LockService` para serializar a consulta e a inclusão entre execuções simultâneas desse novo fluxo.
+- O cadastro tradicional `BairroService.cadastrar(nome)` e o ponto de entrada global `cadastrarBairro(nome)` foram preservados.
+- A estrutura atual da planilha não foi alterada; a coluna opcional `cidade` continua sem preenchimento por esse fluxo.
+
+### Testes realizados
+- Busca de bairro existente ignorando caixa e espaços externos: aprovado.
+- Retorno `null` quando o bairro não existe: aprovado.
+- Geração do próximo código: aprovado.
+- Reutilização de bairro existente: aprovado.
+- Cadastro automático de bairro ausente: aprovado.
+- Verificação de que o fluxo não cria duplicidade quando o bairro já existe: aprovado.
+- Rejeição de nome vazio: aprovado.
+- Sintaxe dos dois arquivos compilada no ambiente JavaScript V8 com dependências simuladas: aprovado.
+
+Os testes foram executados com objetos simulados (mocks); ainda não foi realizado teste integrado contra uma planilha real do Google Sheets.
+
+### Arquivos desta etapa
+- **Criados:** nenhum.
+- **Alterados:** `BairroService.js` e `BairroRepository.js`.
+- **Mantidos:** `BairroValidator.js`, `ClienteRepository.js`, `ClienteService.js`, `ClienteValidator.js` e `index.html`.
+- **Excluídos:** nenhum. Não há arquivo obsoleto identificado nesta etapa.
+
+### Próxima etapa
+Criar `ClienteCepService.js` para consultar a API ViaCEP e integrar o retorno à interface em `index.html`. O fluxo deverá preencher endereço, CEP, bairro e cidade quando houver correspondência, mantendo a seleção manual quando a cidade não existir na lista cadastrada. O bairro deverá utilizar `BairroService.localizarOuCadastrar()` para evitar duplicidade.
