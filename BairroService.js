@@ -47,3 +47,11 @@ var BairroService = (function() {
 function cadastrarBairro(nome) {
   return BairroService.cadastrar(nome);
 }
+
+/** Ponto de entrada público para localizar ou cadastrar bairro via interface.
+ * @param {string} nome Nome recebido da consulta de CEP.
+ * @return {{codigo:string|number,nome:string,criado:boolean}} Resultado.
+ */
+function localizarOuCadastrarBairro(nome) {
+  return BairroService.localizarOuCadastrar(nome);
+}
