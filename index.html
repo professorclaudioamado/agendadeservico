@@ -1259,7 +1259,7 @@
      */
     function normalizarTextoCepCliente(valor) {
       return String(valor || "").normalize("NFD")
-        .replace(/[\\u0300-\\u036f]/g, "")
+        .replace(/[\u0300-\u036f]/g, "")
         .trim()
         .toLocaleLowerCase("pt-BR");
     }
@@ -1297,7 +1297,7 @@
      */
     function consultarCepClienteTela() {
       var campoCep = document.getElementById("cepCliente");
-      var cep = campoCep.value.replace(/\\D/g, "");
+      var cep = campoCep.value.replace(/\D/g, "");
       var status = document.getElementById("statusCepCliente");
 
       if (cep.length === 0) {
