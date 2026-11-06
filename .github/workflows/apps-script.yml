@@ -43,6 +43,9 @@ jobs:
             -not -path './node_modules/*' \
             -print0)
 
+      - name: Executar testes automatizados do BOT
+        run: node --test tests/*.test.js
+
       - name: Validar arquivos de configuração
         run: |
           node -e "const fs=require('fs'); JSON.parse(fs.readFileSync('appsscript.json','utf8')); const c=JSON.parse(fs.readFileSync('.clasp.json','utf8')); if (!c.scriptId) { throw new Error('scriptId ausente em .clasp.json'); } console.log('Manifesto e configuração clasp válidos.');"

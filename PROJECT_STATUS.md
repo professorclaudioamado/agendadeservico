@@ -215,3 +215,42 @@ Criar `ClienteCepService.js` para consultar a API ViaCEP e integrar o retorno à
 
 ### Próximo passo
 Testar a funcionalidade na implantação real do Google Apps Script, autorizar a chamada externa quando solicitado e conferir os registros nas abas BAIRROS e CLIENTES.
+
+
+## BOT conversacional de agendamento — implementação inicial concluída
+
+### Objetivo
+Adicionar uma interface de conversa ao mesmo projeto Agenda de Serviços, selecionada pelo parâmetro `?BOT`, sem criar outro projeto Apps Script ou outra planilha.
+
+### Implementado na branch de desenvolvimento
+- Criada a interface `Bot.html`, com apresentação de mensagens e campo de resposta.
+- Criados `BotService.js`, `BotValidator.js`, `BotRules.js` e `BotRepository.js), respeitando a arquitetura em camadas.
+- O fluxo conversa por etapas: identificação do cliente por CPF, escolha do serviço, escolha do profissional, data, horário e confirmação.
+- A consulta do cliente retorna somente código e nome; o BOT não lista nem apresenta outros dados pessoais.
+- A identificação de CPF confere formato e dígitos verificadores.
+- A disponibilidade é verificada considerando o profissional, a duração cadastrada do serviço e os agendamentos não cancelados do dia.
+- A gravação utiliza o fluxo existente `AgendamentoService.cadastrar()`.
+- `Main.gs.js` direciona para `Bot.html` quando o parâmetro `BOT` está presente; sem esse parâmetro, mantém a interface administrativa `index.html`.
+- Criados testes automatizados para CPF, data, horário, normalização de nomes e conflito de horários.
+
+### Segurança e publicação
+- O manifesto permanece com `webapp.access = MYSELF`; não foi habilitado acesso anônimo.
+- A aplicação atual possui pontos de entrada administrativos globais que ainda precisam de autenticação individual no servidor antes de liberar a mesma implantação para visitantes externos.
+- Por esse motivo, o BOT ainda não está liberado ao público e não deve ser divulgado como URL de atendimento público.
+- A publicação no Apps Script não foi executada nesta etapa. A implantação atual permanece com a política de acesso existente.
+
+### Validações realizadas
+- GitHub Actions: verificação de sintaxe JavaScript aprovada.
+- GitHub Actions: testes automatizados do BOT aprovados.
+- A validação de configuração do projeto foi aprovada.
+- Ainda não foi realizado teste integrado no Apps Script com a planilha real.
+- Ainda não foi realizado teste de ponta a ponta na interface implantada.
+
+### Arquivos desta etapa
+- **Criados:** `Bot.html`, `BotService.js`, `BotValidator.js`, `BotRules.js`, `BotRepository.js`, `tests/bot.test.js`.
+- **Alterados:** `Main.gs.js`, `AgendamentoRepository.js`, `ClienteRepository.js`, `.github/workflows/apps-script.yml`, `PROJECT_STATUS.md`.
+- **Mantidos:** `index.html`, `AgendamentoService.js`, `AgendamentoValidator.js`, `AgendamentoRules.js`, `appsscript.json` e `PROJECT_GUIDE.md`.
+- **Excluídos:** nenhum. Nenhum arquivo existente ficou obsoleto nesta etapa.
+
+### Próxima etapa obrigatória
+Implementar autenticação administrativa no servidor e proteger todos os pontos de entrada administrativos antes de alterar a implantação para acesso público. Depois, executar testes integrados e atualizar a implantação Web App.

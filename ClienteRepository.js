@@ -127,6 +127,34 @@ var ClienteRepository = (function() {
   }
 
   /**
+   * Localiza um cliente pelo CPF sem expor outros dados pessoais ao BOT.
+   *
+   * @param {string} cpf CPF informado durante a conversa.
+   * @return {{codigo:string,nome:string}|null} Identificação mínima do cliente.
+   */
+  function buscarResumoPorCpf(cpf) {
+    var procurado = String(cpf || "").replace(/\D/g, "");
+    if (!/^\d{11}$/.test(procurado)) return null;
+
+    var aba = obterAba_(ABA_CLIENTES);
+    verificarCabecalhos_(aba, CABECALHOS_CLIENTES);
+    if (aba.getLastRow() < 2) return null;
+
+    var dados = aba.getRange(2, 1, aba.getLastRow() - 1, 3).getDisplayValues();
+    var encontrado = null;
+    for (var i = 0; i < dados.length; i++) {
+      var cpfLinha = String(dados[i][2] || "").replace(/\D/g, "");
+      if (cpfLinha !== procurado) continue;
+      if (encontrado) {
+        throw new Error("Há mais de um cadastro associado a esse CPF. Procure a equipe.");
+      }
+      encontrado = { codigo: String(dados[i][0]), nome: String(dados[i][1]) };
+    }
+    return encontrado;
+  }
+
+
+  /**
    * Procura um registro pelo código em uma lista previamente consultada.
    *
    * @param {Object[]} itens Lista de registros.
@@ -210,6 +238,7 @@ var ClienteRepository = (function() {
     listarBairros: listarBairros,
     buscarCidadePorCodigo: buscarCidadePorCodigo,
     buscarBairroPorCodigo: buscarBairroPorCodigo,
+    buscarResumoPorCpf: buscarResumoPorCpf,
     salvar: salvar
   };
 

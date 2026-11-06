@@ -16,7 +16,16 @@
  *
  * @return {GoogleAppsScript.HTML.HtmlOutput} Página principal da aplicação.
  */
-function doGet() {
+function doGet(e) {
+  // A presença do parâmetro BOT seleciona a interface conversacional.
+  // A política de acesso do Web App continua definida na implantação.
+  if (e && e.parameter &&
+      Object.prototype.hasOwnProperty.call(e.parameter, "BOT")) {
+    return HtmlService
+      .createHtmlOutputFromFile("Bot")
+      .setTitle("Assistente de Agendamento");
+  }
+
   return HtmlService
     .createHtmlOutputFromFile("index")
     .setTitle("Agenda de Atendimento - Serviços");

@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <base target="_top">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Assistente de Agendamento</title>
+  <style>
+    *{box-sizing:border-box}body{margin:0;font-family:Arial,sans-serif;background:#eef2f7;color:#172033}
+    header{background:#1d4ed8;color:#fff;padding:22px 16px;text-align:center}
+    header h1{margin:0 0 6px;font-size:22px}header p{margin:0;font-size:14px;opacity:.9}
+    main{max-width:720px;margin:24px auto;padding:0 14px}
+    .painel{background:#fff;border-radius:16px;box-shadow:0 8px 28px #0f172a12;overflow:hidden}
+    #mensagens{height:min(60vh,560px);min-height:320px;overflow:auto;padding:20px;display:flex;flex-direction:column;gap:12px}
+    .msg{max-width:88%;padding:12px 15px;border-radius:14px;white-space:pre-line;line-height:1.45;font-size:15px}
+    .bot{align-self:flex-start;background:#e8eefc;border-bottom-left-radius:4px}
+    .usuario{align-self:flex-end;background:#1d4ed8;color:white;border-bottom-right-radius:4px}
+    form{display:flex;gap:10px;padding:14px;border-top:1px solid #e5e7eb}
+    input{flex:1;min-width:0;padding:13px;border:1px solid #cbd5e1;border-radius:9px;font-size:16px}
+    button{border:0;border-radius:9px;background:#1d4ed8;color:white;padding:0 20px;font-weight:bold;cursor:pointer}
+    button:disabled{opacity:.55;cursor:wait}
+    .ajuda{text-align:center;color:#64748b;font-size:12px;padding:0 12px 15px}
+  </style>
+</head>
+<body>
+  <header><h1>Assistente de Agendamento</h1><p>Converse conosco para solicitar seu horário.</p></header>
+  <main><section class="painel">
+    <div id="mensagens" aria-live="polite"></div>
+    <form id="formulario"><input id="entrada" autocomplete="off" placeholder="Digite sua resposta..." aria-label="Sua mensagem" required><button id="enviar" type="submit">Enviar</button></form>
+    <div class="ajuda">Para recomeçar a conversa, digite REINICIAR.</div>
+  </section></main>
+  <script>
+    var sessao = { etapa: "inicio" };
+    var mensagens = document.getElementById("mensagens");
+    var entrada = document.getElementById("entrada");
+    var enviar = document.getElementById("enviar");
+
+    function adicionarMensagem(texto, classe) {
+      var elemento = document.createElement("div");
+      elemento.className = "msg " + classe;
+      elemento.textContent = texto;
+      mensagens.appendChild(elemento);
+      mensagens.scrollTop = mensagens.scrollHeight;
+    }
+
+    function processar(texto) {
+      enviar.disabled = true;
+      entrada.disabled = true;
+      google.script.run
+        .withSuccessHandler(function(resposta) {
+          sessao = resposta.sessao || { etapa: "inicio" };
+          adicionarMensagem(resposta.mensagem || "Não recebi uma resposta válida.", "bot");
+          enviar.disabled = false;
+          entrada.disabled = false;
+          entrada.focus();
+        })
+        .withFailureHandler(function(erro) {
+          adicionarMensagem("Não foi possível concluir a solicitação. Tente novamente.", "bot");
+          enviar.disabled = false;
+          entrada.disabled = false;
+          entrada.focus();
+        })
+        .botProcessarMensagem(texto, sessao);
+    }
+
+    document.getElementById("formulario").addEventListener("submit", function(evento) {
+      evento.preventDefault();
+      var texto = entrada.value.trim();
+      if (!texto) return;
+      adicionarMensagem(texto, "usuario");
+      entrada.value = "";
+      processar(texto);
+    });
+
+    adicionarMensagem("Olá! Sou o assistente de agendamento. Para começar, informe seu CPF (somente números).", "bot");
+    sessao = { etapa: "cpf" };
+  </script>
+</body>
+</html>

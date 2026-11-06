@@ -203,6 +203,52 @@ var AgendamentoRepository = (function() {
 
 
   /**
+   * Lista os agendamentos de uma data, incluindo a duração do serviço,
+   * para que o BOT possa verificar sobreposição de horários.
+   *
+   * @param {string} dataTexto Data no formato AAAA-MM-DD.
+   * @return {Object[]} Agendamentos do dia com funcionário, hora e duração.
+   */
+  function listarPorData(dataTexto) {
+    var aba = obterAba_(ABA_AGENDA);
+    verificarCabecalhos_(aba, [
+      "Código", "Data", "Hora", "Codigo_funcionario",
+      "Codigo_cliente", "Codigo_servico", "Valor", "Status"
+    ]);
+    if (aba.getLastRow() < 2) return [];
+
+    var servicos = listarServicos();
+    var duracoes = {};
+    servicos.forEach(function(servico) {
+      duracoes[String(servico.codigo)] = Number(servico.tempo) || 30;
+    });
+
+    var linhas = aba.getRange(2, 1, aba.getLastRow() - 1, 8).getValues();
+    var resultado = [];
+    var fuso = Session.getScriptTimeZone();
+
+    linhas.forEach(function(linha) {
+      var data = linha[1];
+      var chaveData = data instanceof Date
+        ? Utilities.formatDate(data, fuso, "yyyy-MM-dd")
+        : String(data).trim();
+      if (chaveData !== dataTexto) return;
+      resultado.push({
+        codigoFuncionario: String(linha[3]),
+        hora: String(linha[2]).length > 5
+          ? Utilities.formatDate(new Date(linha[2]), fuso, "HH:mm")
+          : String(linha[2]).substring(0, 5),
+        duracao: duracoes[String(linha[5])] || 30,
+        status: String(linha[7] || "")
+      });
+    });
+    return resultado.filter(function(item) {
+      return item.status.toUpperCase() !== "CANCELADO";
+    });
+  }
+
+
+  /**
    * Procura uma entidade em uma lista usando o código.
    *
    * @param {Object[]} itens Lista de entidades.
@@ -323,6 +369,7 @@ var AgendamentoRepository = (function() {
     buscarFuncionarioPorCodigo: buscarFuncionarioPorCodigo,
     buscarClientePorCodigo: buscarClientePorCodigo,
     buscarServicoPorCodigo: buscarServicoPorCodigo,
+    listarPorData: listarPorData,
     salvar: salvar
   };
 
