@@ -422,7 +422,7 @@ Executar e registrar o teste integrado real do BOT com a Groq. Depois, definir a
 Exibir no cabeçalho da interface do BOT o número da implantação para facilitar a confirmação visual de que a atualização foi publicada.
 
 ### Alteração
-- O cabeçalho de `Bot.html` exibe **Versão 64** junto à identificação do assistente.
+- O cabeçalho de `Bot.html` exibe **Versão 67** junto à identificação do assistente.
 - O número fica na linha de identificação do BOT e permanece visível também em telas pequenas.
 - A numeração corresponde à próxima versão esperada da implantação do Apps Script; a confirmação depende da conclusão bem-sucedida do workflow de publicação.
 
@@ -434,6 +434,10 @@ Exibir no cabeçalho da interface do BOT o número da implantação para facilit
 
 ### Como testar
 1. Aguardar a execução do workflow no push da `main`.
-2. Confirmar que a etapa de publicação foi concluída e que o log registrou a implantação `@64`.
-3. Abrir a URL do BOT e conferir **Versão 64** no cabeçalho, inclusive em largura de celular.
+2. Confirmar que a etapa de publicação foi concluída e que o log registrou a implantação `@67`.
+3. Abrir a URL do BOT e conferir **Versão 67** no cabeçalho, inclusive em largura de celular.
 4. Se a tela ainda mostrar versão anterior, recarregar a página sem cache.
+
+
+### Ajuste da numeração da implantação
+- A publicação intermediária concluiu a implantação `@66`; o cabeçalho foi ajustado para exibir `Versão 67`, correspondente à próxima publicação automática disparada por este commit.
