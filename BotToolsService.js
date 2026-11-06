@@ -52,10 +52,11 @@ var BotToolsService = (function() {
    * @return {Object} Resultado da consulta autorizada.
    */
   function executar(nome, argumentos) {
-    var executor = executores_[String(nome || "")];
-    if (typeof executor !== "function") {
+    var nomeFerramenta = String(nome || "");
+    if (!Object.prototype.hasOwnProperty.call(executores_, nomeFerramenta)) {
       throw new Error("A IA solicitou uma ferramenta não autorizada.");
     }
+    var executor = executores_[nomeFerramenta];
     if (!argumentos || typeof argumentos !== "object" || Array.isArray(argumentos)) {
       throw new Error("Os argumentos da consulta são inválidos.");
     }
