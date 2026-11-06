@@ -29,11 +29,17 @@ var BotService = (function() {
 
         case "cpf":
           estado.cpf = BotValidator.validarCpf(texto);
-          estado.cliente = BotRepository.buscarClientePorCpf(estado.cpf);
+          estado.etapa = "celular";
+          return retorno("Agora, informe os quatro últimos números do celular cadastrado.", estado);
+
+        case "celular":
+          estado.finalCelular = BotValidator.validarFinalCelular(texto);
+          estado.cliente = BotRepository.buscarClientePorCpf(estado.cpf, estado.finalCelular);
           if (!estado.cliente) {
             estado.etapa = "cpf";
             estado.cpf = "";
-            return retorno("Não encontrei um cadastro com esse CPF. Confira os números ou procure a equipe para realizar seu cadastro. Digite REINICIAR para tentar novamente.", estado);
+            estado.finalCelular = "";
+            return retorno("Não consegui confirmar os dados. Confira o CPF e os quatro últimos números do celular cadastrado. Digite REINICIAR para tentar novamente.", estado);
           }
           estado.etapa = "servico";
           estado.servicos = BotRepository.listarServicos();
@@ -84,7 +90,7 @@ var BotService = (function() {
           if (!/^sim$/i.test(texto)) return retorno("Responda SIM para confirmar ou NÃO para recomeçar.", estado);
 
           // Revalida cadastros e conflito imediatamente antes de gravar.
-          var clienteAtual = BotRepository.buscarClientePorCpf(estado.cpf);
+          var clienteAtual = BotRepository.buscarClientePorCpf(estado.cpf, estado.finalCelular);
           var servicoAtual = BotRepository.listarServicos().filter(function(x) {
             return String(x.codigo) === String(estado.codigoServico);
           })[0];
