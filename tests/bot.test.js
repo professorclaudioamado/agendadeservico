@@ -106,7 +106,7 @@ test("fluxo conversacional completo chama o AgendamentoService", () => {
 
 test("JavaScript incorporado em Bot.html possui sintaxe válida", () => {
   const html = fs.readFileSync("Bot.html", "utf8");
-  const script = html.match(/<script>([\\s\\S]*?)<\\/script>/);
+  const script = html.match(/<script>([\s\S]*?)<\/script>/);
   assert.ok(script, "script inline deve existir");
   assert.doesNotThrow(() => new vm.Script(script[1]));
 });
