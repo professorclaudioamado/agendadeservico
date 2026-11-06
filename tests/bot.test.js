@@ -99,6 +99,7 @@ test("interpreta linguagem natural pela API Groq com resposta estruturada", () =
 });
 
 
+// Confere o diagnóstico HTTP sem permitir que a chave da API apareça na mensagem.
 test("exibe a mensagem técnica da Groq em erro HTTP sem revelar a chave", () => {
   const contexto = {
     PropertiesService: { getScriptProperties: () => ({ getProperty: () => "segredo-nao-exibir" }) },
