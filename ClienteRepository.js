@@ -133,8 +133,8 @@ var ClienteRepository = (function() {
    * @return {{codigo:string,nome:string}|null} Identificação mínima do cliente.
    */
   function buscarResumoPorCpf(cpf) {
-    var procurado = String(cpf || "").replace(/\\D/g, "");
-    if (!/^\\d{11}$/.test(procurado)) return null;
+    var procurado = String(cpf || "").replace(/\D/g, "");
+    if (!/^\d{11}$/.test(procurado)) return null;
 
     var aba = obterAba_(ABA_CLIENTES);
     verificarCabecalhos_(aba, CABECALHOS_CLIENTES);
@@ -143,7 +143,7 @@ var ClienteRepository = (function() {
     var dados = aba.getRange(2, 1, aba.getLastRow() - 1, 3).getDisplayValues();
     var encontrado = null;
     for (var i = 0; i < dados.length; i++) {
-      var cpfLinha = String(dados[i][2] || "").replace(/\\D/g, "");
+      var cpfLinha = String(dados[i][2] || "").replace(/\D/g, "");
       if (cpfLinha !== procurado) continue;
       if (encontrado) {
         throw new Error("Há mais de um cadastro associado a esse CPF. Procure a equipe.");
