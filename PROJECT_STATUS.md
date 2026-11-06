@@ -302,3 +302,28 @@ Evoluir o BOT inicial para uma experiência de conversa natural, com interface r
 - O BOT reutiliza a propriedade `GROQ_API_KEY` nas Propriedades do Script. O valor da chave não é lido nem exposto pelo repositório.
 - Ainda falta o teste real de ponta a ponta no navegador com a planilha e uma chamada efetiva à Groq. Se a propriedade `GROQ_API_KEY` já estiver configurada nesse projeto Apps Script, não é necessário cadastrá-la novamente; caso contrário, configure-a nas Propriedades do Script.
 - A implantação continua com acesso `MYSELF`; o BOT não está liberado para clientes externos. Manter assim até implementar autenticação administrativa em todos os pontos de entrada.
+
+
+## Correção de compatibilidade e diagnóstico da API Groq — em validação
+
+### Problema identificado
+- O BOT recebia HTTP 400, mas BotIAService.js descartava o corpo de erro enviado pela Groq. Assim, a interface mostrava uma mensagem genérica e não era possível identificar a causa precisa.
+- O modelo GPT-OSS 20B é listado pela documentação Groq como compatível com Structured Outputs; portanto, ainda não há evidência suficiente para atribuir o erro a chave inválida, modelo indisponível ou limite de conta.
+- A documentação oficial da Groq também oferece JSON Object Mode. Como o servidor já valida os seis campos e seus valores permitidos, esta etapa troca o formato de resposta para JSON Object Mode e mantém a validação local obrigatória.
+
+### Alterações preparadas na branch fix/bot-groq-http-400
+- BotIAService.js: usa response_format type json_object e reasoning_format hidden; mantém o modelo openai/gpt-oss-20b, a chave em Script Properties e a validação dos campos recebidos.
+- BotIAService.js: quando a API retorna erro HTTP, extrai apenas error.message do corpo de resposta, limita o texto e nunca expõe cabeçalhos ou a chave.
+- tests/bot.test.js: ajusta o teste do formato JSON e acrescenta teste de erro HTTP 400, incluindo a verificação de que a chave não aparece na mensagem.
+
+### Arquivos
+- Criados: nenhum.
+- Alterados: BotIAService.js, tests/bot.test.js.
+- Mantidos: BotService.js, BotRepository.js, BotValidator.js, BotRules.js, Bot.html, serviços e repositórios de Agendamento, appsscript.json, PROJECT_GUIDE.md.
+- Excluídos: nenhum.
+
+### Validação e próximo passo
+- Aguardando GitHub Actions para validar sintaxe e testes automatizados.
+- Após aprovação, integrar a correção à main e publicar a nova versão do Apps Script.
+- Fazer uma chamada real à Groq pelo BOT. Se ainda houver HTTP 400, a interface passará a mostrar a mensagem técnica devolvida pelo provedor, permitindo identificar e corrigir a causa específica.
+- Não alterar a chave GROQ_API_KEY nem compartilhá-la no chat. A chave não foi modificada nesta etapa.
