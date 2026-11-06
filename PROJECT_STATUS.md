@@ -327,3 +327,12 @@ Evoluir o BOT inicial para uma experiência de conversa natural, com interface r
 - Após aprovação, integrar a correção à main e publicar a nova versão do Apps Script.
 - Fazer uma chamada real à Groq pelo BOT. Se ainda houver HTTP 400, a interface passará a mostrar a mensagem técnica devolvida pelo provedor, permitindo identificar e corrigir a causa específica.
 - Não alterar a chave GROQ_API_KEY nem compartilhá-la no chat. A chave não foi modificada nesta etapa.
+
+
+### Correção Groq — integrada e publicada
+- PR #11 integrado à main após validação do GitHub Actions.
+- O formato de resposta da API foi alterado para JSON Object Mode; a validação dos seis campos obrigatórios e dos valores permitidos permanece no servidor.
+- A mensagem técnica de erro HTTP da Groq agora é extraída do corpo da resposta, limitada e sem expor chave ou cabeçalhos.
+- Testes automatizados: 9 aprovados, incluindo teste de diagnóstico HTTP 400 e proteção da chave.
+- GitHub Actions, execução #55: validação e publicação concluídas; 35 arquivos enviados e implantação Web App atualizada para a versão @59.
+- Ainda pendente: teste real no navegador com a chamada à Groq. Caso ocorra novo erro, a interface exibirá a mensagem específica retornada pela API, para correção direcionada.
