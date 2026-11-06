@@ -103,12 +103,15 @@ var BotService = (function() {
 
     aplicarInterpretacao_(interpretacao, estado, servicos, profissionais);
 
-    if (estado.etapa === "confirmacao" && interpretacao.confirmacao === "nao") {
+    var possuiAlteracao = !!(interpretacao.servico || interpretacao.profissional ||
+      interpretacao.data || interpretacao.hora);
+    if (estado.etapa === "confirmacao" && interpretacao.confirmacao === "nao" &&
+        !possuiAlteracao) {
       estado.campos = {};
       estado.etapa = "pedido";
       salvarSessao_(id, estado);
       return retorno_("Sem problema! Não vou registrar esse pedido. 😊\n\n" +
-        "O que você gostaria de alterar ou qual novo horário deseja?", id);
+        "Se quiser fazer outro pedido, é só me contar. Para reiniciar, digite REINICIAR.", id);
     }
     if (estado.etapa === "confirmacao" && interpretacao.confirmacao === "sim") {
       return confirmarAgendamento_(id, estado);
