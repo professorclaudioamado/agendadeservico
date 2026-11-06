@@ -416,7 +416,7 @@ O teste real depende da autorização do proprietário e do uso de dados reais d
 Executar e registrar o teste integrado real do BOT com a Groq. Depois, definir a jornada dos profissionais (expediente, intervalos, folgas e serviços permitidos) antes de implementar busca de horários livres ou alternativas.
 
 
-## Identificação visual da versão do BOT — em publicação
+## Identificação visual da versão do BOT — publicada e validada
 
 ### Objetivo
 Exibir no cabeçalho da interface do BOT o número da implantação para facilitar a confirmação visual de que a atualização foi publicada.
@@ -424,7 +424,7 @@ Exibir no cabeçalho da interface do BOT o número da implantação para facilit
 ### Alteração
 - O cabeçalho de `Bot.html` exibe **Versão 67** junto à identificação do assistente.
 - O número fica na linha de identificação do BOT e permanece visível também em telas pequenas.
-- A numeração corresponde à próxima versão esperada da implantação do Apps Script; a confirmação depende da conclusão bem-sucedida do workflow de publicação.
+- A numeração corresponde à versão publicada da implantação do Apps Script. O GitHub Actions, execução #69, concluiu com sucesso a validação e a publicação da implantação existente, registrando a versão `@67`.
 
 ### Arquivos desta etapa
 - **Criados:** nenhum.
@@ -440,4 +440,4 @@ Exibir no cabeçalho da interface do BOT o número da implantação para facilit
 
 
 ### Ajuste da numeração da implantação
-- A publicação intermediária concluiu a implantação `@66`; o cabeçalho foi ajustado para exibir `Versão 67`, correspondente à próxima publicação automática disparada por este commit.
+- A publicação intermediária concluiu a implantação `@66`. O ajuste final do cabeçalho foi publicado com sucesso na execução #69, que registrou a implantação `@67`.
