@@ -19,8 +19,8 @@ var BotRepository = (function() {
     return AgendamentoRepository.listarFuncionarios();
   }
 
-  function buscarClientePorCpf(cpf) {
-    return ClienteRepository.buscarResumoPorCpf(cpf);
+  function buscarClientePorCpf(cpf, finalCelular) {
+    return ClienteRepository.buscarResumoPorCpf(cpf, finalCelular);
   }
 
   function listarAgendamentosDoDia(dataTexto) {
