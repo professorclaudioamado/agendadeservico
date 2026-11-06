@@ -481,3 +481,40 @@ Exibir no cabeçalho da interface do BOT o número da implantação para facilit
 - A instrução da IA determina que os nomes extraídos correspondam aos catálogos recebidos, sem inventar opções.
 - tests/bot.test.js verifica que os nomes dos catálogos são enviados no contexto da interpretação.
 - Arquivos adicionais alterados nesta complementação: BotIAService.js e tests/bot.test.js. Não foram criados nem excluídos arquivos.
+
+
+## Continuidade do contexto do BOT — correção integrada e publicada
+
+### Resultado
+- As correções foram integradas à branch `main` pelos PRs #13 e #14.
+- O BOT preserva o serviço mencionado pelo cliente enquanto responde a uma pergunta informativa sobre profissionais.
+- A interpretação da IA recebe os nomes dos serviços e profissionais cadastrados, permitindo relacionar expressões do cliente aos nomes oficiais sem inventar opções.
+- O serviço citado é aplicado à sessão antes da resposta informativa, sem avançar indevidamente a etapa do agendamento.
+
+### Arquivos
+- **Criados:** nenhum.
+- **Alterados:** `BotIAService.js`, `BotService.js`, `tests/bot.test.js` e `PROJECT_STATUS.md`.
+- **Mantidos:** `BotToolsService.js`, `BotRepository.js`, `BotValidator.js`, `BotRules.js`, `Bot.html`, serviços e repositórios de agendamento, `Main.gs.js`, `appsscript.json`, `.claspignore`, workflow de publicação e `PROJECT_GUIDE.md`.
+- **Excluídos:** nenhum. Não há arquivo obsoleto identificado nesta etapa.
+
+### Validação e publicação
+- PR #13: validação automatizada concluída com sucesso.
+- PR #14: execução de validação #75 aprovada; sintaxe JavaScript, configuração e 10 testes automatizados aprovados.
+- A publicação decorrente do merge do PR #14 foi executada pelo GitHub Actions, execução #76.
+- O job **Publicar no Google Apps Script** terminou com sucesso e o log confirmou: implantação existente atualizada para a versão `@69`.
+- Commit publicado: `15df91ebbe2d1c72e77ec67bf3e927d5230b709d`.
+- A implantação permanece restrita ao proprietário (`webapp.access = MYSELF`); não foi habilitado acesso público.
+- **Atenção à identificação visual:** o cabeçalho de `Bot.html` ainda contém o texto fixo “Versão 67”. A versão efetivamente implantada é `69`; portanto, não use o número exibido no cabeçalho como confirmação da implantação até que a identificação visual seja corrigida em etapa própria.
+
+### Teste manual pendente
+Os testes automatizados utilizam respostas simuladas da IA. Ainda é necessário testar a conversa real com a Groq e a planilha:
+1. Abrir o BOT na implantação atualizada e concluir a identificação do cliente.
+2. Enviar: “Quero cortar o cabelo, mas gostaria de saber quais profissionais estão disponíveis”.
+3. Confirmar que o BOT lista os profissionais e mantém o serviço na sessão.
+4. Perguntar: “Blz, para quando podemos agendar?”.
+5. Confirmar que o BOT pergunta pelo próximo dado ausente (profissional), sem solicitar novamente o serviço.
+6. Prosseguir até o resumo e confirmar que nenhum agendamento é gravado antes da confirmação explícita.
+7. Se concluir um agendamento de teste, conferir o registro na aba `AGENDA`.
+
+### Próxima etapa
+Executar o teste manual real com a conta proprietária, Groq e planilha. Em uma etapa separada, corrigir a identificação visual do cabeçalho para que ela não apresente um número fixo divergente da implantação efetiva.
