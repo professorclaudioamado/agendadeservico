@@ -3,77 +3,142 @@
 <head>
   <base target="_top">
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Assistente de Agendamento</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#075e54">
+  <title>Agenda de Serviços | Atendimento</title>
   <style>
-    *{box-sizing:border-box}body{margin:0;font-family:Arial,sans-serif;background:#eef2f7;color:#172033}
-    header{background:#1d4ed8;color:#fff;padding:22px 16px;text-align:center}
-    header h1{margin:0 0 6px;font-size:22px}header p{margin:0;font-size:14px;opacity:.9}
-    main{max-width:720px;margin:24px auto;padding:0 14px}
-    .painel{background:#fff;border-radius:16px;box-shadow:0 8px 28px #0f172a12;overflow:hidden}
-    #mensagens{height:min(60vh,560px);min-height:320px;overflow:auto;padding:20px;display:flex;flex-direction:column;gap:12px}
-    .msg{max-width:88%;padding:12px 15px;border-radius:14px;white-space:pre-line;line-height:1.45;font-size:15px}
-    .bot{align-self:flex-start;background:#e8eefc;border-bottom-left-radius:4px}
-    .usuario{align-self:flex-end;background:#1d4ed8;color:white;border-bottom-right-radius:4px}
-    form{display:flex;gap:10px;padding:14px;border-top:1px solid #e5e7eb}
-    input{flex:1;min-width:0;padding:13px;border:1px solid #cbd5e1;border-radius:9px;font-size:16px}
-    button{border:0;border-radius:9px;background:#1d4ed8;color:white;padding:0 20px;font-weight:bold;cursor:pointer}
-    button:disabled{opacity:.55;cursor:wait}
-    .ajuda{text-align:center;color:#64748b;font-size:12px;padding:0 12px 15px}
+    :root{font-family:Arial,Helvetica,sans-serif;color:#111b21;background:#d9dbd5}
+    *{box-sizing:border-box}
+    html,body{margin:0;min-height:100%;height:100%}
+    body{display:flex;justify-content:center;align-items:center;padding:0;background:linear-gradient(180deg,#0b7a6e 0,#0b7a6e 128px,#d9dbd5 128px,#d9dbd5 100%)}
+    .app{width:min(100%,960px);height:min(94dvh,860px);min-height:480px;background:#efeae2;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 8px 36px #172b251f;border-radius:10px}
+    .topo{height:72px;flex:0 0 72px;background:#075e54;color:#fff;display:flex;align-items:center;padding:0 18px;gap:13px}
+    .avatar{width:44px;height:44px;border-radius:50%;background:#d9fdd3;color:#075e54;display:grid;place-items:center;font-size:21px;font-weight:700}
+    .identidade{min-width:0;flex:1}.identidade h1{font-size:16px;margin:0 0 4px;font-weight:600}.identidade p{font-size:12px;margin:0;color:#d1e7e2}
+    .selo{font-size:11px;color:#d1e7e2;border:1px solid #ffffff45;border-radius:20px;padding:6px 10px;white-space:nowrap}
+    .conversa{flex:1;min-height:0;overflow-y:auto;padding:24px clamp(12px,4vw,54px);display:flex;flex-direction:column;gap:10px;background-color:#efeae2;background-image:radial-gradient(#d7d0c6 0.65px,transparent .65px);background-size:14px 14px;scroll-behavior:smooth}
+    .aviso{align-self:center;max-width:90%;padding:7px 12px;border-radius:8px;background:#fff4c7;color:#54656f;font-size:11px;text-align:center;box-shadow:0 1px 1px #0000000d;margin-bottom:8px}
+    .mensagem{max-width:min(78%,620px);padding:9px 11px 7px;border-radius:8px;box-shadow:0 1px 1px #00000012;white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.42;font-size:14px;position:relative}
+    .mensagem.bot{align-self:flex-start;background:#fff;border-top-left-radius:2px}
+    .mensagem.usuario{align-self:flex-end;background:#d9fdd3;border-top-right-radius:2px}
+    .hora{display:block;text-align:right;font-size:10px;color:#667781;margin:4px 0 0 14px;line-height:1}
+    .digitando{align-self:flex-start;background:#fff;border-radius:8px;padding:11px 14px;color:#667781;font-size:12px;box-shadow:0 1px 1px #00000012}
+    .digitando span{display:inline-block;width:5px;height:5px;margin:0 2px;background:#87969d;border-radius:50%;animation:pulse 1s infinite ease-in-out}.digitando span:nth-child(2){animation-delay:.15s}.digitando span:nth-child(3){animation-delay:.3s}
+    @keyframes pulse{0%,70%,100%{opacity:.35;transform:translateY(0)}35%{opacity:1;transform:translateY(-3px)}}
+    .rodape{background:#f0f2f5;padding:12px max(12px,env(safe-area-inset-right)) calc(12px + env(safe-area-inset-bottom)) max(12px,env(safe-area-inset-left));display:flex;gap:10px;align-items:flex-end;border-top:1px solid #e2e6e8}
+    .entrada{flex:1;min-width:0;max-height:120px;resize:none;border:0;outline:0;border-radius:24px;padding:13px 17px;font:14px Arial,sans-serif;color:#111b21;background:#fff;box-shadow:0 1px 2px #0000000d}
+    .entrada:focus{box-shadow:0 0 0 2px #b7d9d1}
+    .enviar{height:44px;width:44px;flex:0 0 44px;border:0;border-radius:50%;background:#075e54;color:#fff;font-size:19px;cursor:pointer;display:grid;place-items:center;transition:background .15s}
+    .enviar:hover{background:#08776a}.enviar:disabled{opacity:.5;cursor:wait}
+    .rodape-ajuda{text-align:center;background:#f0f2f5;color:#667781;font-size:10px;padding:0 8px 8px}
+    @media(max-width:600px){body{display:block;background:#efeae2}.app{width:100%;height:100dvh;min-height:0;border-radius:0;box-shadow:none}.topo{height:64px;flex-basis:64px;padding:0 13px}.conversa{padding:16px 10px}.mensagem{max-width:88%;font-size:14px}.selo{display:none}.rodape{gap:8px}}
+    @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;scroll-behavior:auto!important;transition:none!important}}
   </style>
 </head>
 <body>
-  <header><h1>Assistente de Agendamento</h1><p>Converse conosco para solicitar seu horário.</p></header>
-  <main><section class="painel">
-    <div id="mensagens" aria-live="polite"></div>
-    <form id="formulario"><input id="entrada" autocomplete="off" placeholder="Digite sua resposta..." aria-label="Sua mensagem" required><button id="enviar" type="submit">Enviar</button></form>
-    <div class="ajuda">Para recomeçar a conversa, digite REINICIAR.</div>
-  </section></main>
+  <main class="app" aria-label="Atendimento da Agenda de Serviços">
+    <header class="topo">
+      <div class="avatar" aria-hidden="true">A</div>
+      <div class="identidade"><h1>Agenda de Serviços</h1><p>Assistente virtual • atendimento automático</p></div>
+      <div class="selo">● Atendimento</div>
+    </header>
+    <section id="conversa" class="conversa" aria-live="polite" aria-label="Mensagens da conversa">
+      <div class="aviso">🔒 Seus dados são usados para localizar seu cadastro e solicitar o agendamento.</div>
+    </section>
+    <form id="formulario" class="rodape">
+      <textarea id="entrada" class="entrada" rows="1" maxlength="800" autocomplete="off" placeholder="Digite uma mensagem" aria-label="Digite sua mensagem" required></textarea>
+      <button id="enviar" class="enviar" type="submit" aria-label="Enviar mensagem" title="Enviar">➤</button>
+    </form>
+    <div class="rodape-ajuda">Digite REINICIAR para iniciar um novo atendimento.</div>
+  </main>
   <script>
-    var sessao = { etapa: "inicio" };
-    var mensagens = document.getElementById("mensagens");
+    var sessaoId = "";
+    var conversa = document.getElementById("conversa");
     var entrada = document.getElementById("entrada");
     var enviar = document.getElementById("enviar");
+    var indicador = null;
 
-    function adicionarMensagem(texto, classe) {
-      var elemento = document.createElement("div");
-      elemento.className = "msg " + classe;
-      elemento.textContent = texto;
-      mensagens.appendChild(elemento);
-      mensagens.scrollTop = mensagens.scrollHeight;
+    function horarioAtual() {
+      return new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
     }
-
+    function mascararCpf(texto) {
+      return String(texto).replace(/\d{3}\.?\d{3}\.?\d{3}-?\d{2}/g, function(cpf) {
+        var numeros = cpf.replace(/\D/g, "");
+        return "***.***.***-" + numeros.slice(-2);
+      });
+    }
+    function adicionarMensagem(texto, tipo) {
+      var bolha = document.createElement("div");
+      bolha.className = "mensagem " + tipo;
+      bolha.textContent = tipo === "usuario" ? mascararCpf(texto) : String(texto || "");
+      var hora = document.createElement("span");
+      hora.className = "hora";
+      hora.textContent = horarioAtual();
+      bolha.appendChild(hora);
+      conversa.appendChild(bolha);
+      conversa.scrollTop = conversa.scrollHeight;
+    }
+    function mostrarDigitando() {
+      removerDigitando();
+      indicador = document.createElement("div");
+      indicador.className = "digitando";
+      indicador.innerHTML = "<span></span><span></span><span></span>";
+      conversa.appendChild(indicador);
+      conversa.scrollTop = conversa.scrollHeight;
+    }
+    function removerDigitando() {
+      if (indicador && indicador.parentNode) indicador.parentNode.removeChild(indicador);
+      indicador = null;
+    }
+    function bloquear(bloqueado) {
+      enviar.disabled = bloqueado;
+      entrada.disabled = bloqueado;
+    }
+    function receberResposta(resposta) {
+      removerDigitando();
+      if (resposta && resposta.sessaoId) sessaoId = resposta.sessaoId;
+      adicionarMensagem(resposta && resposta.mensagem ? resposta.mensagem : "Não recebi uma resposta válida.", "bot");
+      bloquear(false);
+      entrada.focus();
+    }
+    function falha(erro) {
+      removerDigitando();
+      adicionarMensagem("Não consegui me conectar agora. Sua conversa foi preservada; tente enviar novamente em instantes.", "bot");
+      bloquear(false);
+      entrada.focus();
+    }
+    function iniciar() {
+      bloquear(true);
+      mostrarDigitando();
+      google.script.run.withSuccessHandler(receberResposta).withFailureHandler(falha).botIniciarConversa();
+    }
     function processar(texto) {
-      enviar.disabled = true;
-      entrada.disabled = true;
-      google.script.run
-        .withSuccessHandler(function(resposta) {
-          sessao = resposta.sessao || { etapa: "inicio" };
-          adicionarMensagem(resposta.mensagem || "Não recebi uma resposta válida.", "bot");
-          enviar.disabled = false;
-          entrada.disabled = false;
-          entrada.focus();
-        })
-        .withFailureHandler(function(erro) {
-          adicionarMensagem("Não foi possível concluir a solicitação. Tente novamente.", "bot");
-          enviar.disabled = false;
-          entrada.disabled = false;
-          entrada.focus();
-        })
-        .botProcessarMensagem(texto, sessao);
+      bloquear(true);
+      mostrarDigitando();
+      google.script.run.withSuccessHandler(receberResposta).withFailureHandler(falha)
+        .botProcessarMensagem(texto, sessaoId);
     }
 
     document.getElementById("formulario").addEventListener("submit", function(evento) {
       evento.preventDefault();
       var texto = entrada.value.trim();
-      if (!texto) return;
+      if (!texto || enviar.disabled) return;
       adicionarMensagem(texto, "usuario");
       entrada.value = "";
+      entrada.style.height = "auto";
       processar(texto);
     });
-
-    adicionarMensagem("Olá! Sou o assistente de agendamento. Para começar, informe seu CPF (somente números).", "bot");
-    sessao = { etapa: "cpf" };
+    entrada.addEventListener("input", function() {
+      entrada.style.height = "auto";
+      entrada.style.height = Math.min(entrada.scrollHeight, 120) + "px";
+    });
+    entrada.addEventListener("keydown", function(evento) {
+      if (evento.key === "Enter" && !evento.shiftKey) {
+        evento.preventDefault();
+        document.getElementById("formulario").requestSubmit();
+      }
+    });
+    iniciar();
   </script>
 </body>
 </html>
