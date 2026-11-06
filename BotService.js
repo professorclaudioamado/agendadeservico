@@ -31,7 +31,7 @@ var BotService = (function() {
           estado.cpf = BotValidator.validarCpf(texto);
           estado.cliente = BotRepository.buscarClientePorCpf(estado.cpf);
           if (!estado.cliente) {
-            estado.etapa = "inicio";
+            estado.etapa = "cpf";
             estado.cpf = "";
             return retorno("Não encontrei um cadastro com esse CPF. Confira os números ou procure a equipe para realizar seu cadastro. Digite REINICIAR para tentar novamente.", estado);
           }
