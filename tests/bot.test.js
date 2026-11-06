@@ -25,7 +25,7 @@ function criarContextoBot(opcoes = {}) {
       buscarClientePorCpf: (cpf, final) => cpf === "52998224725" && final === "1234"
         ? { codigo: "7", nome: "Maria" } : null,
       buscarClientePorCodigo: codigo => String(codigo) === "7" ? { codigo: "7", nome: "Maria" } : null,
-      listarServicos: () => [{ codigo: "2", nome: "Consulta", tempo: 30 }],
+      listarServicos: () => opcoes.servicos || [{ codigo: "2", nome: "Consulta", tempo: 30 }],
       listarFuncionarios: () => [{ codigo: "5", nome: "João" }],
       listarAgendamentosDoDia: () => opcoes.ocupados || []
     },
@@ -36,11 +36,11 @@ function criarContextoBot(opcoes = {}) {
       }
     },
     BotIAService: {
-      interpretarMensagem: texto => /confirm/i.test(texto)
+      interpretarMensagem: opcoes.interpretarMensagem || (texto => /confirm/i.test(texto)
         ? { intencao: "confirmar", servico: "", profissional: "", data: "", hora: "", confirmacao: "sim" }
         : /não|nao/i.test(texto)
           ? { intencao: "outro", servico: "", profissional: "", data: "", hora: "", confirmacao: "nao" }
-          : { intencao: "agendar", servico: "Consulta", profissional: "João", data: "2099-12-31", hora: "14:00", confirmacao: "nenhuma" }
+          : { intencao: "agendar", servico: "Consulta", profissional: "João", data: "2099-12-31", hora: "14:00", confirmacao: "nenhuma" })
     }
   };
   carregar(contexto, "BotValidator.js");
@@ -182,6 +182,46 @@ test("conversa natural identifica cliente, prepara resumo e só grava após conf
   assert.equal(contexto.agendamentoCriado.codigo_cliente, "7");
   assert.equal(contexto.agendamentoCriado.codigo_funcionario, "5");
   assert.equal(contexto.agendamentoCriado.codigo_servico, "2");
+});
+
+test("preserva o serviço citado enquanto responde pergunta sobre profissionais", () => {
+  const contexto = criarContextoBot({
+    servicos: [{ codigo: "8", nome: "Corte de Cabelo", tempo: 30 }],
+    interpretarMensagem: texto => /profissionais disponíveis/i.test(texto)
+      ? {
+          intencao: "outro",
+          mensagem: "Os profissionais cadastrados são João e Pedro.",
+          servico: "Corte de Cabelo",
+          profissional: "",
+          data: "",
+          hora: "",
+          confirmacao: "nenhuma"
+        }
+      : {
+          intencao: "agendar",
+          mensagem: "",
+          servico: "",
+          profissional: "",
+          data: "",
+          hora: "",
+          confirmacao: "nenhuma"
+        }
+  });
+  const bot = contexto.BotService;
+  const sessaoId = bot.iniciar().sessaoId;
+  bot.processar("529.982.247-25", sessaoId);
+  bot.processar("1234", sessaoId);
+
+  const informacao = bot.processar(
+    "Quero cortar o cabelo, mas gostaria de saber quais profissionais disponíveis",
+    sessaoId
+  );
+  assert.match(informacao.mensagem, /João e Pedro/);
+
+  const continuidade = bot.processar("blz, para qdo podemos agendar?", sessaoId);
+  assert.match(continuidade.mensagem, /Com qual profissional/);
+  assert.doesNotMatch(continuidade.mensagem, /Qual serviço você deseja/);
+  assert.equal(contexto.agendamentoCriado, undefined);
 });
 
 test("não permite gravar quando o horário está ocupado", () => {
