@@ -94,7 +94,31 @@ test("interpreta linguagem natural pela API Groq com resposta estruturada", () =
   assert.equal(resultado.data, "2099-12-31");
   assert.equal(requisicao.url, "https://api.groq.com/openai/v1/chat/completions");
   assert.equal(requisicao.opcoes.headers.Authorization, "Bearer chave-de-teste");
-  assert.equal(JSON.parse(requisicao.opcoes.payload).response_format.type, "json_schema");
+  assert.equal(JSON.parse(requisicao.opcoes.payload).response_format.type, "json_object");
+  assert.equal(JSON.parse(requisicao.opcoes.payload).reasoning_format, "hidden");
+});
+
+
+// Confere o diagnóstico HTTP sem permitir que a chave da API apareça na mensagem.
+test("exibe a mensagem técnica da Groq em erro HTTP sem revelar a chave", () => {
+  const contexto = {
+    PropertiesService: { getScriptProperties: () => ({ getProperty: () => "segredo-nao-exibir" }) },
+    Utilities: { formatDate: () => "2099-12-30" },
+    Session: { getScriptTimeZone: () => "America/Cuiaba" },
+    UrlFetchApp: { fetch: () => ({
+      getResponseCode: () => 400,
+      getContentText: () => JSON.stringify({ error: { message: "Invalid response_format for this request" } })
+    }) }
+  };
+  carregar(contexto, "BotIAService.js");
+  assert.throws(
+    () => contexto.BotIAService.interpretarMensagem("Quero marcar amanhã", {}),
+    erro => {
+      assert.match(erro.message, /HTTP 400: Invalid response_format/);
+      assert.equal(erro.message.includes("segredo-nao-exibir"), false);
+      return true;
+    }
+  );
 });
 
 test("conversa natural identifica cliente, prepara resumo e só grava após confirmação", () => {
