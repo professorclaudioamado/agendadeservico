@@ -17,7 +17,7 @@ var BotValidator = (function() {
 
   function validarCpf(valor) {
     var cpf = normalizarCpf(valor);
-    if (!/^\d{11}$/.test(cpf) || /^(\d)\1{10}$/.test(cpf)) {
+    if (!/^\d{11}$/.test(cpf) || /^(\d)\1{10}$/.test(cpf) || !cpfValido_(cpf)) {
       throw new Error("Informe um CPF válido com 11 números.");
     }
     return cpf;
