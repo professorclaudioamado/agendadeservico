@@ -224,8 +224,8 @@ Adicionar uma interface de conversa ao mesmo projeto Agenda de Serviços, seleci
 
 ### Implementado na branch de desenvolvimento
 - Criada a interface `Bot.html`, com apresentação de mensagens e campo de resposta.
-- Criados `BotService.js`, `BotValidator.js`, `BotRules.js` e `BotRepository.js), respeitando a arquitetura em camadas.
-- O fluxo conversa por etapas: identificação do cliente por CPF, escolha do serviço, escolha do profissional, data, horário e confirmação.
+- Criados `BotService.js`, `BotValidator.js`, `BotRules.js` e `BotRepository.js`, respeitando a arquitetura em camadas.
+- O fluxo conversa por etapas: identificação do cliente por CPF, confirmação dos quatro últimos dígitos do celular cadastrado, escolha do serviço, escolha do profissional, data, horário e confirmação.
 - A consulta do cliente retorna somente código e nome; o BOT não lista nem apresenta outros dados pessoais.
 - A identificação de CPF confere formato e dígitos verificadores.
 - A disponibilidade é verificada considerando o profissional, a duração cadastrada do serviço e os agendamentos não cancelados do dia.
