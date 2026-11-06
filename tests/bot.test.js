@@ -59,3 +59,54 @@ test("rejeita sobreposição de horários", () => {
     false
   );
 });
+
+
+test("fluxo conversacional completo chama o AgendamentoService", () => {
+  const contexto = {
+    BotRepository: {
+      buscarClientePorCpf: () => ({ codigo: "7", nome: "Maria" }),
+      listarServicos: () => [{ codigo: "2", nome: "Consulta", tempo: 30 }],
+      listarFuncionarios: () => [{ codigo: "5", nome: "João" }],
+      listarAgendamentosDoDia: () => []
+    },
+    AgendamentoService: {
+      cadastrar: (dados) => {
+        contexto.agendamentoCriado = dados;
+        return "Agendamento cadastrado com sucesso! Código: 99";
+      }
+    }
+  };
+
+  vm.runInNewContext(fs.readFileSync("BotValidator.js", "utf8"), contexto);
+  vm.runInNewContext(fs.readFileSync("BotRules.js", "utf8"), contexto);
+  vm.runInNewContext(fs.readFileSync("BotService.js", "utf8"), contexto);
+
+  const bot = contexto.BotService;
+  let sessao = { etapa: "cpf" };
+  let resposta = bot.processar("529.982.247-25", sessao);
+  sessao = resposta.sessao;
+  assert.match(resposta.mensagem, /Maria/);
+
+  resposta = bot.processar("Consulta", sessao);
+  sessao = resposta.sessao;
+  resposta = bot.processar("João", sessao);
+  sessao = resposta.sessao;
+  resposta = bot.processar("31/12/2099", sessao);
+  sessao = resposta.sessao;
+  resposta = bot.processar("14:00", sessao);
+  sessao = resposta.sessao;
+  assert.match(resposta.mensagem, /Digite SIM/);
+
+  resposta = bot.processar("SIM", sessao);
+  assert.match(resposta.mensagem, /Código: 99/);
+  assert.equal(contexto.agendamentoCriado.codigo_cliente, "7");
+  assert.equal(contexto.agendamentoCriado.codigo_funcionario, "5");
+  assert.equal(contexto.agendamentoCriado.codigo_servico, "2");
+});
+
+test("JavaScript incorporado em Bot.html possui sintaxe válida", () => {
+  const html = fs.readFileSync("Bot.html", "utf8");
+  const script = html.match(/<script>([\\s\\S]*?)<\\/script>/);
+  assert.ok(script, "script inline deve existir");
+  assert.doesNotThrow(() => new vm.Script(script[1]));
+});
