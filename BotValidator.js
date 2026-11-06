@@ -45,6 +45,20 @@ var BotValidator = (function() {
     return segundo === numeros[10];
   }
 
+  /**
+   * Valida os quatro últimos números do celular cadastrado.
+   *
+   * @param {string} valor Final do telefone informado pelo cliente.
+   * @return {string} Quatro dígitos normalizados.
+   */
+  function validarFinalCelular(valor) {
+    var final = normalizarTexto(valor).replace(/\\D/g, "");
+    if (!/^\\d{4}$/.test(final)) {
+      throw new Error("Informe os quatro últimos números do celular cadastrado.");
+    }
+    return final;
+  }
+
   function validarData(valor) {
     var data = normalizarTexto(valor);
     var partes = data.split("/");
@@ -75,6 +89,7 @@ var BotValidator = (function() {
   return {
     normalizarTexto: normalizarTexto,
     validarCpf: validarCpf,
+    validarFinalCelular: validarFinalCelular,
     validarData: validarData,
     validarHora: validarHora
   };
