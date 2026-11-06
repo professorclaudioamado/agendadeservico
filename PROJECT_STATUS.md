@@ -2,7 +2,7 @@
 
 ## Versão atual
 
-A aplicação utiliza Google Apps Script e Google Sheets, com entidades organizadas em camadas. A integração manual tradicional por Gmail está implementada na `main`. A integração experimental com IA/Groq está sendo preparada na branch `feature/groq-email-agendamento-ia`; ainda depende de revisão, publicação no Apps Script e teste real.
+A aplicação utiliza Google Apps Script e Google Sheets, com entidades organizadas em camadas. A integração manual tradicional por Gmail está implementada na `main`. O BOT conversacional com IA/Groq e chamadas de ferramentas de consulta foi integrado à `main` pelo PR #12. A publicação dessa versão no Apps Script e o teste real de ponta a ponta com a Groq ainda precisam de confirmação. A integração experimental de leitura de e-mails com IA permanece na branch `feature/groq-email-agendamento-ia`, sujeita às pendências descritas nesta documentação.
 
 ## Arquitetura adotada
 
