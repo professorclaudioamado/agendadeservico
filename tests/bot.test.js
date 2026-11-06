@@ -75,29 +75,71 @@ test("normaliza nomes e identifica sobreposição de horários", () => {
   assert.equal(contexto.BotRules.horarioDisponivel("10:20", 30, [{ hora: "10:00", duracao: 30 }]), false);
 });
 
-test("interpreta linguagem natural pela API Groq com resposta estruturada", () => {
-  let requisicao;
-  const retornoIA = { intencao: "agendar", servico: "Consulta", profissional: "João", data: "2099-12-31", hora: "14:00", confirmacao: "nenhuma" };
+test("IA Groq escolhe uma ferramenta, recebe o resultado e responde em linguagem natural", () => {
+  const requisicoes = [];
+  const respostas = [
+    {
+      choices: [{
+        finish_reason: "tool_calls",
+        message: {
+          role: "assistant",
+          content: null,
+          tool_calls: [{
+            id: "chamada-1",
+            type: "function",
+            function: { name: "consultar_servicos", arguments: "{}" }
+          }]
+        }
+      }]
+    },
+    {
+      choices: [{
+        finish_reason: "stop",
+        message: {
+          role: "assistant",
+          content: JSON.stringify({
+            mensagem: "A consulta custa R$ 100,00 e dura 30 minutos.",
+            intencao: "outro",
+            servico: "",
+            profissional: "",
+            data: "",
+            hora: "",
+            confirmacao: "nenhuma"
+          })
+        }
+      }]
+    }
+  ];
   const contexto = {
     PropertiesService: { getScriptProperties: () => ({ getProperty: nome => nome === "GROQ_API_KEY" ? "chave-de-teste" : null }) },
     Utilities: { formatDate: () => "2099-12-30" },
     Session: { getScriptTimeZone: () => "America/Cuiaba" },
+    BotToolsService: {
+      listarFerramentas: () => [{ type: "function", function: { name: "consultar_servicos", parameters: { type: "object" } } }],
+      executar: (nome, args) => {
+        assert.equal(nome, "consultar_servicos");
+        assert.deepEqual(args, {});
+        return { servicos: [{ nome: "Consulta", valor: 100, duracao_minutos: 30 }] };
+      }
+    },
     UrlFetchApp: { fetch: (url, opcoes) => {
-      requisicao = { url, opcoes };
-      return { getResponseCode: () => 200, getContentText: () => JSON.stringify({ choices: [{ finish_reason: "stop", message: { content: JSON.stringify(retornoIA) } }] }) };
+      requisicoes.push({ url, opcoes, resposta: respostas.shift() });
+      return { getResponseCode: () => 200, getContentText: () => JSON.stringify(requisicoes[requisicoes.length - 1].resposta) };
     } }
   };
   carregar(contexto, "BotIAService.js");
-  const resultado = contexto.BotIAService.interpretarMensagem("Quero consulta amanhã às duas com João", {
-    servicos: [{ nome: "Consulta" }], profissionais: [{ nome: "João" }], campos: {}
-  });
-  assert.equal(resultado.data, "2099-12-31");
-  assert.equal(requisicao.url, "https://api.groq.com/openai/v1/chat/completions");
-  assert.equal(requisicao.opcoes.headers.Authorization, "Bearer chave-de-teste");
-  assert.equal(JSON.parse(requisicao.opcoes.payload).response_format.type, "json_object");
-  assert.equal(JSON.parse(requisicao.opcoes.payload).reasoning_format, "hidden");
+  const resultado = contexto.BotIAService.interpretarMensagem("Quanto custa a consulta?", { campos: {} });
+  assert.equal(resultado.mensagem, "A consulta custa R$ 100,00 e dura 30 minutos.");
+  assert.equal(requisicoes.length, 2);
+  const primeira = JSON.parse(requisicoes[0].opcoes.payload);
+  assert.equal(primeira.tool_choice, "auto");
+  assert.equal(primeira.tools[0].function.name, "consultar_servicos");
+  assert.equal(requisicoes[0].opcoes.headers.Authorization, "Bearer chave-de-teste");
+  const segunda = JSON.parse(requisicoes[1].opcoes.payload);
+  assert.equal(segunda.messages[2].role, "assistant");
+  assert.equal(segunda.messages[3].role, "tool");
+  assert.equal(segunda.messages[3].tool_call_id, "chamada-1");
 });
-
 
 // Confere o diagnóstico HTTP sem permitir que a chave da API apareça na mensagem.
 test("exibe a mensagem técnica da Groq em erro HTTP sem revelar a chave", () => {
