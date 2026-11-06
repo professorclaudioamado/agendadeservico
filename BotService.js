@@ -105,8 +105,11 @@ var BotService = (function() {
 
     var possuiAlteracao = !!(interpretacao.servico || interpretacao.profissional ||
       interpretacao.data || interpretacao.hora);
-    if (!possuiAlteracao && interpretacao.intencao === "outro" &&
-        interpretacao.mensagem) {
+
+    // Uma resposta informativa pode também trazer dados novos do agendamento.
+    // Os campos já foram aplicados à sessão acima; responder à pergunta não
+    // deve fazer o BOT abandonar o pedido nem avançar prematuramente de etapa.
+    if (interpretacao.intencao === "outro" && interpretacao.mensagem) {
       salvarSessao_(id, estado);
       return retorno_(interpretacao.mensagem, id);
     }
