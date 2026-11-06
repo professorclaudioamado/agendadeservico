@@ -222,28 +222,28 @@ Testar a funcionalidade na implantação real do Google Apps Script, autorizar a
 ### Objetivo
 Adicionar uma interface de conversa ao mesmo projeto Agenda de Serviços, selecionada pelo parâmetro `?BOT`, sem criar outro projeto Apps Script ou outra planilha.
 
-### Implementado na branch de desenvolvimento
+### Implementado e integrado à branch `main`
 - Criada a interface `Bot.html`, com apresentação de mensagens e campo de resposta.
 - Criados `BotService.js`, `BotValidator.js`, `BotRules.js` e `BotRepository.js`, respeitando a arquitetura em camadas.
 - O fluxo conversa por etapas: identificação do cliente por CPF, confirmação dos quatro últimos dígitos do celular cadastrado, escolha do serviço, escolha do profissional, data, horário e confirmação.
 - A consulta do cliente retorna somente código e nome; o BOT não lista nem apresenta outros dados pessoais.
-- A identificação de CPF confere formato e dígitos verificadores.
+- A identificação confere o formato e os dígitos verificadores do CPF, além dos quatro últimos dígitos do celular cadastrado.
 - A disponibilidade é verificada considerando o profissional, a duração cadastrada do serviço e os agendamentos não cancelados do dia.
 - A gravação utiliza o fluxo existente `AgendamentoService.cadastrar()`.
 - `Main.gs.js` direciona para `Bot.html` quando o parâmetro `BOT` está presente; sem esse parâmetro, mantém a interface administrativa `index.html`.
-- Criados testes automatizados para CPF, data, horário, normalização de nomes e conflito de horários.
+- Criados 12 testes automatizados cobrindo CPF, final do celular, data, horário, normalização de nomes, conflito de horários, fluxo conversacional completo e sintaxe do JavaScript de `Bot.html`.
 
 ### Segurança e publicação
 - O manifesto permanece com `webapp.access = MYSELF`; não foi habilitado acesso anônimo.
 - A aplicação atual possui pontos de entrada administrativos globais que ainda precisam de autenticação individual no servidor antes de liberar a mesma implantação para visitantes externos.
 - Por esse motivo, o BOT ainda não está liberado ao público e não deve ser divulgado como URL de atendimento público.
 - A implementação foi integrada à branch `main` pelo PR #9.
-- O GitHub Actions executou `clasp push --force` e atualizou a implantação Web App existente com sucesso (execução 42140661644).
+- O GitHub Actions executou `clasp push --force` e atualizou a implantação Web App existente com sucesso; a versão implantada foi registrada como `@54` na execução 42140899936.
 - O manifesto continua com `webapp.access = MYSELF`; portanto, o BOT está implantado, mas acessível somente ao proprietário. O acesso público ainda não foi habilitado.
 
 ### Validações realizadas
 - GitHub Actions: verificação de sintaxe JavaScript aprovada.
-- GitHub Actions: testes automatizados do BOT aprovados, incluindo fluxo conversacional completo com dependências simuladas e sintaxe do JavaScript incorporado em `Bot.html`.
+- GitHub Actions: os 12 testes automatizados do BOT foram aprovados, incluindo fluxo conversacional completo com dependências simuladas e sintaxe do JavaScript incorporado em `Bot.html`.
 - A verificação de sintaxe JavaScript e a validação de configuração do projeto foram aprovadas.
 - A publicação dos arquivos e a atualização da implantação Web App existente foram concluídas com sucesso.
 - Ainda não foi realizado teste integrado no Apps Script com a planilha real nem teste de ponta a ponta no navegador.
