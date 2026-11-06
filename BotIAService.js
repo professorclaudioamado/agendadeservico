@@ -112,7 +112,7 @@ var BotIAService = (function() {
       } catch (erroLeitura) {
         detalhe = "";
       }
-      detalhe = detalhe.replace(/[\\r\\n\\t]+/g, " ").substring(0, 450);
+      detalhe = detalhe.replace(/[\r\n\t]+/g, " ").substring(0, 450);
       throw new Error("A API Groq retornou HTTP " + codigoHTTP +
         (detalhe ? ": " + detalhe : ". Consulte a chave, o modelo e os limites da conta."));
     }
