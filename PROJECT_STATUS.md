@@ -258,12 +258,12 @@ Adicionar uma interface de conversa ao mesmo projeto Agenda de Serviços, seleci
 Implementar autenticação administrativa no servidor e proteger todos os pontos de entrada administrativos antes de alterar a implantação para acesso público. Depois, executar testes integrados no Google Sheets e no navegador. Até essa proteção ser concluída, manter `webapp.access = MYSELF`.
 
 
-## BOT com interface estilo WhatsApp e IA Groq — desenvolvimento
+## BOT com interface estilo WhatsApp e IA Groq — implementação integrada e publicada
 
 ### Objetivo
 Evoluir o BOT inicial para uma experiência de conversa natural, com interface responsiva inspirada no WhatsApp e interpretação de mensagens por IA, sem criar outro projeto Apps Script ou outra planilha.
 
-### Implementação preparada na branch `feature/bot-whatsapp-groq`
+### Implementação integrada à branch `main` pelo PR #10
 - Interface refeita em `Bot.html`, com cabeçalho verde, balões de conversa, horários, indicador de digitação, campo fixo de mensagem e adaptação para celular.
 - Criado `BotIAService.js`, que utiliza a API Groq, modelo `openai/gpt-oss-20b` e a propriedade `GROQ_API_KEY` das Propriedades do Script.
 - A IA interpreta serviço, profissional, data relativa ou explícita, horário coloquial e confirmação, retornando JSON Schema estrito.
@@ -294,7 +294,11 @@ Evoluir o BOT inicial para uma experiência de conversa natural, com interface r
 - **Mantidos:** `BotValidator.js`, `BotRules.js`, `AgendamentoService.js`, `AgendamentoRepository.js`, `ClienteRepository.js`, `Main.gs.js`, `appsscript.json`, `.claspignore` e `PROJECT_GUIDE.md`.
 - **Excluídos:** nenhum.
 
-### Validação e próximos passos
-- Testes locais simulados: 8 aprovados.
-- Ainda pendente: validação no GitHub Actions, confirmar que `GROQ_API_KEY` está configurada no projeto Apps Script correto, autorizar `UrlFetchApp` se necessário e testar a conversa real no navegador com a planilha.
-- Depois da validação, integrar a branch à `main` e atualizar a implantação Web App existente, mantendo o acesso `MYSELF` até a autenticação administrativa ser implementada.
+### Validação e publicação
+- GitHub Actions, execução #51 (validação do PR): sintaxe, testes e configuração aprovados.
+- GitHub Actions, execução #52 (push na main): validação aprovada e publicação no Apps Script concluída.
+- O workflow enviou 35 arquivos e atualizou a implantação Web App existente para a versão `@57`.
+- O modelo de IA é `openai/gpt-oss-20b`, chamado pelo endpoint compatível com OpenAI da Groq.
+- O BOT reutiliza a propriedade `GROQ_API_KEY` nas Propriedades do Script. O valor da chave não é lido nem exposto pelo repositório.
+- Ainda falta o teste real de ponta a ponta no navegador com a planilha e uma chamada efetiva à Groq. Se a propriedade `GROQ_API_KEY` já estiver configurada nesse projeto Apps Script, não é necessário cadastrá-la novamente; caso contrário, configure-a nas Propriedades do Script.
+- A implantação continua com acesso `MYSELF`; o BOT não está liberado para clientes externos. Manter assim até implementar autenticação administrativa em todos os pontos de entrada.
