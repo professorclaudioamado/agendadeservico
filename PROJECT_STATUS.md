@@ -473,3 +473,11 @@ Exibir no cabeçalho da interface do BOT o número da implantação para facilit
 4. Perguntar em seguida quando pode agendar.
 5. Confirmar que o BOT mantém o serviço e pergunta apenas o próximo dado ausente.
 6. Prosseguir até o resumo e verificar que nenhum registro é gravado antes da confirmação explícita.
+
+
+### Complemento da correção — contexto dos cadastros fornecido à IA
+- A análise identificou que BotService já obtinha os catálogos, mas BotIAService enviava à Groq somente os campos já selecionados. Assim, a IA nem sempre tinha os nomes oficiais para relacionar expressões como “cortar o cabelo” ao serviço cadastrado “Corte de Cabelo”.
+- BotIAService.js agora inclui no contexto da solicitação os nomes dos serviços e profissionais cadastrados, sem enviar códigos internos ou dados pessoais.
+- A instrução da IA determina que os nomes extraídos correspondam aos catálogos recebidos, sem inventar opções.
+- tests/bot.test.js verifica que os nomes dos catálogos são enviados no contexto da interpretação.
+- Arquivos adicionais alterados nesta complementação: BotIAService.js e tests/bot.test.js. Não foram criados nem excluídos arquivos.
