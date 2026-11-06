@@ -23,6 +23,28 @@ var BotValidator = (function() {
     return cpf;
   }
 
+  /**
+   * Confere os dois dígitos verificadores do CPF.
+   *
+   * @param {string} cpf CPF com onze dígitos.
+   * @return {boolean} Verdadeiro quando os dígitos verificadores conferem.
+   * @private
+   */
+  function cpfValido_(cpf) {
+    var numeros = cpf.split("").map(Number);
+    var soma = 0;
+    for (var i = 0; i < 9; i++) soma += numeros[i] * (10 - i);
+    var primeiro = (soma * 10) % 11;
+    if (primeiro === 10) primeiro = 0;
+    if (primeiro !== numeros[9]) return false;
+
+    soma = 0;
+    for (var j = 0; j < 10; j++) soma += numeros[j] * (11 - j);
+    var segundo = (soma * 10) % 11;
+    if (segundo === 10) segundo = 0;
+    return segundo === numeros[10];
+  }
+
   function validarData(valor) {
     var data = normalizarTexto(valor);
     var partes = data.split("/");
