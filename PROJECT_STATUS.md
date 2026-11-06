@@ -338,7 +338,7 @@ Evoluir o BOT inicial para uma experiência de conversa natural, com interface r
 - Ainda pendente: teste real no navegador com a chamada à Groq. Caso ocorra novo erro, a interface exibirá a mensagem específica retornada pela API, para correção direcionada.
 
 
-## BOT com IA e chamadas de ferramentas — implementação em revisão
+## BOT com IA e chamadas de ferramentas — integrado à main
 
 ### Objetivo
 Permitir que a IA interprete perguntas em linguagem natural e escolha consultas reais ao cadastro e à agenda, sem depender de uma árvore rígida de perguntas e respostas. A IA não acessa o Google Sheets diretamente e não recebe ferramentas de gravação.
@@ -368,10 +368,11 @@ Permitir que a IA interprete perguntas em linguagem natural e escolha consultas 
 
 ### Validação e publicação
 - Foi atualizado o teste automatizado da integração Groq para cobrir o ciclo de chamada de ferramenta e retorno do resultado ao modelo.
-- A validação do GitHub Actions ainda precisa ser executada no Pull Request.
-- Esta etapa ainda não foi integrada à `main` nem publicada no Apps Script.
-- O deployment publicado permanece na versão `@59`, com acesso `MYSELF`.
-- Após a aprovação do workflow e integração, será necessário realizar uma conversa real no BOT com a propriedade `GROQ_API_KEY` configurada para confirmar a compatibilidade efetiva do modelo com tool calling.
+- GitHub Actions, execução #62: sintaxe JavaScript, nove testes automatizados do BOT e validação de configuração aprovados.
+- PR #12 integrado à `main` por squash; commit de integração `b5050a54bcf24d81957029aadec82f01c75b23d5`.
+- A execução de validação do PR não publica o Apps Script. A publicação decorrente do push na `main` ainda precisa ser confirmada separadamente.
+- A última versão de implantação comprovada antes desta etapa era `@59`, com acesso `MYSELF`; não registrar uma nova versão até confirmar o resultado do workflow de publicação.
+- Após a publicação, será necessário realizar uma conversa real no BOT com `GROQ_API_KEY` configurada para confirmar a compatibilidade efetiva do modelo com tool calling.
 
 ### Como validar
 1. Aguardar o GitHub Actions no Pull Request e corrigir qualquer falha encontrada.
