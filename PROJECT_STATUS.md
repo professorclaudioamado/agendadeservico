@@ -2,7 +2,7 @@
 
 ## Versão atual
 
-A aplicação utiliza Google Apps Script e Google Sheets, com entidades organizadas em camadas. A integração manual tradicional por Gmail está implementada na `main`. O BOT conversacional com IA/Groq e chamadas de ferramentas de consulta foi integrado à `main` pelo PR #12. O BOT com IA e chamadas de ferramentas foi publicado no Apps Script pela execução #66 do GitHub Actions, que concluiu validação e publicação com sucesso (versão registrada no log: @63). O teste real de ponta a ponta com a Groq ainda depende de validação manual na implantação. A integração experimental de leitura de e-mails com IA permanece na branch `feature/groq-email-agendamento-ia`, sujeita às pendências descritas nesta documentação. A integração experimental de leitura de e-mails com IA permanece na branch `feature/groq-email-agendamento-ia`, sujeita às pendências descritas nesta documentação.
+A aplicação utiliza Google Apps Script e Google Sheets, com entidades organizadas em camadas. A integração manual tradicional por Gmail está implementada na `main`. O BOT conversacional com IA/Groq e chamadas de ferramentas de consulta foi integrado à `main` pelo PR #12. O BOT com IA e chamadas de ferramentas foi publicado no Apps Script pela execução #66 do GitHub Actions, que concluiu validação e publicação com sucesso (versão registrada no log: @63). O teste real de ponta a ponta com a Groq ainda depende de validação manual na implantação. A integração experimental de leitura de e-mails com IA permanece na branch `feature/groq-email-agendamento-ia`, sujeita às pendências descritas nesta documentação.
 
 ## Arquitetura adotada
 
@@ -414,3 +414,26 @@ O teste real depende da autorização do proprietário e do uso de dados reais d
 
 ### Próxima etapa
 Executar e registrar o teste integrado real do BOT com a Groq. Depois, definir a jornada dos profissionais (expediente, intervalos, folgas e serviços permitidos) antes de implementar busca de horários livres ou alternativas.
+
+
+## Identificação visual da versão do BOT — em publicação
+
+### Objetivo
+Exibir no cabeçalho da interface do BOT o número da implantação para facilitar a confirmação visual de que a atualização foi publicada.
+
+### Alteração
+- O cabeçalho de `Bot.html` exibe **Versão 64** junto à identificação do assistente.
+- O número fica na linha de identificação do BOT e permanece visível também em telas pequenas.
+- A numeração corresponde à próxima versão esperada da implantação do Apps Script; a confirmação depende da conclusão bem-sucedida do workflow de publicação.
+
+### Arquivos desta etapa
+- **Criados:** nenhum.
+- **Alterados:** `Bot.html` e `PROJECT_STATUS.md`.
+- **Mantidos:** `BotService.js`, `BotIAService.js`, `BotToolsService.js`, `Bot.html` (estrutura e fluxo conversacional preservados), `appsscript.json`, `.github/workflows/apps-script.yml` e `PROJECT_GUIDE.md`.
+- **Excluídos:** nenhum.
+
+### Como testar
+1. Aguardar a execução do workflow no push da `main`.
+2. Confirmar que a etapa de publicação foi concluída e que o log registrou a implantação `@64`.
+3. Abrir a URL do BOT e conferir **Versão 64** no cabeçalho, inclusive em largura de celular.
+4. Se a tela ainda mostrar versão anterior, recarregar a página sem cache.
