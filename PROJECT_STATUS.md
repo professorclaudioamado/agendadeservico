@@ -441,3 +441,35 @@ Exibir no cabeçalho da interface do BOT o número da implantação para facilit
 
 ### Ajuste da numeração da implantação
 - A publicação intermediária concluiu a implantação `@66`. O ajuste final do cabeçalho foi publicado com sucesso na execução #69, que registrou a implantação `@67`.
+
+
+## Continuidade do contexto do BOT — correção preparada
+
+### Problema identificado
+- Em uma mensagem que combinava a intenção de agendar um serviço com uma pergunta informativa sobre profissionais, a IA podia responder à pergunta sem devolver o serviço mencionado nos campos estruturados.
+- O BotService só preservava o retorno informativo quando não havia alteração de campos. Isso tornava frágil a combinação de resposta informativa e atualização do pedido.
+
+### Correção implementada na branch fix/bot-preservar-contexto-agendamento
+- BotIAService.js: reforçadas as instruções para extrair o serviço mencionado mesmo quando a mesma mensagem contém uma pergunta informativa; orientado o modelo a não descartar dados já presentes na sessão.
+- BotService.js: aplica primeiro os campos interpretados à sessão e, em seguida, responde a mensagens informativas sem avançar indevidamente o fluxo de agendamento.
+- tests/bot.test.js: incluído teste de regressão que reproduz a sequência “quero cortar o cabelo, quais profissionais estão disponíveis?” seguida de “para quando podemos agendar?”. O teste verifica que o BOT pergunta pelo profissional, e não novamente pelo serviço.
+
+### Arquivos
+- **Criados:** nenhum.
+- **Alterados:** BotIAService.js, BotService.js, tests/bot.test.js, PROJECT_STATUS.md.
+- **Mantidos:** BotToolsService.js, BotRepository.js, BotValidator.js, BotRules.js, Bot.html, serviços e repositórios de agendamento, appsscript.json, .claspignore, workflow de publicação e PROJECT_GUIDE.md.
+- **Excluídos:** nenhum. Nenhum arquivo ficou obsoleto.
+
+### Validação e publicação
+- A validação automatizada pelo GitHub Actions ainda deve ser concluída no Pull Request.
+- A publicação no Apps Script depende da integração na main e da execução bem-sucedida do workflow de publicação.
+- O teste automatizado simula a resposta estruturada da IA; a conversa real com a Groq e os cadastros da planilha ainda exige validação manual após a publicação.
+- A implantação permanece restrita ao proprietário (MYSELF).
+
+### Como testar após publicar
+1. Abrir o BOT e concluir a identificação do cliente.
+2. Enviar uma mensagem que mencione um serviço e pergunte quais profissionais estão disponíveis.
+3. Confirmar que a lista de profissionais é apresentada.
+4. Perguntar em seguida quando pode agendar.
+5. Confirmar que o BOT mantém o serviço e pergunta apenas o próximo dado ausente.
+6. Prosseguir até o resumo e verificar que nenhum registro é gravado antes da confirmação explícita.
