@@ -118,7 +118,7 @@ test("IA Groq escolhe uma ferramenta, recebe o resultado e responde em linguagem
       listarFerramentas: () => [{ type: "function", function: { name: "consultar_servicos", parameters: { type: "object" } } }],
       executar: (nome, args) => {
         assert.equal(nome, "consultar_servicos");
-        assert.deepEqual(args, {});
+        assert.equal(Object.keys(args).length, 0);
         return { servicos: [{ nome: "Consulta", valor: 100, duracao_minutos: 30 }] };
       }
     },
