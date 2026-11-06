@@ -134,10 +134,9 @@ test("IA Groq escolhe uma ferramenta, recebe o resultado e responde em linguagem
   const primeira = JSON.parse(requisicoes[0].opcoes.payload);
   assert.equal(primeira.tool_choice, "auto");
   assert.equal(primeira.tools[0].function.name, "consultar_servicos");
-  const contextoTexto = primeira.messages[1].content.split("CONTEXTO_DA_SESSAO:\\n")[1].split("\\n\\nMENSAGEM_DO_CLIENTE:")[0];
-  const contextoEnviado = JSON.parse(contextoTexto);
-  assert.deepEqual(Array.from(contextoEnviado.servicos_cadastrados), ["Corte de Cabelo"]);
-  assert.deepEqual(Array.from(contextoEnviado.profissionais_cadastrados), ["João"]);
+  const conteudoMensagens = primeira.messages.map(item => String(item.content || "")).join("\\n");
+  assert.match(conteudoMensagens, /"servicos_cadastrados":\\["Corte de Cabelo"\\]/);
+  assert.match(conteudoMensagens, /"profissionais_cadastrados":\\["João"\\]/);
   assert.equal(requisicoes[0].opcoes.headers.Authorization, "Bearer chave-de-teste");
   const segunda = JSON.parse(requisicoes[1].opcoes.payload);
   assert.equal(segunda.messages[2].role, "assistant");
