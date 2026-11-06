@@ -135,8 +135,8 @@ test("IA Groq escolhe uma ferramenta, recebe o resultado e responde em linguagem
   assert.equal(primeira.tool_choice, "auto");
   assert.equal(primeira.tools[0].function.name, "consultar_servicos");
   const conteudoMensagens = primeira.messages.map(item => String(item.content || "")).join("\\n");
-  assert.match(conteudoMensagens, /"servicos_cadastrados":\\["Corte de Cabelo"\\]/);
-  assert.match(conteudoMensagens, /"profissionais_cadastrados":\\["João"\\]/);
+  assert.ok(conteudoMensagens.includes('"servicos_cadastrados":["Corte de Cabelo"]'));
+  assert.ok(conteudoMensagens.includes('"profissionais_cadastrados":["João"]'));
   assert.equal(requisicoes[0].opcoes.headers.Authorization, "Bearer chave-de-teste");
   const segunda = JSON.parse(requisicoes[1].opcoes.payload);
   assert.equal(segunda.messages[2].role, "assistant");
