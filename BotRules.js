@@ -35,7 +35,7 @@ var BotRules = (function() {
 
   function normalizar_(texto) {
     return String(texto == null ? "" : texto).trim().toLocaleLowerCase("pt-BR")
-      .normalize("NFD").replace(/[\\u0300-\\u036f]/g, "");
+      .normalize("NFD").replace(/[\u0300-\u036f]/g, "");
   }
 
   return {
