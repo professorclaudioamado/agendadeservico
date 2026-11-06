@@ -2,7 +2,7 @@
 
 ## Versão atual
 
-A aplicação utiliza Google Apps Script e Google Sheets, com entidades organizadas em camadas. A integração manual tradicional por Gmail está implementada na `main`. O BOT conversacional com IA/Groq e chamadas de ferramentas de consulta foi integrado à `main` pelo PR #12. A publicação dessa versão no Apps Script e o teste real de ponta a ponta com a Groq ainda precisam de confirmação. A integração experimental de leitura de e-mails com IA permanece na branch `feature/groq-email-agendamento-ia`, sujeita às pendências descritas nesta documentação.
+A aplicação utiliza Google Apps Script e Google Sheets, com entidades organizadas em camadas. A integração manual tradicional por Gmail está implementada na `main`. O BOT conversacional com IA/Groq e chamadas de ferramentas de consulta foi integrado à `main` pelo PR #12. O BOT com IA e chamadas de ferramentas foi publicado no Apps Script pela execução #66 do GitHub Actions, que concluiu validação e publicação com sucesso (versão registrada no log: @63). O teste real de ponta a ponta com a Groq ainda depende de validação manual na implantação. A integração experimental de leitura de e-mails com IA permanece na branch `feature/groq-email-agendamento-ia`, sujeita às pendências descritas nesta documentação. A integração experimental de leitura de e-mails com IA permanece na branch `feature/groq-email-agendamento-ia`, sujeita às pendências descritas nesta documentação.
 
 ## Arquitetura adotada
 
@@ -385,3 +385,32 @@ Permitir que a IA interprete perguntas em linguagem natural e escolha consultas 
 
 ### Próxima etapa
 Definir e cadastrar a jornada dos profissionais (dias da semana, início e fim do expediente, intervalos, folgas e, se necessário, serviços que cada profissional executa). Com essa fonte de dados será possível implementar busca confiável de primeiro horário e alternativas.
+
+
+## Publicação do BOT com IA e chamadas de ferramentas — concluída
+
+### Resultado da publicação
+- O commit `a7e2f6ad878bd4ace2a0c223b75489efe7a380e0` da branch `main` acionou a execução #66 do workflow **Apps Script - validar e publicar**.
+- A etapa de validação foi concluída com sucesso: sintaxe JavaScript, testes automatizados do BOT e configuração.
+- A etapa **Publicar no Google Apps Script** também foi concluída com sucesso.
+- O log confirmou `clasp push --force` e atualização da implantação Web App existente; versão registrada: `@63`.
+- A implantação mantém `webapp.access = MYSELF` e `executeAs = USER_DEPLOYING`. O BOT continua restrito ao proprietário; não foi liberado acesso público.
+
+### O que ainda exige validação manual
+1. Abrir a implantação Web App com a conta proprietária e acessar o BOT pelo parâmetro `?BOT`.
+2. Confirmar que `GROQ_API_KEY` está configurada nas Propriedades do Script, sem compartilhar seu valor.
+3. Fazer uma pergunta informativa, por exemplo: quais serviços estão cadastrados e qual o preço/duração de um deles.
+4. Solicitar a lista de profissionais e uma consulta de agenda para uma data.
+5. Verificar se a IA responde com dados reais e se consultas não criam agendamentos.
+6. Se for testar um agendamento, concluir a identificação e só confirmar depois de revisar o resumo. Conferir o registro na aba `AGENDA`.
+
+O teste real depende da autorização do proprietário e do uso de dados reais da planilha; não pode ser declarado aprovado apenas com os testes automatizados.
+
+### Arquivos desta etapa
+- **Criados:** nenhum.
+- **Alterados:** `PROJECT_STATUS.md`.
+- **Mantidos:** todos os arquivos de código e configuração, inclusive `PROJECT_GUIDE.md`.
+- **Excluídos:** nenhum.
+
+### Próxima etapa
+Executar e registrar o teste integrado real do BOT com a Groq. Depois, definir a jornada dos profissionais (expediente, intervalos, folgas e serviços permitidos) antes de implementar busca de horários livres ou alternativas.
