@@ -52,8 +52,8 @@ var BotValidator = (function() {
    * @return {string} Quatro dígitos normalizados.
    */
   function validarFinalCelular(valor) {
-    var final = normalizarTexto(valor).replace(/\\D/g, "");
-    if (!/^\\d{4}$/.test(final)) {
+    var final = normalizarTexto(valor).replace(/\D/g, "");
+    if (!/^\d{4}$/.test(final)) {
       throw new Error("Informe os quatro últimos números do celular cadastrado.");
     }
     return final;
