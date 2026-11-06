@@ -103,6 +103,15 @@ var BotService = (function() {
 
     aplicarInterpretacao_(interpretacao, estado, servicos, profissionais);
 
+    if (interpretacao.intencao === "cancelar") {
+      estado.campos = {};
+      estado.etapa = "pedido";
+      salvarSessao_(id, estado);
+      return retorno_("Por enquanto, este atendimento ainda não realiza cancelamentos. " +
+        "Para cancelar um agendamento existente, entre em contato com a equipe. " +
+        "Posso ajudar com um novo agendamento.", id);
+    }
+
     var possuiAlteracao = !!(interpretacao.servico || interpretacao.profissional ||
       interpretacao.data || interpretacao.hora);
     if (estado.etapa === "confirmacao" && interpretacao.confirmacao === "nao" &&
