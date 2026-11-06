@@ -12,12 +12,12 @@ var BotValidator = (function() {
   }
 
   function normalizarCpf(valor) {
-    return normalizarTexto(valor).replace(/\\D/g, "");
+    return normalizarTexto(valor).replace(/\D/g, "");
   }
 
   function validarCpf(valor) {
     var cpf = normalizarCpf(valor);
-    if (!/^\\d{11}$/.test(cpf) || /^(\\d)\\1{10}$/.test(cpf)) {
+    if (!/^\d{11}$/.test(cpf) || /^(\d)\1{10}$/.test(cpf)) {
       throw new Error("Informe um CPF válido com 11 números.");
     }
     return cpf;
@@ -26,8 +26,8 @@ var BotValidator = (function() {
   function validarData(valor) {
     var data = normalizarTexto(valor);
     var partes = data.split("/");
-    if (partes.length !== 3 || !/^\\d{2}$/.test(partes[0]) ||
-        !/^\\d{2}$/.test(partes[1]) || !/^\\d{4}$/.test(partes[2])) {
+    if (partes.length !== 3 || !/^\d{2}$/.test(partes[0]) ||
+        !/^\d{2}$/.test(partes[1]) || !/^\d{4}$/.test(partes[2])) {
       throw new Error("Informe a data no formato DD/MM/AAAA.");
     }
     var d = new Date(Number(partes[2]), Number(partes[1]) - 1, Number(partes[0]));
@@ -44,7 +44,7 @@ var BotValidator = (function() {
 
   function validarHora(valor) {
     var hora = normalizarTexto(valor);
-    if (!/^([01]\\d|2[0-3]):[0-5]\\d$/.test(hora)) {
+    if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(hora)) {
       throw new Error("Informe o horário no formato HH:MM.");
     }
     return hora;
