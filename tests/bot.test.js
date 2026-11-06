@@ -128,12 +128,15 @@ test("IA Groq escolhe uma ferramenta, recebe o resultado e responde em linguagem
     } }
   };
   carregar(contexto, "BotIAService.js");
-  const resultado = contexto.BotIAService.interpretarMensagem("Quanto custa a consulta?", { campos: {} });
+  const resultado = contexto.BotIAService.interpretarMensagem("Quanto custa a consulta?", { campos: {}, servicos: [{ nome: "Corte de Cabelo" }], profissionais: [{ nome: "João" }] });
   assert.equal(resultado.mensagem, "A consulta custa R$ 100,00 e dura 30 minutos.");
   assert.equal(requisicoes.length, 2);
   const primeira = JSON.parse(requisicoes[0].opcoes.payload);
   assert.equal(primeira.tool_choice, "auto");
   assert.equal(primeira.tools[0].function.name, "consultar_servicos");
+  const contextoEnviado = JSON.parse(primeira.messages[1].content);
+  assert.deepEqual(Array.from(contextoEnviado.servicos_cadastrados), ["Corte de Cabelo"]);
+  assert.deepEqual(Array.from(contextoEnviado.profissionais_cadastrados), ["João"]);
   assert.equal(requisicoes[0].opcoes.headers.Authorization, "Bearer chave-de-teste");
   const segunda = JSON.parse(requisicoes[1].opcoes.payload);
   assert.equal(segunda.messages[2].role, "assistant");
