@@ -237,20 +237,22 @@ Adicionar uma interface de conversa ao mesmo projeto Agenda de Serviços, seleci
 - O manifesto permanece com `webapp.access = MYSELF`; não foi habilitado acesso anônimo.
 - A aplicação atual possui pontos de entrada administrativos globais que ainda precisam de autenticação individual no servidor antes de liberar a mesma implantação para visitantes externos.
 - Por esse motivo, o BOT ainda não está liberado ao público e não deve ser divulgado como URL de atendimento público.
-- A publicação no Apps Script não foi executada nesta etapa. A implantação atual permanece com a política de acesso existente.
+- A implementação foi integrada à branch `main` pelo PR #9.
+- O GitHub Actions executou `clasp push --force` e atualizou a implantação Web App existente com sucesso (execução 42140661644).
+- O manifesto continua com `webapp.access = MYSELF`; portanto, o BOT está implantado, mas acessível somente ao proprietário. O acesso público ainda não foi habilitado.
 
 ### Validações realizadas
 - GitHub Actions: verificação de sintaxe JavaScript aprovada.
-- GitHub Actions: testes automatizados do BOT aprovados.
-- A validação de configuração do projeto foi aprovada.
-- Ainda não foi realizado teste integrado no Apps Script com a planilha real.
-- Ainda não foi realizado teste de ponta a ponta na interface implantada.
+- GitHub Actions: testes automatizados do BOT aprovados, incluindo fluxo conversacional completo com dependências simuladas e sintaxe do JavaScript incorporado em `Bot.html`.
+- A verificação de sintaxe JavaScript e a validação de configuração do projeto foram aprovadas.
+- A publicação dos arquivos e a atualização da implantação Web App existente foram concluídas com sucesso.
+- Ainda não foi realizado teste integrado no Apps Script com a planilha real nem teste de ponta a ponta no navegador.
 
 ### Arquivos desta etapa
 - **Criados:** `Bot.html`, `BotService.js`, `BotValidator.js`, `BotRules.js`, `BotRepository.js`, `tests/bot.test.js`.
-- **Alterados:** `Main.gs.js`, `AgendamentoRepository.js`, `ClienteRepository.js`, `.github/workflows/apps-script.yml`, `PROJECT_STATUS.md`.
+- **Alterados:** `Main.gs.js`, `AgendamentoRepository.js`, `ClienteRepository.js`, `.github/workflows/apps-script.yml`, `.claspignore`, `PROJECT_STATUS.md`.
 - **Mantidos:** `index.html`, `AgendamentoService.js`, `AgendamentoValidator.js`, `AgendamentoRules.js`, `appsscript.json` e `PROJECT_GUIDE.md`.
 - **Excluídos:** nenhum. Nenhum arquivo existente ficou obsoleto nesta etapa.
 
 ### Próxima etapa obrigatória
-Implementar autenticação administrativa no servidor e proteger todos os pontos de entrada administrativos antes de alterar a implantação para acesso público. Depois, executar testes integrados e atualizar a implantação Web App.
+Implementar autenticação administrativa no servidor e proteger todos os pontos de entrada administrativos antes de alterar a implantação para acesso público. Depois, executar testes integrados no Google Sheets e no navegador. Até essa proteção ser concluída, manter `webapp.access = MYSELF`.
