@@ -103,6 +103,14 @@ var BotService = (function() {
 
     aplicarInterpretacao_(interpretacao, estado, servicos, profissionais);
 
+    var possuiAlteracao = !!(interpretacao.servico || interpretacao.profissional ||
+      interpretacao.data || interpretacao.hora);
+    if (!possuiAlteracao && interpretacao.intencao === "outro" &&
+        interpretacao.mensagem) {
+      salvarSessao_(id, estado);
+      return retorno_(interpretacao.mensagem, id);
+    }
+
     if (interpretacao.intencao === "cancelar") {
       estado.campos = {};
       estado.etapa = "pedido";
@@ -112,8 +120,6 @@ var BotService = (function() {
         "Posso ajudar com um novo agendamento.", id);
     }
 
-    var possuiAlteracao = !!(interpretacao.servico || interpretacao.profissional ||
-      interpretacao.data || interpretacao.hora);
     if (estado.etapa === "confirmacao" && interpretacao.confirmacao === "nao" &&
         !possuiAlteracao) {
       estado.campos = {};
