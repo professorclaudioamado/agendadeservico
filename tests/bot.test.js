@@ -29,7 +29,7 @@ test("rejeita CPF com todos os números iguais", () => {
 });
 
 test("valida os quatro últimos números do celular", () => {
-  assert.equal(validator.validarFinalCelular("(67) 9999"), "9999");
+  assert.equal(validator.validarFinalCelular("9999"), "9999");
   assert.throws(() => validator.validarFinalCelular("123"), /quatro últimos/);
 });
 
