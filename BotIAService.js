@@ -47,6 +47,7 @@ var BotIAService = (function() {
       "Se a mesma mensagem mencionar um serviço e também perguntar quais profissionais existem, quais horários há ou pedir outra informação, extraia o serviço mencionado no campo servico E responda à pergunta informativa.",
       "Exemplo: se o cliente disser que quer cortar o cabelo e perguntar quais profissionais estão disponíveis, consulte os profissionais, responda à pergunta e retorne servico com o nome exato do serviço correspondente ao cadastro. Não deixe servico vazio só porque a intenção principal também é informativa.",
       "Quando CONTEXTO_DA_SESSAO já tiver serviço, profissional, data ou hora, não os descarte por causa de uma pergunta informativa. Só extraia um valor diferente quando o cliente claramente corrigir ou substituir o dado.",
+      "Use os nomes de servicos_cadastrados e profissionais_cadastrados para relacionar expressões coloquiais aos nomes exatos da planilha. Não invente nem crie nomes.",
       "Datas relativas devem usar a data atual fornecida no contexto e retornar AAAA-MM-DD. Horários devem retornar HH:MM em 24 horas.",
       "Só indique confirmacao=sim após autorização inequívoca para registrar o resumo apresentado pelo servidor. Não diga que registrou ou confirmou um agendamento.",
       "Se a pergunta for informativa, responda diretamente usando os resultados consultados, sem obrigar o cliente a iniciar um agendamento.",
@@ -61,6 +62,8 @@ var BotIAService = (function() {
         role: "user",
         content: "CONTEXTO_DA_SESSAO:\n" + JSON.stringify({
           campos_ja_informados: contexto.campos || {},
+          servicos_cadastrados: (contexto.servicos || []).map(function(item) { return item.nome; }),
+          profissionais_cadastrados: (contexto.profissionais || []).map(function(item) { return item.nome; }),
           servico_e_profissional_sao_dados_de_cadastro: true
         }) + "\n\nMENSAGEM_DO_CLIENTE:\n" + texto
       }
