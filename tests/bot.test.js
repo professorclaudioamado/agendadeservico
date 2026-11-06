@@ -147,6 +147,7 @@ test("exibe a mensagem técnica da Groq em erro HTTP sem revelar a chave", () =>
     PropertiesService: { getScriptProperties: () => ({ getProperty: () => "segredo-nao-exibir" }) },
     Utilities: { formatDate: () => "2099-12-30" },
     Session: { getScriptTimeZone: () => "America/Cuiaba" },
+    BotToolsService: { listarFerramentas: () => [] },
     UrlFetchApp: { fetch: () => ({
       getResponseCode: () => 400,
       getContentText: () => JSON.stringify({ error: { message: "Invalid response_format for this request" } })
