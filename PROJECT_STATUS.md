@@ -256,3 +256,45 @@ Adicionar uma interface de conversa ao mesmo projeto Agenda de Serviços, seleci
 
 ### Próxima etapa obrigatória
 Implementar autenticação administrativa no servidor e proteger todos os pontos de entrada administrativos antes de alterar a implantação para acesso público. Depois, executar testes integrados no Google Sheets e no navegador. Até essa proteção ser concluída, manter `webapp.access = MYSELF`.
+
+
+## BOT com interface estilo WhatsApp e IA Groq — desenvolvimento
+
+### Objetivo
+Evoluir o BOT inicial para uma experiência de conversa natural, com interface responsiva inspirada no WhatsApp e interpretação de mensagens por IA, sem criar outro projeto Apps Script ou outra planilha.
+
+### Implementação preparada na branch `feature/bot-whatsapp-groq`
+- Interface refeita em `Bot.html`, com cabeçalho verde, balões de conversa, horários, indicador de digitação, campo fixo de mensagem e adaptação para celular.
+- Criado `BotIAService.js`, que utiliza a API Groq, modelo `openai/gpt-oss-20b` e a propriedade `GROQ_API_KEY` das Propriedades do Script.
+- A IA interpreta serviço, profissional, data relativa ou explícita, horário coloquial e confirmação, retornando JSON Schema estrito.
+- `BotService.js` mantém o fluxo de identificação por CPF e quatro últimos dígitos do celular; depois disso aceita linguagem natural.
+- A sessão passou a ser armazenada no CacheService do servidor por até 30 minutos. O navegador recebe apenas um identificador aleatório, não o estado interno nem o CPF.
+- Cadastros, disponibilidade e gravação continuam sob controle dos Repositories, Rules, Validators e `AgendamentoService.cadastrar()`.
+- A gravação só acontece depois de resumo e confirmação explícita do cliente.
+
+### Segurança e limites
+- A chave Groq não é enviada ao navegador nem armazenada no GitHub.
+- A IA não escolhe códigos internos e não grava na planilha.
+- A saída da IA é validada pelo servidor; nomes precisam corresponder a cadastros existentes.
+- O horário é consultado novamente antes de gravar.
+- O conteúdo das mensagens enviadas à Groq é compartilhado com esse provedor. Não envie informações além das necessárias ao atendimento.
+- A implantação continua com acesso `MYSELF`; não liberar acesso público até proteger os pontos de entrada administrativos conforme o status anterior.
+
+### Testes automatizados preparados
+- Validação de CPF, celular, data e hora.
+- Normalização de nomes e conflitos de horário.
+- Chamada simulada da API Groq e validação de resposta estruturada.
+- Conversa completa simulada com confirmação antes da gravação.
+- Bloqueio de horário ocupado.
+- Expiração da sessão e sintaxe do JavaScript da interface.
+
+### Arquivos desta etapa
+- **Criado:** `BotIAService.js`.
+- **Alterados:** `Bot.html`, `BotService.js`, `BotRepository.js`, `tests/bot.test.js`.
+- **Mantidos:** `BotValidator.js`, `BotRules.js`, `AgendamentoService.js`, `AgendamentoRepository.js`, `ClienteRepository.js`, `Main.gs.js`, `appsscript.json`, `.claspignore` e `PROJECT_GUIDE.md`.
+- **Excluídos:** nenhum.
+
+### Validação e próximos passos
+- Testes locais simulados: 8 aprovados.
+- Ainda pendente: validação no GitHub Actions, confirmar que `GROQ_API_KEY` está configurada no projeto Apps Script correto, autorizar `UrlFetchApp` se necessário e testar a conversa real no navegador com a planilha.
+- Depois da validação, integrar a branch à `main` e atualizar a implantação Web App existente, mantendo o acesso `MYSELF` até a autenticação administrativa ser implementada.
