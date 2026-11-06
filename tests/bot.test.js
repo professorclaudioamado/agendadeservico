@@ -28,6 +28,11 @@ test("rejeita CPF com todos os números iguais", () => {
   assert.throws(() => validator.validarCpf("11111111111"), /CPF válido/);
 });
 
+test("valida os quatro últimos números do celular", () => {
+  assert.equal(validator.validarFinalCelular("(67) 9999"), "9999");
+  assert.throws(() => validator.validarFinalCelular("123"), /quatro últimos/);
+});
+
 test("valida data real no formato DD/MM/AAAA", () => {
   assert.equal(validator.validarData("31/12/2099"), "2099-12-31");
 });
@@ -64,7 +69,9 @@ test("rejeita sobreposição de horários", () => {
 test("fluxo conversacional completo chama o AgendamentoService", () => {
   const contexto = {
     BotRepository: {
-      buscarClientePorCpf: () => ({ codigo: "7", nome: "Maria" }),
+      buscarClientePorCpf: (cpf, finalCelular) =>
+        cpf === "52998224725" && finalCelular === "1234"
+          ? ({ codigo: "7", nome: "Maria" }) : null,
       listarServicos: () => [{ codigo: "2", nome: "Consulta", tempo: 30 }],
       listarFuncionarios: () => [{ codigo: "5", nome: "João" }],
       listarAgendamentosDoDia: () => []
@@ -84,6 +91,9 @@ test("fluxo conversacional completo chama o AgendamentoService", () => {
   const bot = contexto.BotService;
   let sessao = { etapa: "cpf" };
   let resposta = bot.processar("529.982.247-25", sessao);
+  sessao = resposta.sessao;
+  assert.match(resposta.mensagem, /quatro últimos/);
+  resposta = bot.processar("1234", sessao);
   sessao = resposta.sessao;
   assert.match(resposta.mensagem, /Maria/);
 
