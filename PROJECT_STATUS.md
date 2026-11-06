@@ -336,3 +336,51 @@ Evoluir o BOT inicial para uma experiência de conversa natural, com interface r
 - Testes automatizados: 9 aprovados, incluindo teste de diagnóstico HTTP 400 e proteção da chave.
 - GitHub Actions, execução #55: validação e publicação concluídas; 35 arquivos enviados e implantação Web App atualizada para a versão @59.
 - Ainda pendente: teste real no navegador com a chamada à Groq. Caso ocorra novo erro, a interface exibirá a mensagem específica retornada pela API, para correção direcionada.
+
+
+## BOT com IA e chamadas de ferramentas — implementação em revisão
+
+### Objetivo
+Permitir que a IA interprete perguntas em linguagem natural e escolha consultas reais ao cadastro e à agenda, sem depender de uma árvore rígida de perguntas e respostas. A IA não acessa o Google Sheets diretamente e não recebe ferramentas de gravação.
+
+### Implementação preparada na branch `feature/bot-ia-tool-calling`
+- Criado `BotToolsService.js`, com registro de ferramentas autorizadas e despacho por nome, sem uma cadeia de condições para decidir qual consulta executar.
+- Ferramenta `consultar_servicos`: retorna nome, preço e duração cadastrados.
+- Ferramenta `consultar_profissionais`: retorna os profissionais cadastrados.
+- Ferramenta `consultar_agenda`: consulta os agendamentos já registrados em uma data, com filtro opcional por profissional.
+- Ferramenta `verificar_horario`: verifica conflito com os agendamentos existentes, considerando a duração cadastrada do serviço.
+- `BotIAService.js` foi preparado para o ciclo de tool calling (chamada de ferramentas): envia o catálogo de ferramentas à Groq, recebe a ferramenta escolhida pelo modelo, executa a consulta no servidor, devolve o resultado ao modelo e aguarda a resposta natural final.
+- `BotService.js` agora permite que respostas informativas da IA sejam apresentadas sem forçar o cliente a iniciar um agendamento.
+- O despacho rejeita nomes de ferramentas que não estejam explicitamente registrados.
+- A IA continua sem permissão para gravar, editar ou cancelar registros. A confirmação explícita e o cadastro permanecem sob responsabilidade do fluxo existente `BotService` → `AgendamentoService.cadastrar()`.
+
+### Limites conhecidos — não inventar disponibilidade
+- A planilha e os repositórios inspecionados não fornecem expediente, dias de trabalho, intervalos, folgas ou associação formal entre serviço e profissional.
+- Por isso, `verificar_horario` informa somente se há conflito com agendamentos já registrados. Ausência de conflito não comprova que o profissional trabalha naquele horário.
+- Não foi implementada busca de primeiro horário livre nem lista de alternativas, pois isso exigiria uma fonte real de jornada e regras de funcionamento.
+- A consulta de agenda é realizada somente após a identificação do cliente pelo fluxo existente.
+
+### Arquivos
+- **Criado:** `BotToolsService.js`.
+- **Alterados:** `BotIAService.js`, `BotService.js`, `tests/bot.test.js`, `PROJECT_STATUS.md`.
+- **Mantidos:** `Bot.html`, `BotValidator.js`, `BotRules.js`, `BotRepository.js`, `AgendamentoService.js`, `AgendamentoRepository.js`, `ClienteRepository.js`, `Main.gs.js`, `appsscript.json`, `.claspignore`, `.github/workflows/apps-script.yml` e `PROJECT_GUIDE.md`.
+- **Excluídos:** nenhum. Não há duplicação de responsabilidade que justifique excluir arquivos existentes.
+
+### Validação e publicação
+- Foi atualizado o teste automatizado da integração Groq para cobrir o ciclo de chamada de ferramenta e retorno do resultado ao modelo.
+- A validação do GitHub Actions ainda precisa ser executada no Pull Request.
+- Esta etapa ainda não foi integrada à `main` nem publicada no Apps Script.
+- O deployment publicado permanece na versão `@59`, com acesso `MYSELF`.
+- Após a aprovação do workflow e integração, será necessário realizar uma conversa real no BOT com a propriedade `GROQ_API_KEY` configurada para confirmar a compatibilidade efetiva do modelo com tool calling.
+
+### Como validar
+1. Aguardar o GitHub Actions no Pull Request e corrigir qualquer falha encontrada.
+2. Após a integração e publicação, abrir a implantação existente com a conta proprietária.
+3. Perguntar ao BOT quais serviços existem e solicitar o preço e a duração de um serviço específico.
+4. Perguntar quais profissionais estão cadastrados.
+5. Solicitar a consulta da agenda de uma data e, depois, a verificação de um horário específico.
+6. Confirmar que respostas informativas não iniciam um cadastro e que nenhum agendamento é gravado sem confirmação explícita.
+7. Conferir que a IA não declara expediente ou horário livre sem uma fonte de jornada cadastrada.
+
+### Próxima etapa
+Definir e cadastrar a jornada dos profissionais (dias da semana, início e fim do expediente, intervalos, folgas e, se necessário, serviços que cada profissional executa). Com essa fonte de dados será possível implementar busca confiável de primeiro horário e alternativas.
