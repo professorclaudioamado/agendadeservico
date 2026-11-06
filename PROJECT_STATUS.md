@@ -429,7 +429,7 @@ Exibir no cabeçalho da interface do BOT o número da implantação para facilit
 ### Arquivos desta etapa
 - **Criados:** nenhum.
 - **Alterados:** `Bot.html` e `PROJECT_STATUS.md`.
-- **Mantidos:** `BotService.js`, `BotIAService.js`, `BotToolsService.js`, `Bot.html` (estrutura e fluxo conversacional preservados), `appsscript.json`, `.github/workflows/apps-script.yml` e `PROJECT_GUIDE.md`.
+- **Mantidos:** `BotService.js`, `BotIAService.js`, `BotToolsService.js`, `appsscript.json`, `.github/workflows/apps-script.yml` e `PROJECT_GUIDE.md`.
 - **Excluídos:** nenhum.
 
 ### Como testar
