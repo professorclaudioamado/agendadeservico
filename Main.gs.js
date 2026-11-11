@@ -17,10 +17,19 @@
  * @return {GoogleAppsScript.HTML.HtmlOutput} Página principal da aplicação.
  */
 function doGet(e) {
-  // A presença do parâmetro BOT seleciona a interface conversacional.
+  // Normaliza os nomes dos parâmetros para maiúsculas antes da verificação.
+  // Assim, BOT, bot, Bot e outras combinações selecionam a mesma interface.
+  var parametrosRecebidos = e && e.parameter
+    ? Object.keys(e.parameter).map(function(nomeParametro) {
+        return String(nomeParametro).toUpperCase();
+      })
+    : [];
+
+  // A partir daqui, a aplicação trabalha somente com a chave normalizada BOT.
+  var solicitarBot = parametrosRecebidos.indexOf("BOT") !== -1;
+
   // A política de acesso do Web App continua definida na implantação.
-  if (e && e.parameter &&
-      Object.prototype.hasOwnProperty.call(e.parameter, "BOT")) {
+  if (solicitarBot) {
     return HtmlService
       .createHtmlOutputFromFile("Bot")
       .setTitle("Assistente de Agendamento");
