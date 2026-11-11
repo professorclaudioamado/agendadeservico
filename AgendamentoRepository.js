@@ -202,6 +202,110 @@ var AgendamentoRepository = (function() {
   }
 
 
+
+  /**
+   * Busca um agendamento pelo código, retornando os campos para consulta/edição.
+   *
+   * @param {number|string} codigo Código do agendamento.
+   * @return {Object|null} Agendamento encontrado ou null.
+   */
+  function buscarPorCodigo(codigo) {
+    var aba = obterAba_(ABA_AGENDA);
+    verificarCabecalhos_(aba, [
+      "Código", "Data", "Hora", "Codigo_funcionario",
+      "Codigo_cliente", "Codigo_servico", "Valor", "Status"
+    ]);
+    if (aba.getLastRow() < 2) return null;
+
+    var linhas = aba.getRange(2, 1, aba.getLastRow() - 1, 8).getDisplayValues();
+    var codigoBusca = String(codigo).trim();
+    for (var i = 0; i < linhas.length; i++) {
+      if (String(linhas[i][0]).trim() !== codigoBusca) continue;
+      var partesData = String(linhas[i][1]).split("/");
+      return {
+        codigo: linhas[i][0],
+        data: partesData.length === 3
+          ? partesData[2] + "-" + partesData[1] + "-" + partesData[0]
+          : linhas[i][1],
+        hora: String(linhas[i][2]).substring(0, 5),
+        codigo_funcionario: linhas[i][3],
+        codigo_cliente: linhas[i][4],
+        codigo_servico: linhas[i][5],
+        valor: linhas[i][6],
+        status: linhas[i][7]
+      };
+    }
+    return null;
+  }
+
+
+  /**
+   * Atualiza os dados editáveis de um agendamento sem alterar seu código.
+   * O valor é recalculado a partir do cadastro atual do serviço.
+   *
+   * @param {number|string} codigo Código do agendamento.
+   * @param {Object} agendamento Dados validados e preparados pelo Service.
+   * @return {boolean} true quando atualizado.
+   */
+  function atualizar(codigo, agendamento) {
+    var aba = obterAba_(ABA_AGENDA);
+    verificarCabecalhos_(aba, [
+      "Código", "Data", "Hora", "Codigo_funcionario",
+      "Codigo_cliente", "Codigo_servico", "Valor", "Status"
+    ]);
+    var linha = localizarLinhaPorCodigo_(aba, codigo);
+    if (!linha) throw new Error("Agendamento não encontrado.");
+    aba.getRange(linha, 2, 1, 7).setValues([[
+      agendamento.data,
+      agendamento.hora,
+      agendamento.codigoFuncionario,
+      agendamento.codigoCliente,
+      agendamento.codigoServico,
+      agendamento.valor,
+      agendamento.status
+    ]]);
+    aba.getRange(linha, 2).setNumberFormat("dd/MM/yyyy");
+    aba.getRange(linha, 7).setNumberFormat('"R$" #,##0.00');
+    return true;
+  }
+
+
+  /**
+   * Atualiza exclusivamente o status, preservando os demais campos.
+   *
+   * @param {number|string} codigo Código do agendamento.
+   * @param {string} status Novo status já validado.
+   * @return {boolean} true quando atualizado.
+   */
+  function atualizarStatus(codigo, status) {
+    var aba = obterAba_(ABA_AGENDA);
+    verificarCabecalhos_(aba, [
+      "Código", "Data", "Hora", "Codigo_funcionario",
+      "Codigo_cliente", "Codigo_servico", "Valor", "Status"
+    ]);
+    var linha = localizarLinhaPorCodigo_(aba, codigo);
+    if (!linha) throw new Error("Agendamento não encontrado.");
+    aba.getRange(linha, 8).setValue(status);
+    return true;
+  }
+
+
+  /** Localiza a linha física correspondente ao código informado. */
+  function localizarLinhaPorCodigo_(aba, codigo) {
+    if (codigo == null || String(codigo).trim() === "") {
+      throw new Error("Informe o código do agendamento.");
+    }
+    var ultimaLinha = aba.getLastRow();
+    if (ultimaLinha < 2) return 0;
+    var codigos = aba.getRange(2, 1, ultimaLinha - 1, 1).getDisplayValues();
+    var procurado = String(codigo).trim();
+    for (var i = 0; i < codigos.length; i++) {
+      if (String(codigos[i][0]).trim() === procurado) return i + 2;
+    }
+    return 0;
+  }
+
+
   /**
    * Lista os agendamentos de uma data, incluindo a duração do serviço,
    * para que o BOT possa verificar sobreposição de horários.
@@ -370,6 +474,9 @@ var AgendamentoRepository = (function() {
     buscarClientePorCodigo: buscarClientePorCodigo,
     buscarServicoPorCodigo: buscarServicoPorCodigo,
     listarPorData: listarPorData,
+    buscarPorCodigo: buscarPorCodigo,
+    atualizar: atualizar,
+    atualizarStatus: atualizarStatus,
     salvar: salvar
   };
 
