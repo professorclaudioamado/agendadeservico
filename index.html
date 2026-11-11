@@ -1247,11 +1247,11 @@
 
       google.script.run
         .withSuccessHandler(function(resposta) {
-          mostrarMensagem("mensagemAgenda", resposta, "sucesso");
-          carregarGradeCadastro("agenda");
           if (String(agendamentoSelecionadoCodigo) === String(codigo)) {
             cancelarEdicaoAgendamento();
           }
+          mostrarMensagem("mensagemAgenda", resposta, "sucesso");
+          carregarGradeCadastro("agenda");
         })
         .withFailureHandler(function(erro) {
           mostrarMensagem("mensagemAgenda", erro.message || "Não foi possível alterar o status.", "erro");
@@ -1819,8 +1819,8 @@
 
       var chamada = google.script.run
         .withSuccessHandler(function(resposta) {
-          mostrarMensagem("mensagemAgenda", resposta, "sucesso");
           cancelarEdicaoAgendamento();
+          mostrarMensagem("mensagemAgenda", resposta, "sucesso");
           carregarGradeCadastro("agenda");
           botao.disabled = false;
         })
