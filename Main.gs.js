@@ -92,3 +92,19 @@ function atualizarFuncionario(codigo, nome) { return FuncionarioService.atualiza
 
 /** Exclui um funcionário. @param {number|string} codigo Código. @return {string} Confirmação. */
 function excluirFuncionario(codigo) { return FuncionarioService.excluir(codigo); }
+
+
+/** Encaminha a consulta de um agendamento à camada Service. */
+function consultarAgendamento(codigo) {
+  return AgendamentoService.consultar(codigo);
+}
+
+/** Encaminha a atualização de um agendamento à camada Service. */
+function atualizarAgendamento(codigo, dados) {
+  return AgendamentoService.atualizar(codigo, dados);
+}
+
+/** Encaminha a alteração exclusiva de status à camada Service. */
+function alterarStatusAgendamento(codigo, status) {
+  return AgendamentoService.alterarStatus(codigo, status);
+}
