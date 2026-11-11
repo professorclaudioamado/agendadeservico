@@ -518,3 +518,42 @@ Os testes automatizados utilizam respostas simuladas da IA. Ainda é necessário
 
 ### Próxima etapa
 Executar o teste manual real com a conta proprietária, Groq e planilha. Em uma etapa separada, corrigir a identificação visual do cabeçalho para que ela não apresente um número fixo divergente da implantação efetiva.
+
+
+## CRUD de Agendamentos — interface implementada
+
+### Objetivo
+Concluir na interface da Agenda as operações de consulta, edição, cancelamento e alteração de status, reaproveitando os serviços e repositórios já integrados pelo PR #17.
+
+### Implementado
+- A grade de agendamentos passou a exibir ações por registro: **Consultar**, **Editar** e **Cancelar**.
+- A consulta apresenta os dados do agendamento selecionado.
+- A edição carrega os dados existentes no formulário e permite salvar as alterações sem trocar o código do registro.
+- O formulário diferencia cadastro novo de edição e oferece a opção **Cancelar edição**.
+- O cancelamento é lógico: altera o status para `CANCELADO`, preservando a linha e o histórico.
+- A grade permite selecionar e salvar diretamente um dos status já aceitos: `AGENDADO`, `CONFIRMADO`, `CONCLUÍDO` e `CANCELADO`.
+- Após salvar ou alterar status, a grade é atualizada a partir dos dados do servidor.
+- Os carregadores das listas de funcionários, clientes e serviços aceitam callbacks para preencher corretamente o formulário de edição após o carregamento dos cadastros.
+- Nenhum status novo foi criado e as funcionalidades de cadastro e integração por e-mail foram preservadas.
+
+### Arquivos desta etapa
+- **Criados:** nenhum.
+- **Alterados:** `index.html` e `PROJECT_STATUS.md`.
+- **Mantidos:** `AgendamentoService.js`, `AgendamentoRepository.js`, `AgendamentoValidator.js`, `AgendamentoRules.js`, `Main.gs.js`, `Bot.html`, arquivos de Gmail, arquivos de configuração e `PROJECT_GUIDE.md`.
+- **Excluídos:** nenhum. Nenhum arquivo ficou obsoleto.
+
+### Validação
+- A implementação foi conferida no código integrado à branch de trabalho.
+- A validação automatizada completa do repositório deve ser confirmada pelo GitHub Actions nesta alteração.
+- O teste final na implantação Apps Script, com dados reais da planilha, ainda depende da publicação e da conferência no navegador.
+
+### Como testar após a publicação
+1. Abrir a tela **Agenda** e conferir as ações exibidas em cada registro.
+2. Consultar um agendamento e conferir seus dados.
+3. Editar data, hora, funcionário, cliente, serviço ou status e salvar; conferir a atualização na mesma linha.
+4. Alterar o status pela grade e conferir que somente a coluna Status foi modificada.
+5. Cancelar um agendamento e confirmar que a linha permanece na planilha com status `CANCELADO`.
+6. Criar um novo agendamento para confirmar que o formulário continua funcionando no modo de cadastro.
+
+### Próximo passo
+Concluir a validação automatizada, integrar a alteração à `main` e publicar no Apps Script após aprovação do workflow. A implantação continua restrita ao proprietário (`MYSELF`).

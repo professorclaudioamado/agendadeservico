@@ -248,6 +248,8 @@
     .grade-tabela tbody tr:nth-child(even) { background:#f8fafc; }
     .grade-vazia { padding:18px; color:#64748b; text-align:center; }
     .botao-atualizar-grade { border:1px solid #cbd5e1; background:#fff; color:#334155; border-radius:8px; padding:8px 12px; cursor:pointer; }
+    .acoes-agendamento { display:flex; gap:6px; flex-wrap:wrap; align-items:center; min-width:260px; }
+    .status-grade-select { min-width:130px; padding:7px; border:1px solid #cbd5e1; border-radius:7px; background:#fff; color:#334155; }
 
 
     /* Acompanhamento visual do processamento de e-mails com IA */
@@ -640,6 +642,8 @@
           <button type="submit" class="botao-principal" id="btnCadastrarAgendamento">
             Cadastrar agendamento
           </button>
+          <button type="button" class="botao-atualizar-grade" id="btnCancelarEdicaoAgendamento"
+            onclick="cancelarEdicaoAgendamento()" hidden>Cancelar edição</button>
         </form>
 
         <div class="acoes-email-agendamento">
@@ -855,7 +859,7 @@
     /**
      * Carrega funcionários para a Agenda.
      */
-    function carregarFuncionariosAgendaTela() {
+    function carregarFuncionariosAgendaTela(aoCarregar) {
       var select = prepararLista(
         "funcionarioAgenda", "Carregando funcionários..."
       );
@@ -875,6 +879,7 @@
             opcao.textContent = item.nome;
             select.appendChild(opcao);
           });
+          if (typeof aoCarregar === "function") aoCarregar();
         })
         .withFailureHandler(function(erro) {
           prepararLista("funcionarioAgenda", "Erro ao carregar funcionários");
@@ -886,7 +891,7 @@
     /**
      * Carrega clientes para a Agenda.
      */
-    function carregarClientesAgendaTela() {
+    function carregarClientesAgendaTela(aoCarregar) {
       var select = prepararLista(
         "clienteAgenda", "Carregando clientes..."
       );
@@ -906,6 +911,7 @@
             opcao.textContent = item.nome;
             select.appendChild(opcao);
           });
+          if (typeof aoCarregar === "function") aoCarregar();
         })
         .withFailureHandler(function(erro) {
           prepararLista("clienteAgenda", "Erro ao carregar clientes");
@@ -917,7 +923,7 @@
     /**
      * Carrega serviços e valores para a Agenda.
      */
-    function carregarServicosAgendaTela() {
+    function carregarServicosAgendaTela(aoCarregar) {
       var select = prepararLista(
         "servicoAgenda", "Carregando serviços..."
       );
@@ -943,6 +949,7 @@
           });
 
           atualizarValorServico();
+          if (typeof aoCarregar === "function") aoCarregar();
         })
         .withFailureHandler(function(erro) {
           prepararLista("servicoAgenda", "Erro ao carregar serviços");
@@ -983,6 +990,7 @@
     // Estado do formulário de funcionários durante consulta e edição.
     var funcionarioSelecionadoCodigo = null;
     var modoConsultaFuncionario = false;
+    var agendamentoSelecionadoCodigo = null;
 
     // Abas e campos usados para exibir os registros de cada cadastro.
     var configuracaoGrades = {
@@ -1045,7 +1053,7 @@
         th.textContent = cabecalho;
         trCab.appendChild(th);
       });
-      if (tipo === "funcionarios") {
+      if (tipo === "funcionarios" || tipo === "agenda") {
         var thAcoes = document.createElement("th"); thAcoes.textContent = "Ações"; trCab.appendChild(thAcoes);
       }
       thead.appendChild(trCab);
@@ -1057,6 +1065,48 @@
         linha.forEach(function(valor) {
           var td = document.createElement("td"); td.textContent = valor == null ? "" : String(valor); tr.appendChild(td);
         });
+        if (tipo === "agenda") {
+          var codigoAgendamento = linha[0];
+          var statusAtual = String(linha[7] || "AGENDADO");
+          var tdAcoesAgenda = document.createElement("td");
+          tdAcoesAgenda.className = "acoes-agendamento";
+
+          [
+            { texto: "Consultar", classe: "botao-acao-grade", acao: consultarAgendamentoTela },
+            { texto: "Editar", classe: "botao-acao-grade", acao: editarAgendamentoTela },
+            { texto: "Cancelar", classe: "botao-acao-grade botao-excluir-grade", acao: cancelarAgendamentoTela }
+          ].forEach(function(cfg) {
+            var botao = document.createElement("button");
+            botao.type = "button";
+            botao.className = cfg.classe;
+            botao.textContent = cfg.texto;
+            botao.addEventListener("click", function() { cfg.acao(codigoAgendamento); });
+            tdAcoesAgenda.appendChild(botao);
+          });
+
+          var seletorStatus = document.createElement("select");
+          seletorStatus.className = "status-grade-select";
+          seletorStatus.setAttribute("aria-label", "Novo status do agendamento " + codigoAgendamento);
+          ["AGENDADO", "CONFIRMADO", "CONCLUÍDO", "CANCELADO"].forEach(function(status) {
+            var opcao = document.createElement("option");
+            opcao.value = status;
+            opcao.textContent = status;
+            seletorStatus.appendChild(opcao);
+          });
+          seletorStatus.value = statusAtual;
+          tdAcoesAgenda.appendChild(seletorStatus);
+
+          var botaoStatus = document.createElement("button");
+          botaoStatus.type = "button";
+          botaoStatus.className = "botao-acao-grade";
+          botaoStatus.textContent = "Salvar status";
+          botaoStatus.addEventListener("click", function() {
+            alterarStatusAgendamentoTela(codigoAgendamento, seletorStatus.value);
+          });
+          tdAcoesAgenda.appendChild(botaoStatus);
+          tr.appendChild(tdAcoesAgenda);
+        }
+
         if (tipo === "funcionarios") {
           var codigoFuncionario = linha[0]; tr.className = "linha-selecionavel";
           tr.title = "Clique na linha para editar este funcionário";
@@ -1126,6 +1176,92 @@
       }).withFailureHandler(function(erro) {
         mostrarMensagem("mensagemFuncionario", erro.message || "Não foi possível excluir o funcionário.", "erro");
       }).excluirFuncionario(codigo);
+    }
+
+    /** Consulta e apresenta os dados completos de um agendamento. */
+    function consultarAgendamentoTela(codigo) {
+      google.script.run
+        .withSuccessHandler(function(item) {
+          var texto = "Agendamento " + item.codigo +
+            "\nData: " + item.data +
+            "\nHora: " + item.hora +
+            "\nFuncionário: " + item.codigo_funcionario +
+            "\nCliente: " + item.codigo_cliente +
+            "\nServiço: " + item.codigo_servico +
+            "\nValor: " + item.valor +
+            "\nStatus: " + item.status;
+          mostrarMensagem("mensagemAgenda", texto, "sucesso");
+          abrirPaginaPorNome("agenda");
+        })
+        .withFailureHandler(function(erro) {
+          mostrarMensagem("mensagemAgenda", erro.message || "Não foi possível consultar o agendamento.", "erro");
+        })
+        .consultarAgendamento(codigo);
+    }
+
+    /** Carrega um agendamento no formulário para edição. */
+    function editarAgendamentoTela(codigo) {
+      google.script.run
+        .withSuccessHandler(function(item) {
+          carregarFuncionariosAgendaTela(function() {
+            carregarClientesAgendaTela(function() {
+              carregarServicosAgendaTela(function() {
+                agendamentoSelecionadoCodigo = item.codigo;
+                document.getElementById("dataAgenda").value = item.data;
+                document.getElementById("horaAgenda").value = item.hora;
+                document.getElementById("funcionarioAgenda").value = String(item.codigo_funcionario);
+                document.getElementById("clienteAgenda").value = String(item.codigo_cliente);
+                document.getElementById("servicoAgenda").value = String(item.codigo_servico);
+                document.getElementById("statusAgenda").value = item.status;
+                atualizarValorServico();
+                document.getElementById("btnCadastrarAgendamento").textContent = "Salvar alterações";
+                document.getElementById("btnCancelarEdicaoAgendamento").hidden = false;
+                mostrarMensagem("mensagemAgenda", "Editando o agendamento " + item.codigo + ".", "sucesso");
+                document.getElementById("formAgenda").scrollIntoView({ behavior: "smooth", block: "start" });
+              });
+            });
+          });
+        })
+        .withFailureHandler(function(erro) {
+          mostrarMensagem("mensagemAgenda", erro.message || "Não foi possível carregar o agendamento para edição.", "erro");
+        })
+        .consultarAgendamento(codigo);
+      abrirPaginaPorNome("agenda");
+    }
+
+    /** Retorna o formulário ao modo de novo cadastro. */
+    function cancelarEdicaoAgendamento() {
+      agendamentoSelecionadoCodigo = null;
+      document.getElementById("formAgenda").reset();
+      document.getElementById("statusAgenda").value = "AGENDADO";
+      document.getElementById("btnCadastrarAgendamento").textContent = "Cadastrar agendamento";
+      document.getElementById("btnCancelarEdicaoAgendamento").hidden = true;
+      atualizarValorServico();
+      limparMensagem("mensagemAgenda");
+    }
+
+    /** Atualiza o status de um registro sem alterar os demais dados. */
+    function alterarStatusAgendamentoTela(codigo, status) {
+      if (status === "CANCELADO" &&
+          !window.confirm("Confirma o cancelamento do agendamento " + codigo + "?")) return;
+
+      google.script.run
+        .withSuccessHandler(function(resposta) {
+          if (String(agendamentoSelecionadoCodigo) === String(codigo)) {
+            cancelarEdicaoAgendamento();
+          }
+          mostrarMensagem("mensagemAgenda", resposta, "sucesso");
+          carregarGradeCadastro("agenda");
+        })
+        .withFailureHandler(function(erro) {
+          mostrarMensagem("mensagemAgenda", erro.message || "Não foi possível alterar o status.", "erro");
+        })
+        .alterarStatusAgendamento(codigo, status);
+    }
+
+    /** Cancelamento lógico: preserva o registro e altera o status para CANCELADO. */
+    function cancelarAgendamentoTela(codigo) {
+      alterarStatusAgendamentoTela(codigo, "CANCELADO");
     }
 
     // Carrega a grade correspondente sempre que o usuário abre um cadastro.
@@ -1659,6 +1795,7 @@
       event.preventDefault();
 
       var botao = document.getElementById("btnCadastrarAgendamento");
+      var codigo = agendamentoSelecionadoCodigo;
       limparMensagem("mensagemAgenda");
 
       var dados = {
@@ -1672,40 +1809,32 @@
 
       for (var campo in dados) {
         if (dados[campo] === "") {
-          mostrarMensagem(
-            "mensagemAgenda",
-            "Preencha todos os campos do agendamento.",
-            "erro"
-          );
+          mostrarMensagem("mensagemAgenda", "Preencha todos os campos do agendamento.", "erro");
           return;
         }
       }
 
       botao.disabled = true;
-      botao.textContent = "Cadastrando...";
+      botao.textContent = codigo ? "Salvando alterações..." : "Cadastrando...";
 
-      google.script.run
+      var chamada = google.script.run
         .withSuccessHandler(function(resposta) {
+          cancelarEdicaoAgendamento();
           mostrarMensagem("mensagemAgenda", resposta, "sucesso");
-          document.getElementById("formAgenda").reset();
           carregarGradeCadastro("agenda");
-          document.getElementById("statusAgenda").value = "AGENDADO";
-          atualizarValorServico();
-
           botao.disabled = false;
-          botao.textContent = "Cadastrar agendamento";
         })
         .withFailureHandler(function(erro) {
-          mostrarMensagem(
-            "mensagemAgenda",
-            erro.message || "Não foi possível cadastrar o agendamento.",
-            "erro"
-          );
-
+          mostrarMensagem("mensagemAgenda", erro.message || "Não foi possível salvar o agendamento.", "erro");
           botao.disabled = false;
-          botao.textContent = "Cadastrar agendamento";
-        })
-        .cadastrarAgendamento(dados);
+          botao.textContent = codigo ? "Salvar alterações" : "Cadastrar agendamento";
+        });
+
+      if (codigo) {
+        chamada.atualizarAgendamento(codigo, dados);
+      } else {
+        chamada.cadastrarAgendamento(dados);
+      }
     }
   </script>
 </body>
