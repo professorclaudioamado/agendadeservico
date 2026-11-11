@@ -123,7 +123,7 @@ var AgendamentoService = (function() {
    * @return {string} Mensagem de confirmação.
    */
   function atualizar(codigo, dados) {
-    AgendamentoValidator.validarCadastro(dados);
+    AgendamentoValidator.validarEdicao(dados);
     var status = AgendamentoRules.normalizarStatus(dados.status);
     AgendamentoRules.validarStatus(status);
     var funcionario = AgendamentoRepository.buscarFuncionarioPorCodigo(dados.codigo_funcionario);
