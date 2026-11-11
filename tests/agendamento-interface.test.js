@@ -14,7 +14,7 @@ const vm = require("node:vm");
 const html = fs.readFileSync(path.join(__dirname, "..", "index.html"), "utf8");
 
 test("JavaScript incorporado em index.html possui sintaxe válida", () => {
-  const scripts = Array.from(html.matchAll(/<script(?:\\s[^>]*)?>([\\s\\S]*?)<\\/script>/gi));
+  const scripts = Array.from(html.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/gi));
   assert.ok(scripts.length > 0, "Nenhum bloco script encontrado em index.html");
   scripts.forEach((match, indice) => {
     assert.doesNotThrow(
@@ -39,6 +39,6 @@ test("interface da Agenda oferece as operações do CRUD", () => {
 });
 
 test("cancelamento da Agenda é lógico e mantém o status CANCELADO", () => {
-  assert.match(html, /function cancelarAgendamentoTela\\(codigo\\)[\\s\\S]*?alterarStatusAgendamentoTela\\(codigo, "CANCELADO"\\)/);
+  assert.match(html, /function cancelarAgendamentoTela\(codigo\)[\s\S]*?alterarStatusAgendamentoTela\(codigo, "CANCELADO"\)/);
   assert.match(html, /"AGENDADO", "CONFIRMADO", "CONCLUÍDO", "CANCELADO"/);
 });
