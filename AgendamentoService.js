@@ -60,7 +60,7 @@ var AgendamentoService = (function() {
    * @throws {Error} Quando qualquer validação ou regra falhar.
    */
   function cadastrar(dados) {
-    AgendamentoValidator.validarEdicao(dados);
+    AgendamentoValidator.validarCadastro(dados);
 
     var dataTexto = String(dados.data).trim();
     var horaTexto = String(dados.hora).trim();
