@@ -560,3 +560,31 @@ Concluir na interface da Agenda as operações de consulta, edição, cancelamen
 
 ### Próximo passo
 Publicar a versão integrada no Google Apps Script e executar os testes reais na implantação. A implantação deve continuar restrita ao proprietário (`MYSELF`) até que a autenticação e a autorização dos pontos de entrada administrativos sejam revisadas.
+
+
+## Agenda — exibição dos nomes relacionados e ação Detalhar
+
+### Objetivo
+Substituir os códigos de funcionário, cliente e serviço pelos respectivos nomes na grade de agendamentos, mantendo os códigos originais para operações internas.
+
+### Implementado
+- A grade da aba AGENDA consulta os cadastros de funcionários, clientes e serviços pelos pontos de entrada já existentes no Service.
+- As colunas `Codigo_funcionario`, `Codigo_cliente` e `Codigo_servico` passam a exibir os nomes correspondentes, com títulos amigáveis: **Funcionário**, **Cliente** e **Serviço**.
+- A ação **Consultar** foi renomeada para **Detalhar**.
+- A visualização de detalhes também apresenta os nomes relacionados.
+- Os códigos originais continuam sendo utilizados para editar, cancelar e alterar status; nenhuma coluna ou dado da planilha foi modificado.
+- Quando um código não tiver cadastro correspondente, a interface apresenta `Código N` como fallback, sem ocultar o registro.
+
+### Arquivos da etapa
+- **Criados:** nenhum.
+- **Alterados:** `index.html`, `tests/agendamento-interface.test.js`, `PROJECT_STATUS.md`.
+- **Mantidos:** `AgendamentoService.js`, `AgendamentoRepository.js`, repositórios de Funcionário, Cliente e Serviço, `Main.gs.js`, `appsscript.json` e `PROJECT_GUIDE.md`.
+- **Excluídos:** nenhum. Não há arquivo obsoleto nesta alteração.
+
+### Validação
+- Incluídos testes estáticos para a carga dos três cadastros, substituição visual dos códigos, preservação do código do agendamento nas ações e rótulo **Detalhar**.
+- A validação completa será executada pelo GitHub Actions no Pull Request.
+- Após integração e publicação, conferir na tela Agenda os nomes correspondentes, abrir **Detalhar**, editar e cancelar um registro para confirmar que as operações continuam usando os códigos corretos.
+
+### Próximo passo
+Integrar a alteração após aprovação do workflow e publicar no Apps Script. Em seguida, validar visualmente a grade com os dados reais da planilha.

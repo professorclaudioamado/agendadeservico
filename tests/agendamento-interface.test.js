@@ -42,3 +42,20 @@ test("cancelamento da Agenda é lógico e mantém o status CANCELADO", () => {
   assert.match(html, /function cancelarAgendamentoTela\(codigo\)[\s\S]*?alterarStatusAgendamentoTela\(codigo, "CANCELADO"\)/);
   assert.match(html, /"AGENDADO", "CONFIRMADO", "CONCLUÍDO", "CANCELADO"/);
 });
+
+
+test("grade da Agenda apresenta nomes relacionados e mantém códigos nas ações", () => {
+  assert.match(html, /function carregarReferenciasAgenda\(aoCarregar\)/);
+  assert.match(html, /listarFuncionariosAgenda\(\)/);
+  assert.match(html, /listarClientesAgenda\(\)/);
+  assert.match(html, /listarServicosAgenda\(\)/);
+  assert.match(html, /indice === 3\) valorExibido = obterNomeReferenciaAgenda\("funcionarios", valor\)/);
+  assert.match(html, /indice === 4\) valorExibido = obterNomeReferenciaAgenda\("clientes", valor\)/);
+  assert.match(html, /indice === 5\) valorExibido = obterNomeReferenciaAgenda\("servicos", valor\)/);
+  assert.match(html, /codigoAgendamento = linha\[0\]/);
+});
+
+test("ação de consulta da Agenda é apresentada como Detalhar", () => {
+  assert.match(html, /texto: "Detalhar", classe: "botao-acao-grade", acao: consultarAgendamentoTela/);
+  assert.doesNotMatch(html, /texto: "Consultar", classe: "botao-acao-grade", acao: consultarAgendamentoTela/);
+});

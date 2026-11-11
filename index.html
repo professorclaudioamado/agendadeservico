@@ -1002,6 +1002,78 @@
       agenda: {aba:"AGENDA", titulo:"Agendamentos"}
     };
 
+    // Mapas de referência usados somente para apresentar nomes na grade da Agenda.
+    var referenciasAgenda = {
+      funcionarios: Object.create(null),
+      clientes: Object.create(null),
+      servicos: Object.create(null)
+    };
+
+    /**
+     * Carrega os cadastros relacionados para converter os códigos da AGENDA
+     * em nomes legíveis. As consultas continuam passando pelo Service/Repository.
+     *
+     * @param {Function} aoCarregar Callback executado após as três consultas.
+     */
+    function carregarReferenciasAgenda(aoCarregar) {
+      var pendentes = 3;
+      function concluirConsulta() {
+        pendentes--;
+        if (pendentes === 0) aoCarregar();
+      }
+
+      google.script.run
+        .withSuccessHandler(function(lista) {
+          referenciasAgenda.funcionarios = Object.create(null);
+          lista.forEach(function(item) {
+            referenciasAgenda.funcionarios[String(item.codigo)] = item.nome;
+          });
+          concluirConsulta();
+        })
+        .withFailureHandler(function(erro) {
+          mostrarMensagem("mensagemAgenda", erro.message || "Não foi possível carregar os funcionários.", "erro");
+          concluirConsulta();
+        })
+        .listarFuncionariosAgenda();
+
+      google.script.run
+        .withSuccessHandler(function(lista) {
+          referenciasAgenda.clientes = Object.create(null);
+          lista.forEach(function(item) {
+            referenciasAgenda.clientes[String(item.codigo)] = item.nome;
+          });
+          concluirConsulta();
+        })
+        .withFailureHandler(function(erro) {
+          mostrarMensagem("mensagemAgenda", erro.message || "Não foi possível carregar os clientes.", "erro");
+          concluirConsulta();
+        })
+        .listarClientesAgenda();
+
+      google.script.run
+        .withSuccessHandler(function(lista) {
+          referenciasAgenda.servicos = Object.create(null);
+          lista.forEach(function(item) {
+            referenciasAgenda.servicos[String(item.codigo)] = item.nome;
+          });
+          concluirConsulta();
+        })
+        .withFailureHandler(function(erro) {
+          mostrarMensagem("mensagemAgenda", erro.message || "Não foi possível carregar os serviços.", "erro");
+          concluirConsulta();
+        })
+        .listarServicosAgenda();
+    }
+
+    /**
+     * Retorna o nome associado ao código, mantendo o código como fallback
+     * caso o registro relacionado não exista mais no cadastro.
+     */
+    function obterNomeReferenciaAgenda(tipo, codigo) {
+      var nome = referenciasAgenda[tipo][String(codigo)];
+      return nome || (codigo === "" || codigo == null ? "" : "Código " + codigo);
+    }
+
     /**
      * Solicita os registros da planilha e desenha uma tabela na tela.
      * Os dados são lidos da planilha; a grade não guarda cópias locais.
@@ -1016,6 +1088,12 @@
 
       google.script.run
         .withSuccessHandler(function(resultado) {
+          if (tipo === "agenda") {
+            carregarReferenciasAgenda(function() {
+              desenharGradeCadastro(tipo, resultado);
+            });
+            return;
+          }
           desenharGradeCadastro(tipo, resultado);
         })
         .withFailureHandler(function(erro) {
@@ -1048,9 +1126,15 @@
       tabela.className = "grade-tabela";
       var thead = document.createElement("thead");
       var trCab = document.createElement("tr");
-      cabecalhos.forEach(function(cabecalho) {
+      cabecalhos.forEach(function(cabecalho, indice) {
         var th = document.createElement("th");
-        th.textContent = cabecalho;
+        var titulo = cabecalho;
+        if (tipo === "agenda") {
+          if (indice === 3) titulo = "Funcionário";
+          if (indice === 4) titulo = "Cliente";
+          if (indice === 5) titulo = "Serviço";
+        }
+        th.textContent = titulo;
         trCab.appendChild(th);
       });
       if (tipo === "funcionarios" || tipo === "agenda") {
@@ -1062,8 +1146,16 @@
       var tbody = document.createElement("tbody");
       linhas.forEach(function(linha) {
         var tr = document.createElement("tr");
-        linha.forEach(function(valor) {
-          var td = document.createElement("td"); td.textContent = valor == null ? "" : String(valor); tr.appendChild(td);
+        linha.forEach(function(valor, indice) {
+          var valorExibido = valor;
+          if (tipo === "agenda") {
+            if (indice === 3) valorExibido = obterNomeReferenciaAgenda("funcionarios", valor);
+            if (indice === 4) valorExibido = obterNomeReferenciaAgenda("clientes", valor);
+            if (indice === 5) valorExibido = obterNomeReferenciaAgenda("servicos", valor);
+          }
+          var td = document.createElement("td");
+          td.textContent = valorExibido == null ? "" : String(valorExibido);
+          tr.appendChild(td);
         });
         if (tipo === "agenda") {
           var codigoAgendamento = linha[0];
@@ -1072,7 +1164,7 @@
           tdAcoesAgenda.className = "acoes-agendamento";
 
           [
-            { texto: "Consultar", classe: "botao-acao-grade", acao: consultarAgendamentoTela },
+            { texto: "Detalhar", classe: "botao-acao-grade", acao: consultarAgendamentoTela },
             { texto: "Editar", classe: "botao-acao-grade", acao: editarAgendamentoTela },
             { texto: "Cancelar", classe: "botao-acao-grade botao-excluir-grade", acao: cancelarAgendamentoTela }
           ].forEach(function(cfg) {
@@ -1185,9 +1277,9 @@
           var texto = "Agendamento " + item.codigo +
             "\nData: " + item.data +
             "\nHora: " + item.hora +
-            "\nFuncionário: " + item.codigo_funcionario +
-            "\nCliente: " + item.codigo_cliente +
-            "\nServiço: " + item.codigo_servico +
+            "\nFuncionário: " + obterNomeReferenciaAgenda("funcionarios", item.codigo_funcionario) +
+            "\nCliente: " + obterNomeReferenciaAgenda("clientes", item.codigo_cliente) +
+            "\nServiço: " + obterNomeReferenciaAgenda("servicos", item.codigo_servico) +
             "\nValor: " + item.valor +
             "\nStatus: " + item.status;
           mostrarMensagem("mensagemAgenda", texto, "sucesso");
