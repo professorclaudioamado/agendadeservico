@@ -107,7 +107,56 @@ var AgendamentoService = (function() {
   }
 
 
+
+  /** Consulta um agendamento pelo código para exibição ou edição. */
+  function consultar(codigo) {
+    var agendamento = AgendamentoRepository.buscarPorCodigo(codigo);
+    if (!agendamento) throw new Error("Agendamento não encontrado.");
+    return agendamento;
+  }
+
+
+  /**
+   * Atualiza os dados completos de um agendamento existente.
+   * @param {number|string} codigo Código do registro.
+   * @param {Object} dados Dados recebidos da interface.
+   * @return {string} Mensagem de confirmação.
+   */
+  function atualizar(codigo, dados) {
+    AgendamentoValidator.validarEdicao(dados);
+    var status = AgendamentoRules.normalizarStatus(dados.status);
+    AgendamentoRules.validarStatus(status);
+    var funcionario = AgendamentoRepository.buscarFuncionarioPorCodigo(dados.codigo_funcionario);
+    var cliente = AgendamentoRepository.buscarClientePorCodigo(dados.codigo_cliente);
+    var servico = AgendamentoRepository.buscarServicoPorCodigo(dados.codigo_servico);
+    AgendamentoRules.validarReferencias(funcionario, cliente, servico);
+    AgendamentoRepository.atualizar(codigo, {
+      data: AgendamentoRules.criarDataPlanilha(String(dados.data).trim()),
+      hora: String(dados.hora).trim(),
+      codigoFuncionario: Number(dados.codigo_funcionario),
+      codigoCliente: Number(dados.codigo_cliente),
+      codigoServico: Number(dados.codigo_servico),
+      valor: AgendamentoRules.obterValorServico(servico),
+      status: status
+    });
+    return "Agendamento " + codigo + " atualizado com sucesso.";
+  }
+
+
+  /** Altera somente o status, sem modificar os demais dados. */
+  function alterarStatus(codigo, novoStatus) {
+    var status = AgendamentoRules.normalizarStatus(novoStatus);
+    AgendamentoRules.validarStatus(status);
+    consultar(codigo);
+    AgendamentoRepository.atualizarStatus(codigo, status);
+    return "Status do agendamento " + codigo + " alterado para " + status + ".";
+  }
+
+
   return {
+    consultar: consultar,
+    atualizar: atualizar,
+    alterarStatus: alterarStatus,
     listarFuncionarios: listarFuncionarios,
     listarClientes: listarClientes,
     listarServicos: listarServicos,
@@ -164,4 +213,20 @@ function listarServicosAgenda() {
  */
 function cadastrarAgendamento(dados) {
   return AgendamentoService.cadastrar(dados);
+}
+
+
+/** PONTO DE ENTRADA DA INTERFACE: consulta um agendamento pelo código. */
+function consultarAgendamento(codigo) {
+  return AgendamentoService.consultar(codigo);
+}
+
+/** PONTO DE ENTRADA DA INTERFACE: atualiza os dados de um agendamento. */
+function atualizarAgendamento(codigo, dados) {
+  return AgendamentoService.atualizar(codigo, dados);
+}
+
+/** PONTO DE ENTRADA DA INTERFACE: altera somente o status do agendamento. */
+function alterarStatusAgendamento(codigo, status) {
+  return AgendamentoService.alterarStatus(codigo, status);
 }

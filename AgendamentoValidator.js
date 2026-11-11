@@ -111,7 +111,8 @@ var AgendamentoValidator = (function() {
 
 
   return {
-    validarCadastro: validarCadastro
+    validarCadastro: validarCadastro,
+    validarEdicao: validarCadastro
   };
 
 })();
