@@ -48,7 +48,6 @@ var AprendizadoMaquinaService = (function() {
     var treino = partes.treino.map(paraClassificador_);
     var validacao = partes.validacao.map(paraClassificador_);
     var teste = partes.teste.map(paraClassificador_);
-    var modeloTreino = KNNClassifier.treinar(treino, config);
     var modeloCompleto = KNNClassifier.treinar(treino.concat(validacao), config);
     var metricas = KNNClassifier.avaliar(modeloCompleto, teste, config.limiar);
     var positivosTreino = treino.filter(function(x) { return x.rotulo === 1; }).length;
@@ -56,12 +55,11 @@ var AprendizadoMaquinaService = (function() {
     var aprovado = metricas.quantidade >= 20 && metricas.f1 >= 0.5 &&
       metricas.recall >= 0.5 && metricas.precisao >= 0.5 &&
       metricas.acuracia > baseline;
-    var modelo = {
-      algoritmo: "KNN", versao: 1, configuracao: config,
-      amostras: treino.concat(validacao),
-      metricas: metricas, baseline: baseline, aprovado: aprovado,
-      treinadoEm: new Date().toISOString()
-    };
+    modeloCompleto.metricas = metricas;
+    modeloCompleto.baseline = baseline;
+    modeloCompleto.aprovado = aprovado;
+    modeloCompleto.treinadoEm = new Date().toISOString();
+    var modelo = modeloCompleto;
     var observacoes = "Excluídos: " + JSON.stringify(preparado.excluidos) +
       ". Escore de vizinhos não é probabilidade calibrada.";
     var experimento = {
