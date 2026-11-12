@@ -72,5 +72,28 @@ var AprendizadoMaquinaRules = (function() {
     };
   }
 
-  return { prepararExemplos: prepararExemplos, dividirTemporal: dividirTemporal, converterData: converterData, converterHora: converterHora };
+  /**
+   * Classifica o escore percentual de risco para apresentação na Agenda.
+   *
+   * As faixas são regras visuais acordadas para facilitar a leitura; não
+   * transformam o escore de vizinhos em probabilidade estatística calibrada.
+   *
+   * @param {number} riscoPercentual Escore inteiro entre 0 e 100.
+   * @return {Object|null} Nível e rótulo ou null quando o valor é inválido.
+   */
+  function classificarRisco(riscoPercentual) {
+    var percentual = Number(riscoPercentual);
+    if (!isFinite(percentual) || percentual < 0 || percentual > 100) return null;
+    if (percentual < 30) return { nivel: "BAIXO", rotulo: "Baixo" };
+    if (percentual <= 60) return { nivel: "MEDIO", rotulo: "Médio" };
+    return { nivel: "ALTO", rotulo: "Alto" };
+  }
+
+  return {
+    prepararExemplos: prepararExemplos,
+    dividirTemporal: dividirTemporal,
+    converterData: converterData,
+    converterHora: converterHora,
+    classificarRisco: classificarRisco
+  };
 })();
