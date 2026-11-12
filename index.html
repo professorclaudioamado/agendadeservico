@@ -1281,7 +1281,8 @@
             "\nCliente: " + obterNomeReferenciaAgenda("clientes", item.codigo_cliente) +
             "\nServiço: " + obterNomeReferenciaAgenda("servicos", item.codigo_servico) +
             "\nValor: " + item.valor +
-            "\nStatus: " + item.status;
+            "\nStatus: " + item.status +
+            "\nData de cadastro: " + (item.dataCadastro || "Não informada");
           mostrarMensagem("mensagemAgenda", texto, "sucesso");
           abrirPaginaPorNome("agenda");
         })
