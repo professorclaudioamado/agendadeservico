@@ -129,7 +129,7 @@ test("salvar grava Data_cadastro automaticamente e protege a coluna I", () => {
 
   assert.equal(codigo, 1);
   assert.equal(planilha.linhas[1].length, 9);
-  assert.ok(dataCadastro instanceof Date);
+  assert.equal(Object.prototype.toString.call(dataCadastro), "[object Date]");
   assert.ok(dataCadastro.getTime() >= antes.getTime());
   assert.ok(dataCadastro.getTime() <= depois.getTime());
   assert.equal(planilha.protecoes.length, 1);
