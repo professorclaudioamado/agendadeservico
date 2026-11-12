@@ -40,7 +40,7 @@ test("interface da Agenda oferece as operações do CRUD", () => {
 
 test("cancelamento da Agenda é lógico e mantém o status CANCELADO", () => {
   assert.match(html, /function cancelarAgendamentoTela\(codigo\)[\s\S]*?alterarStatusAgendamentoTela\(codigo, "CANCELADO"\)/);
-  assert.match(html, /"AGENDADO", "CONFIRMADO", "CONCLUÍDO", "CANCELADO"/);
+  assert.match(html, /"AGENDADO", "CONFIRMADO", "CONCLUÍDO", "FALTOU", "CANCELADO"/);
 });
 
 
@@ -64,4 +64,14 @@ test("ação de consulta da Agenda é apresentada como Detalhar", () => {
 test("Data_cadastro não é campo de formulário e aparece no detalhamento como somente leitura", () => {
   assert.doesNotMatch(html, /id=["']dataCadastroAgenda["']/);
   assert.match(html, /Data de cadastro:.*item\.dataCadastro/);
+});
+
+test("interface oferece acesso à configuração K-NN e exibe escore na grade", () => {
+  assert.match(html, /data-pagina="aprendizado"/);
+  assert.match(html, /id="mlK"/);
+  assert.match(html, /id="mlLimiar"/);
+  assert.match(html, /treinarAvaliarAprendizadoMaquina/);
+  assert.match(html, /preverAgendamentosAgenda/);
+  assert.match(html, /Risco estimado de falta/);
+  assert.match(html, /escore experimental/);
 });
