@@ -316,7 +316,7 @@
       onclick="abrirPagina('agenda', this)">Agenda</button>
 
     <button type="button" data-pagina="aprendizado"
-      onclick="abrirPagina('aprendizado', this)">Previsão de faltas</button>
+      onclick="abrirPagina('aprendizado', this); carregarPainelMLTela()">Previsão de faltas</button>
   </nav>
 
   <main>
@@ -1992,6 +1992,107 @@
         chamada.cadastrarAgendamento(dados);
       }
     }
+
+    /** Carrega configuração, métricas e experimentos do servidor. */
+    function carregarPainelMLTela() {
+      google.script.run.withSuccessHandler(function(painel) {
+        var cfg = painel.configuracao || {};
+        document.getElementById("mlK").value = cfg.k || 7;
+        document.getElementById("mlLimiar").value = cfg.limiar || 0.5;
+        document.getElementById("mlPonderar").checked = Boolean(cfg.ponderarDistancia);
+        document.querySelectorAll("input[name='mlFeature']").forEach(function(campo) {
+          campo.checked = (cfg.features || []).indexOf(campo.value) !== -1;
+        });
+        renderizarPainelMLTela(painel);
+      }).withFailureHandler(function(erro) {
+        mostrarMensagem("mensagemML", erro.message || "Não foi possível carregar as configurações.", "erro");
+      }).obterPainelAprendizadoMaquina();
+    }
+
+    /** Apresenta métricas e experimentos sem interpretar os dados como HTML. */
+    function renderizarPainelMLTela(painel) {
+      var resumo = document.getElementById("resumoModeloML");
+      resumo.innerHTML = "";
+      var modelo = painel.modelo;
+      if (!modelo) {
+        resumo.textContent = "Nenhum modelo treinado.";
+      } else {
+        var m = modelo.metricas || {};
+        var alerta = document.createElement("div");
+        alerta.className = "ml-alerta";
+        alerta.textContent = modelo.aprovado
+          ? "Modelo aprovado pelos critérios mínimos. Os valores na Agenda continuam sendo escores experimentais, não probabilidades calibradas."
+          : "Modelo não aprovado. Nenhum escore será exibido na Agenda até que a avaliação atinja os critérios mínimos.";
+        resumo.appendChild(alerta);
+        [["Acurácia",m.acuracia],["Precisão",m.precisao],["Recall",m.recall],["F1",m.f1],["Baseline",modelo.baseline]].forEach(function(item) {
+          var card = document.createElement("div"); card.className = "ml-indicador";
+          var valor = document.createElement("strong");
+          valor.textContent = (Number(item[1] || 0) * 100).toFixed(1) + "%";
+          var rotulo = document.createElement("span"); rotulo.textContent = item[0];
+          card.appendChild(valor); card.appendChild(rotulo); resumo.appendChild(card);
+        });
+        var data = document.createElement("p");
+        data.className = "observacao";
+        data.textContent = "Treinado em: " + (modelo.treinadoEm || "não informado");
+        resumo.appendChild(data);
+      }
+      var caixa = document.getElementById("tabelaExperimentosML");
+      caixa.innerHTML = "";
+      var itens = painel.experimentos || [];
+      if (!itens.length) { caixa.textContent = "Nenhum experimento registrado."; return; }
+      var tabela = document.createElement("table"); tabela.className = "grade-tabela";
+      var cab = document.createElement("tr");
+      ["Data","Amostras","Treino","Validação","Teste","Acurácia","Precisão","Recall","F1","Baseline"].forEach(function(t) {
+        var th = document.createElement("th"); th.textContent = t; cab.appendChild(th);
+      });
+      var thead = document.createElement("thead"); thead.appendChild(cab); tabela.appendChild(thead);
+      var tbody = document.createElement("tbody");
+      itens.forEach(function(item) {
+        var tr = document.createElement("tr");
+        [item.data,item.amostras,item.treino,item.validacao,item.teste,item.acuracia,item.precisao,item.recall,item.f1,item.baseline]
+          .forEach(function(v, i) {
+            var td = document.createElement("td");
+            td.textContent = i >= 5 ? (Number(v || 0) * 100).toFixed(1) + "%" : String(v == null ? "" : v);
+            tr.appendChild(td);
+          });
+        tbody.appendChild(tr);
+      });
+      tabela.appendChild(tbody); caixa.appendChild(tabela);
+    }
+
+    /** Lê os campos e solicita ao servidor a validação e gravação da configuração. */
+    function salvarConfiguracaoMLTela() {
+      var config = {
+        modelo: "KNN",
+        k: Number(document.getElementById("mlK").value),
+        limiar: Number(document.getElementById("mlLimiar").value),
+        ponderarDistancia: document.getElementById("mlPonderar").checked,
+        features: Array.from(document.querySelectorAll("input[name='mlFeature']:checked")).map(function(c) { return c.value; })
+      };
+      var botao = document.getElementById("btnSalvarML"); botao.disabled = true;
+      google.script.run.withSuccessHandler(function(resposta) {
+        mostrarMensagem("mensagemML", resposta.mensagem, "sucesso");
+        botao.disabled = false; carregarPainelMLTela();
+      }).withFailureHandler(function(erro) {
+        mostrarMensagem("mensagemML", erro.message || "Não foi possível salvar a configuração.", "erro");
+        botao.disabled = false;
+      }).salvarConfiguracaoAprendizadoMaquina(config);
+    }
+
+    /** Executa treinamento e avaliação cronológica no servidor. */
+    function treinarMLTela() {
+      var botao = document.getElementById("btnTreinarML"); botao.disabled = true;
+      botao.textContent = "Treinando e avaliando...";
+      google.script.run.withSuccessHandler(function(resposta) {
+        mostrarMensagem("mensagemML", resposta.mensagem + " Experimento: " + resposta.experimentoId, resposta.aprovado ? "sucesso" : "erro");
+        botao.disabled = false; botao.textContent = "Treinar e avaliar modelo";
+        carregarPainelMLTela(); carregarGradeCadastro("agenda");
+      }).withFailureHandler(function(erro) {
+        mostrarMensagem("mensagemML", erro.message || "Falha no treinamento.", "erro");
+        botao.disabled = false; botao.textContent = "Treinar e avaliar modelo";
+      }).treinarAvaliarAprendizadoMaquina();
+    }
+
   </script>
 </body>
 </html>
