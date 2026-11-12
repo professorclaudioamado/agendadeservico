@@ -2,7 +2,7 @@
 
 ## Versão atual
 
-A aplicação utiliza Google Apps Script e Google Sheets, com entidades organizadas em camadas. A integração manual tradicional por Gmail está implementada na `main`. O BOT conversacional com IA/Groq e chamadas de ferramentas de consulta foi integrado à `main` pelo PR #12. O BOT com IA e chamadas de ferramentas foi publicado no Apps Script pela execução #66 do GitHub Actions, que concluiu validação e publicação com sucesso (versão registrada no log: @63). O teste real de ponta a ponta com a Groq ainda depende de validação manual na implantação. A integração experimental de leitura de e-mails com IA permanece na branch `feature/groq-email-agendamento-ia`, sujeita às pendências descritas nesta documentação.
+A aplicação utiliza Google Apps Script e Google Sheets, com entidades organizadas em camadas. A `main` contém os cadastros, o CRUD de agendamentos, as integrações com Gmail e ViaCEP, o BOT conversacional com IA/Groq e chamadas de ferramentas, além do registro automático e protegido de `Data_cadastro` na aba `AGENDA`. A atualização mais recente registrada neste documento é a integração da PR #20. A publicação dessa atualização no Apps Script e os testes integrados na planilha real ainda precisam ser confirmados conforme as pendências abaixo. A implantação permanece restrita ao proprietário (`MYSELF`).
 
 ## Arquitetura adotada
 
@@ -588,3 +588,102 @@ Substituir os códigos de funcionário, cliente e serviço pelos respectivos nom
 
 ### Próximo passo
 Integrar a alteração após aprovação do workflow e publicar no Apps Script. Em seguida, validar visualmente a grade com os dados reais da planilha.
+
+---
+
+## Atualização de estado — PR #20: Data_cadastro automática
+
+### Resultado integrado à branch `main`
+
+- A PR #20 foi integrada por squash.
+- Commit de integração: `a44c1dabe958561365362d1dd502bcbc9ec1c713`.
+- Mensagem: `Registra e protege Data_cadastro dos agendamentos (#20)`.
+- A alteração registra automaticamente a data de cadastro do agendamento na coluna I (`Data_cadastro`) da aba `AGENDA`.
+- O valor é gerado no servidor durante a gravação; não existe campo correspondente no formulário.
+- A coluna I é protegida contra edição manual, com a descrição `AGENDA_DATA_CADASTRO_SOMENTE_LEITURA`.
+- A consulta do agendamento devolve `dataCadastro`, e a edição preserva o valor já gravado na coluna I.
+- A interface apresenta a data de cadastro no detalhamento do agendamento.
+
+### Arquivos da PR #20
+
+- **Criado:** `tests/agendamento-repository.test.js`.
+- **Alterados:** `AgendamentoRepository.js`, `index.html`, `tests/agendamento.test.js`, `tests/agendamento-interface.test.js`.
+- **Mantidos:** `AgendamentoService.js`, `AgendamentoRules.js`, `AgendamentoValidator.js`, `Main.gs.js`, demais entidades e integrações, configurações e `PROJECT_GUIDE.md`.
+- **Excluídos:** nenhum. Não foi identificada responsabilidade antiga obsoleta nesta etapa.
+- **Documentação:** esta atualização registra o resultado da PR #20; o guia do projeto permanece inalterado.
+
+### Validação automatizada
+
+- GitHub Actions, execução de validação #92 (run ID `43128894716`): concluída com sucesso.
+- Sintaxe JavaScript, testes automatizados e validação de configuração aprovados.
+- A execução de Pull Request não publicou o conteúdo no Apps Script.
+- Os testes de repositório utilizam dependências simuladas; não comprovam, por si só, a aplicação efetiva das permissões na planilha real.
+
+### Pendências de validação no Google Apps Script
+
+1. Executar o workflow manual de publicação da branch `main`, com a confirmação `publicar=true`, caso ainda não tenha sido executado.
+2. Confirmar no GitHub Actions que os jobs de validação e publicação terminaram com sucesso.
+3. Na implantação atual, criar um agendamento e conferir se a coluna I recebe a data automaticamente.
+4. Conferir se a coluna I está protegida contra edição manual e se a edição de um agendamento preserva a data original.
+5. Conferir se a data aparece no detalhamento da interface.
+
+**Importante:** a integração da PR #20 no GitHub não significa que a implantação Web App já esteja atualizada. Não registrar uma nova versão publicada até confirmar o sucesso do job de publicação.
+
+## Estado das frentes de evolução já combinadas
+
+### 1. Qualidade e histórico dos dados — próxima frente
+
+Ainda não foi implementada a preparação dos dados para o modelo de previsão de faltas. O trabalho combinado deve começar pela análise e melhoria do registro dos resultados dos agendamentos:
+
+- avaliar a inclusão do status `FALTOU`, distinto de `CANCELADO`;
+- registrar quando o status do agendamento é alterado, para preservar a informação temporal;
+- avaliar como manter o histórico das alterações, sem sobrescrever evidências necessárias às análises;
+- verificar consistência e completude dos registros existentes antes de utilizá-los no treinamento.
+
+A alteração de status atualmente conhecida grava o novo status, mas não mantém um histórico temporal completo das mudanças. Dados históricos sem a data em que o status foi definido não permitem reconstruir com segurança o que era conhecido em cada momento.
+
+### 2. Previsão de faltas com K-NN — planejada, não implementada
+
+A implementação do algoritmo K-NN (K vizinhos mais próximos) deverá ocorrer somente depois da preparação e avaliação dos dados. A arquitetura planejada inclui:
+
+- `AprendizadoMaquinaService.js`;
+- `AprendizadoMaquinaRepository.js`;
+- `AprendizadoMaquinaRules.js`;
+- `AprendizadoMaquinaValidator.js`;
+- `KNNClassifier.js`;
+- integração controlada com o fluxo de agendamentos e a interface, quando definida.
+
+Critérios já discutidos: separar treino e avaliação respeitando a ordem temporal; evitar vazamento de informações futuras; comparar com uma previsão básica; avaliar precisão, sensibilidade (recall), F1 e matriz de confusão. A distância deverá considerar adequadamente atributos numéricos e categóricos. Nenhum desses arquivos ou do modelo foi implementado até esta atualização.
+
+### 3. Jornada e disponibilidade dos profissionais — ainda pendente
+
+Para oferecer horários livres e alternativas confiáveis pelo BOT, ainda é necessário definir uma fonte de dados para:
+
+- dias de trabalho da semana;
+- início e fim do expediente;
+- intervalos;
+- folgas e exceções;
+- serviços que cada profissional está habilitado a executar, quando aplicável.
+
+Até essa fonte existir, a ferramenta de verificação informa apenas conflitos com agendamentos já registrados; ausência de conflito não comprova que o profissional trabalha naquele horário. Não implementar busca de primeiro horário livre com base apenas na ausência de conflitos.
+
+### 4. Segurança para eventual acesso público — ainda pendente
+
+A implantação permanece com acesso `MYSELF`. Antes de liberar o BOT ou a aplicação a visitantes externos, é necessário revisar autenticação e autorização no servidor e proteger todos os pontos de entrada administrativos. Não alterar o acesso para público antes dessa etapa.
+
+### 5. Testes integrados reais — pendentes de confirmação
+
+Os testes automatizados aprovados não substituem a validação no ambiente Google. Permanecem como verificações manuais ou integradas a registrar:
+
+- CRUD de agendamentos na implantação e na planilha reais;
+- gravação, preservação e proteção de `Data_cadastro`;
+- preenchimento de CEP com ViaCEP e gravação de cliente/bairro;
+- conversa real do BOT com Groq, consultas e confirmação antes da gravação;
+- processamento tradicional de e-mails Gmail e prevenção de duplicidade;
+- confirmação visual da interface e dos dados exibidos.
+
+A integração experimental de leitura de e-mails com IA continua sendo uma frente separada, sujeita às pendências já descritas neste documento; não considerá-la concluída.
+
+## Próxima etapa recomendada
+
+Iniciar a frente de qualidade dos dados com análise do fluxo atual de alteração de status, das colunas da aba `AGENDA` e dos testes existentes. Antes de alterar código, apresentar o diagnóstico, o plano incremental e os arquivos que seriam afetados. Preservar os registros existentes e não iniciar a implementação do K-NN nesta etapa.
