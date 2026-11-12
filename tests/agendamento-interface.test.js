@@ -73,5 +73,15 @@ test("interface oferece acesso à configuração K-NN e exibe escore na grade", 
   assert.match(html, /treinarAvaliarAprendizadoMaquina/);
   assert.match(html, /preverAgendamentosAgenda/);
   assert.match(html, /Risco estimado de falta/);
-  assert.match(html, /escore experimental/);
+  assert.match(html, /Escore experimental/);
+});
+
+
+test("grade da Agenda apresenta classificação visual do risco e mantém aviso de escore experimental", () => {
+  assert.match(html, /risco-agendamento-baixo/);
+  assert.match(html, /risco-agendamento-medio/);
+  assert.match(html, /risco-agendamento-alto/);
+  assert.match(html, /previsao\.classificacaoRisco/);
+  assert.match(html, /Escore experimental: proporção de vizinhos com falta; não é probabilidade calibrada/);
+  assert.match(html, /carregarGradeCadastro\("agenda"\)/);
 });

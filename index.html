@@ -250,6 +250,11 @@
     .botao-atualizar-grade { border:1px solid #cbd5e1; background:#fff; color:#334155; border-radius:8px; padding:8px 12px; cursor:pointer; }
     .acoes-agendamento { display:flex; gap:6px; flex-wrap:wrap; align-items:center; min-width:260px; }
     .status-grade-select { min-width:130px; padding:7px; border:1px solid #cbd5e1; border-radius:7px; background:#fff; color:#334155; }
+    .risco-agendamento { display:inline-block; padding:5px 8px; border-radius:999px; font-size:12px; font-weight:700; white-space:nowrap; }
+    .risco-agendamento-baixo { background:#dcfce7; color:#166534; }
+    .risco-agendamento-medio { background:#fef3c7; color:#92400e; }
+    .risco-agendamento-alto { background:#fee2e2; color:#991b1b; }
+    .risco-agendamento-indisponivel { color:#64748b; font-size:12px; }
 
 
     /* Acompanhamento visual do processamento de e-mails com IA */
@@ -1239,8 +1244,19 @@
         if (tipo === "agenda") {
           var previsao = previsoes && previsoes[String(linha[0])];
           var tdRisco = document.createElement("td");
-          tdRisco.textContent = previsao ? previsao.riscoPercentual + "% · escore experimental" : "Indisponível";
-          tdRisco.title = previsao ? "Proporção de vizinhos com falta; não é probabilidade calibrada." : "Modelo não aprovado ou dados insuficientes.";
+          if (previsao && previsao.classificacaoRisco) {
+            var indicadorRisco = document.createElement("span");
+            indicadorRisco.className = "risco-agendamento risco-agendamento-" +
+              String(previsao.nivelRisco || "").toLowerCase();
+            indicadorRisco.textContent = previsao.classificacaoRisco + " · " +
+              previsao.riscoPercentual + "%";
+            tdRisco.appendChild(indicadorRisco);
+            tdRisco.title = "Escore experimental: proporção de vizinhos com falta; não é probabilidade calibrada.";
+          } else {
+            tdRisco.textContent = "Indisponível";
+            tdRisco.className = "risco-agendamento-indisponivel";
+            tdRisco.title = "Modelo não aprovado ou dados insuficientes para estimar.";
+          }
           tr.appendChild(tdRisco);
           var codigoAgendamento = linha[0];
           var statusAtual = String(linha[7] || "AGENDADO");

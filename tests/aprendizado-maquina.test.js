@@ -97,3 +97,19 @@ test("critérios de avaliação identificam corretamente uma reprovação", () =
   assert.equal(criterios.every(Boolean), false);
   assert.equal(criterios.length, 5);
 });
+
+
+test("classificação do risco respeita os limites baixo, médio e alto", () => {
+  const contexto = {};
+  carregar(contexto, "AprendizadoMaquinaRules.js");
+  const classificar = contexto.AprendizadoMaquinaRules.classificarRisco;
+  assert.deepEqual(JSON.parse(JSON.stringify(classificar(0))), { nivel: "BAIXO", rotulo: "Baixo" });
+  assert.equal(classificar(29).nivel, "BAIXO");
+  assert.equal(classificar(30).nivel, "MEDIO");
+  assert.equal(classificar(60).nivel, "MEDIO");
+  assert.equal(classificar(61).nivel, "ALTO");
+  assert.equal(classificar(100).nivel, "ALTO");
+  assert.equal(classificar(-1), null);
+  assert.equal(classificar(101), null);
+  assert.equal(classificar("inválido"), null);
+});
