@@ -43,13 +43,18 @@ var AprendizadoMaquinaService = (function() {
     var registros = AgendamentoRepository.listarDadosAprendizado();
     var preparado = AprendizadoMaquinaRules.prepararExemplos(registros, config);
     var partes = AprendizadoMaquinaRules.dividirTemporal(preparado.exemplos);
-    if (partes.treino.length < config.k) throw new Error("Reduza K: há menos exemplos de treino que vizinhos solicitados.");
+    if (partes.treino.length < 1) throw new Error("Não há exemplos suficientes para treinar o modelo.");
 
     var treino = partes.treino.map(paraClassificador_);
     var validacao = partes.validacao.map(paraClassificador_);
     var teste = partes.teste.map(paraClassificador_);
-    var modeloCompleto = KNNClassifier.treinar(treino.concat(validacao), config);
-    var metricas = KNNClassifier.avaliar(modeloCompleto, teste, config.limiar);
+
+    // A validação escolhe K e limiar. O conjunto de teste permanece isolado
+    // para medir o desempenho final sem participar da escolha dos parâmetros.
+    var ajuste = selecionarParametros_(treino, validacao, config);
+    var configuracaoSelecionada = ajuste.configuracao;
+    var modeloCompleto = KNNClassifier.treinar(treino.concat(validacao), configuracaoSelecionada);
+    var metricas = KNNClassifier.avaliar(modeloCompleto, teste, configuracaoSelecionada.limiar);
     var positivosTreino = treino.filter(function(x) { return x.rotulo === 1; }).length;
     var classeBaseline = positivosTreino >= treino.length - positivosTreino ? 1 : 0;
     var acertosBaseline = teste.filter(function(x) { return x.rotulo === classeBaseline; }).length;
@@ -82,10 +87,11 @@ var AprendizadoMaquinaService = (function() {
     modeloCompleto.amostras = preparado.exemplos.length;
     modeloCompleto.excluidos = preparado.excluidos;
     var modelo = modeloCompleto;
-    var observacoes = "Excluídos: " + JSON.stringify(preparado.excluidos) +
-      ". Escore de vizinhos não é probabilidade calibrada.";
+    var observacoes = "Parâmetros escolhidos na validação: K=" + configuracaoSelecionada.k +
+      ", limiar=" + configuracaoSelecionada.limiar + ". Excluídos: " +
+      JSON.stringify(preparado.excluidos) + ". Escore de vizinhos não é probabilidade calibrada.";
     var experimento = {
-      configuracao: config, amostras: preparado.exemplos.length,
+      configuracao: configuracaoSelecionada, amostras: preparado.exemplos.length,
       treino: treino.length, validacao: validacao.length, teste: teste.length,
       metricas: metricas, baseline: baseline, observacoes: observacoes
     };
@@ -97,10 +103,76 @@ var AprendizadoMaquinaService = (function() {
       excluidos: preparado.excluidos,
       divisao: { treino: treino.length, validacao: validacao.length, teste: teste.length },
       criterios: criterios,
+      configuracaoSelecionada: configuracaoSelecionada,
+      metricasValidacao: ajuste.metricas,
       mensagem: aprovado
         ? "Modelo avaliado e liberado para exibir escores experimentais."
         : "Modelo treinado, mas não atingiu os critérios mínimos para exibição na Agenda."
     };
+  }
+
+  /**
+   * Seleciona K e limiar pelo melhor F1 no conjunto de validação.
+   *
+   * A busca usa somente os dados de treino e validação. O conjunto de teste
+   * não é consultado até que os parâmetros estejam definidos, evitando
+   * escolher parâmetros com base no resultado que será usado para aprovação.
+   *
+   * Em caso de empate, prioriza acurácia, depois recall e, por fim, a
+   * configuração mais próxima dos parâmetros informados pelo usuário.
+   *
+   * @param {Object[]} treino Exemplos históricos usados para ajustar candidatos.
+   * @param {Object[]} validacao Exemplos reservados para comparar candidatos.
+   * @param {Object} config Configuração informada pelo usuário.
+   * @return {{configuracao:Object, metricas:Object}} Melhor configuração e métricas.
+   */
+  function selecionarParametros_(treino, validacao, config) {
+    var valoresK = [1, 3, 5, 7, 9];
+    if (valoresK.indexOf(Number(config.k)) === -1) valoresK.push(Number(config.k));
+    valoresK = valoresK.filter(function(k, indice, lista) {
+      return k <= treino.length && lista.indexOf(k) === indice;
+    });
+
+    var limiares = [0.3, 0.4, 0.5, 0.6, 0.7];
+    if (limiares.indexOf(Number(config.limiar)) === -1) limiares.push(Number(config.limiar));
+    limiares.sort(function(a, b) { return a - b; });
+
+    var melhor = null;
+    valoresK.forEach(function(k) {
+      limiares.forEach(function(limiar) {
+        var candidata = {
+          modelo: config.modelo,
+          k: k,
+          limiar: limiar,
+          ponderarDistancia: config.ponderarDistancia,
+          features: config.features.slice(),
+          pesos: config.pesos
+        };
+        var modeloCandidato = KNNClassifier.treinar(treino, candidata);
+        var metricas = KNNClassifier.avaliar(modeloCandidato, validacao, limiar);
+        var distanciaConfiguracao = Math.abs(k - Number(config.k)) +
+          Math.abs(limiar - Number(config.limiar)) * 10;
+        var pontuacao = {
+          configuracao: candidata,
+          metricas: metricas,
+          distanciaConfiguracao: distanciaConfiguracao
+        };
+
+        if (!melhor ||
+            metricas.f1 > melhor.metricas.f1 ||
+            (metricas.f1 === melhor.metricas.f1 && metricas.acuracia > melhor.metricas.acuracia) ||
+            (metricas.f1 === melhor.metricas.f1 && metricas.acuracia === melhor.metricas.acuracia &&
+              metricas.recall > melhor.metricas.recall) ||
+            (metricas.f1 === melhor.metricas.f1 && metricas.acuracia === melhor.metricas.acuracia &&
+              metricas.recall === melhor.metricas.recall &&
+              distanciaConfiguracao < melhor.distanciaConfiguracao)) {
+          melhor = pontuacao;
+        }
+      });
+    });
+
+    if (!melhor) throw new Error("Não foi possível selecionar parâmetros com os dados de validação.");
+    return { configuracao: melhor.configuracao, metricas: melhor.metricas };
   }
 
   /** Converte a estrutura preparada para o contrato do classificador. */
