@@ -273,6 +273,17 @@
     .ia-detalhe-atual { margin:14px 0 0; padding:11px 13px; background:#f1f5f9; border-radius:9px; color:#475569; font-size:12px; line-height:1.5; white-space:pre-line; }
     @media (max-width:600px) { .painel-processamento-ia { padding:15px; } }
 
+
+    .ml-features { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px 16px; margin-top:8px; }
+    .ml-features label { display:flex; align-items:center; gap:8px; font-weight:normal; margin:5px 0; }
+    .ml-features input, #mlPonderar { width:auto; }
+    .ml-acoes { display:flex; flex-wrap:wrap; gap:10px; margin-top:18px; }
+    .ml-resumo { display:grid; grid-template-columns:repeat(auto-fit,minmax(130px,1fr)); gap:12px; }
+    .ml-indicador { padding:14px; border:1px solid #e2e8f0; border-radius:9px; }
+    .ml-indicador strong { display:block; font-size:22px; color:#1d4ed8; }
+    .ml-indicador span { color:#64748b; font-size:12px; }
+    .ml-alerta { padding:12px; border-radius:8px; background:#fff7ed; color:#9a3412; margin-bottom:12px; line-height:1.5; }
+    @media (max-width:600px) { .ml-features { grid-template-columns:1fr; } }
   </style>
 </head>
 
@@ -303,6 +314,9 @@
 
     <button type="button" data-pagina="agenda"
       onclick="abrirPagina('agenda', this)">Agenda</button>
+
+    <button type="button" data-pagina="aprendizado"
+      onclick="abrirPagina('aprendizado', this); carregarPainelMLTela()">Previsão de faltas</button>
   </nav>
 
   <main>
@@ -634,6 +648,7 @@
                 <option value="AGENDADO">AGENDADO</option>
                 <option value="CONFIRMADO">CONFIRMADO</option>
                 <option value="CONCLUÍDO">CONCLUÍDO</option>
+                <option value="FALTOU">FALTOU</option>
                 <option value="CANCELADO">CANCELADO</option>
               </select>
             </div>
@@ -688,6 +703,42 @@
 
       </div>
     </section>
+
+    <!-- CONFIGURAÇÃO DOS MODELOS DE APRENDIZADO DE MÁQUINA -->
+    <section id="pagina-aprendizado" class="pagina">
+      <div class="cartao">
+        <h2>Configuração da previsão de faltas</h2>
+        <p class="observacao">Configure o K-NN (K vizinhos mais próximos), selecione as características e execute uma avaliação cronológica. O escore exibido na Agenda representa a proporção de faltas entre os vizinhos, não uma probabilidade calibrada.</p>
+        <div class="campos-grid">
+          <div><label for="mlModelo">Modelo</label><select id="mlModelo" disabled><option value="KNN">K-NN — K vizinhos mais próximos</option></select></div>
+          <div><label for="mlK">Quantidade de vizinhos (K)</label><input type="number" id="mlK" min="1" max="50" step="1" value="3"></div>
+          <div><label for="mlLimiar">Limiar para risco elevado (0 a 1)</label><input type="number" id="mlLimiar" min="0.01" max="0.99" step="0.01" value="0.5"></div>
+          <div class="campo-completo">
+            <label>Características utilizadas</label>
+            <div class="ml-features">
+              <label><input type="checkbox" name="mlFeature" value="antecedenciaDias"> Antecedência do agendamento</label>
+              <label><input type="checkbox" name="mlFeature" value="hora" checked> Horário</label>
+              <label><input type="checkbox" name="mlFeature" value="diaSemana" checked> Dia da semana</label>
+              <label><input type="checkbox" name="mlFeature" value="funcionario" checked> Funcionário</label>
+              <label><input type="checkbox" name="mlFeature" value="servico" checked> Serviço</label>
+              <label><input type="checkbox" name="mlFeature" value="cliente"> Cliente</label>
+            </div>
+          </div>
+          <div class="campo-completo"><label><input type="checkbox" id="mlPonderar"> Dar mais peso aos vizinhos mais próximos</label></div>
+        </div>
+        <div class="ml-acoes">
+          <button type="button" class="botao-principal" id="btnSalvarML" onclick="salvarConfiguracaoMLTela()">Salvar configuração</button>
+          <button type="button" class="botao-principal" id="btnTreinarML" onclick="treinarMLTela()">Treinar e avaliar modelo</button>
+          <button type="button" class="botao-atualizar-grade" onclick="carregarPainelMLTela()">Atualizar resultados</button>
+        </div>
+        <div id="mensagemML" class="mensagem"></div>
+      </div>
+      <div class="cartao"><h3>Resultado do modelo atual</h3><div id="resumoModeloML" class="ml-resumo">Carregando...</div>
+        <p class="observacao">Avaliação cronológica: 60% treino, 20% validação e 20% teste. O modelo só libera escores na Agenda se superar o resultado básico e atingir os critérios mínimos definidos no servidor.</p>
+      </div>
+      <div class="cartao"><h3>Histórico de experimentos</h3><div class="grade-tabela-wrap" id="tabelaExperimentosML"><div class="grade-vazia">Carregando experimentos...</div></div></div>
+    </section>
+
   </main>
 
   <footer>Agenda de Atendimento - Serviços</footer>
@@ -1090,7 +1141,11 @@
         .withSuccessHandler(function(resultado) {
           if (tipo === "agenda") {
             carregarReferenciasAgenda(function() {
-              desenharGradeCadastro(tipo, resultado);
+              google.script.run.withSuccessHandler(function(previsoes) {
+                desenharGradeCadastro(tipo, resultado, previsoes || {});
+              }).withFailureHandler(function() {
+                desenharGradeCadastro(tipo, resultado, {});
+              }).preverAgendamentosAgenda();
             });
             return;
           }
@@ -1105,7 +1160,7 @@
     }
 
     // Cria as células usando textContent para não interpretar dados como HTML.
-    function desenharGradeCadastro(tipo, resultado) {
+    function desenharGradeCadastro(tipo, resultado, previsoes) {
       var caixa = document.getElementById("tabela-" + tipo);
       var contagem = document.getElementById("contagem-" + tipo);
       var cabecalhos = resultado && resultado.cabecalhos ? resultado.cabecalhos : [];
@@ -1137,6 +1192,9 @@
         th.textContent = titulo;
         trCab.appendChild(th);
       });
+      if (tipo === "agenda") {
+        var thRisco = document.createElement("th"); thRisco.textContent = "Risco estimado de falta"; trCab.appendChild(thRisco);
+      }
       if (tipo === "funcionarios" || tipo === "agenda") {
         var thAcoes = document.createElement("th"); thAcoes.textContent = "Ações"; trCab.appendChild(thAcoes);
       }
@@ -1158,6 +1216,11 @@
           tr.appendChild(td);
         });
         if (tipo === "agenda") {
+          var previsao = previsoes && previsoes[String(linha[0])];
+          var tdRisco = document.createElement("td");
+          tdRisco.textContent = previsao ? previsao.riscoPercentual + "% · escore experimental" : "Indisponível";
+          tdRisco.title = previsao ? "Proporção de vizinhos com falta; não é probabilidade calibrada." : "Modelo não aprovado ou dados insuficientes.";
+          tr.appendChild(tdRisco);
           var codigoAgendamento = linha[0];
           var statusAtual = String(linha[7] || "AGENDADO");
           var tdAcoesAgenda = document.createElement("td");
@@ -1179,7 +1242,7 @@
           var seletorStatus = document.createElement("select");
           seletorStatus.className = "status-grade-select";
           seletorStatus.setAttribute("aria-label", "Novo status do agendamento " + codigoAgendamento);
-          ["AGENDADO", "CONFIRMADO", "CONCLUÍDO", "CANCELADO"].forEach(function(status) {
+          ["AGENDADO", "CONFIRMADO", "CONCLUÍDO", "FALTOU", "CANCELADO"].forEach(function(status) {
             var opcao = document.createElement("option");
             opcao.value = status;
             opcao.textContent = status;
@@ -1929,6 +1992,107 @@
         chamada.cadastrarAgendamento(dados);
       }
     }
+
+    /** Carrega configuração, métricas e experimentos do servidor. */
+    function carregarPainelMLTela() {
+      google.script.run.withSuccessHandler(function(painel) {
+        var cfg = painel.configuracao || {};
+        document.getElementById("mlK").value = cfg.k || 7;
+        document.getElementById("mlLimiar").value = cfg.limiar || 0.5;
+        document.getElementById("mlPonderar").checked = Boolean(cfg.ponderarDistancia);
+        document.querySelectorAll("input[name='mlFeature']").forEach(function(campo) {
+          campo.checked = (cfg.features || []).indexOf(campo.value) !== -1;
+        });
+        renderizarPainelMLTela(painel);
+      }).withFailureHandler(function(erro) {
+        mostrarMensagem("mensagemML", erro.message || "Não foi possível carregar as configurações.", "erro");
+      }).obterPainelAprendizadoMaquina();
+    }
+
+    /** Apresenta métricas e experimentos sem interpretar os dados como HTML. */
+    function renderizarPainelMLTela(painel) {
+      var resumo = document.getElementById("resumoModeloML");
+      resumo.innerHTML = "";
+      var modelo = painel.modelo;
+      if (!modelo) {
+        resumo.textContent = "Nenhum modelo treinado.";
+      } else {
+        var m = modelo.metricas || {};
+        var alerta = document.createElement("div");
+        alerta.className = "ml-alerta";
+        alerta.textContent = modelo.aprovado
+          ? "Modelo aprovado pelos critérios mínimos. Os valores na Agenda continuam sendo escores experimentais, não probabilidades calibradas."
+          : "Modelo não aprovado. Nenhum escore será exibido na Agenda até que a avaliação atinja os critérios mínimos.";
+        resumo.appendChild(alerta);
+        [["Acurácia",m.acuracia],["Precisão",m.precisao],["Recall",m.recall],["F1",m.f1],["Baseline",modelo.baseline]].forEach(function(item) {
+          var card = document.createElement("div"); card.className = "ml-indicador";
+          var valor = document.createElement("strong");
+          valor.textContent = (Number(item[1] || 0) * 100).toFixed(1) + "%";
+          var rotulo = document.createElement("span"); rotulo.textContent = item[0];
+          card.appendChild(valor); card.appendChild(rotulo); resumo.appendChild(card);
+        });
+        var data = document.createElement("p");
+        data.className = "observacao";
+        data.textContent = "Treinado em: " + (modelo.treinadoEm || "não informado");
+        resumo.appendChild(data);
+      }
+      var caixa = document.getElementById("tabelaExperimentosML");
+      caixa.innerHTML = "";
+      var itens = painel.experimentos || [];
+      if (!itens.length) { caixa.textContent = "Nenhum experimento registrado."; return; }
+      var tabela = document.createElement("table"); tabela.className = "grade-tabela";
+      var cab = document.createElement("tr");
+      ["Data","Amostras","Treino","Validação","Teste","Acurácia","Precisão","Recall","F1","Baseline"].forEach(function(t) {
+        var th = document.createElement("th"); th.textContent = t; cab.appendChild(th);
+      });
+      var thead = document.createElement("thead"); thead.appendChild(cab); tabela.appendChild(thead);
+      var tbody = document.createElement("tbody");
+      itens.forEach(function(item) {
+        var tr = document.createElement("tr");
+        [item.data,item.amostras,item.treino,item.validacao,item.teste,item.acuracia,item.precisao,item.recall,item.f1,item.baseline]
+          .forEach(function(v, i) {
+            var td = document.createElement("td");
+            td.textContent = i >= 5 ? (Number(v || 0) * 100).toFixed(1) + "%" : String(v == null ? "" : v);
+            tr.appendChild(td);
+          });
+        tbody.appendChild(tr);
+      });
+      tabela.appendChild(tbody); caixa.appendChild(tabela);
+    }
+
+    /** Lê os campos e solicita ao servidor a validação e gravação da configuração. */
+    function salvarConfiguracaoMLTela() {
+      var config = {
+        modelo: "KNN",
+        k: Number(document.getElementById("mlK").value),
+        limiar: Number(document.getElementById("mlLimiar").value),
+        ponderarDistancia: document.getElementById("mlPonderar").checked,
+        features: Array.from(document.querySelectorAll("input[name='mlFeature']:checked")).map(function(c) { return c.value; })
+      };
+      var botao = document.getElementById("btnSalvarML"); botao.disabled = true;
+      google.script.run.withSuccessHandler(function(resposta) {
+        mostrarMensagem("mensagemML", resposta.mensagem, "sucesso");
+        botao.disabled = false; carregarPainelMLTela();
+      }).withFailureHandler(function(erro) {
+        mostrarMensagem("mensagemML", erro.message || "Não foi possível salvar a configuração.", "erro");
+        botao.disabled = false;
+      }).salvarConfiguracaoAprendizadoMaquina(config);
+    }
+
+    /** Executa treinamento e avaliação cronológica no servidor. */
+    function treinarMLTela() {
+      var botao = document.getElementById("btnTreinarML"); botao.disabled = true;
+      botao.textContent = "Treinando e avaliando...";
+      google.script.run.withSuccessHandler(function(resposta) {
+        mostrarMensagem("mensagemML", resposta.mensagem + " Experimento: " + resposta.experimentoId, resposta.aprovado ? "sucesso" : "erro");
+        botao.disabled = false; botao.textContent = "Treinar e avaliar modelo";
+        carregarPainelMLTela(); carregarGradeCadastro("agenda");
+      }).withFailureHandler(function(erro) {
+        mostrarMensagem("mensagemML", erro.message || "Falha no treinamento.", "erro");
+        botao.disabled = false; botao.textContent = "Treinar e avaliar modelo";
+      }).treinarAvaliarAprendizadoMaquina();
+    }
+
   </script>
 </body>
 </html>

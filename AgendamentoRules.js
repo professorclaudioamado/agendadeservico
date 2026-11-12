@@ -22,6 +22,7 @@ var AgendamentoRules = (function() {
     "AGENDADO",
     "CONFIRMADO",
     "CONCLUÍDO",
+    "FALTOU",
     "CANCELADO"
   ];
 

@@ -2,7 +2,7 @@
 
 ## Versão atual
 
-A aplicação utiliza Google Apps Script e Google Sheets, com entidades organizadas em camadas. A integração manual tradicional por Gmail está implementada na `main`. O BOT conversacional com IA/Groq e chamadas de ferramentas de consulta foi integrado à `main` pelo PR #12. O BOT com IA e chamadas de ferramentas foi publicado no Apps Script pela execução #66 do GitHub Actions, que concluiu validação e publicação com sucesso (versão registrada no log: @63). O teste real de ponta a ponta com a Groq ainda depende de validação manual na implantação. A integração experimental de leitura de e-mails com IA permanece na branch `feature/groq-email-agendamento-ia`, sujeita às pendências descritas nesta documentação.
+A aplicação utiliza Google Apps Script e Google Sheets, com entidades organizadas em camadas. A `main` contém os cadastros, o CRUD de agendamentos, as integrações com Gmail e ViaCEP, o BOT conversacional com IA/Groq e chamadas de ferramentas, além do registro automático e protegido de `Data_cadastro` na aba `AGENDA`. O CSV da aba `AGENDA` enviado para análise contém 207 registros e confirma a presença do status `FALTOU`. A atualização de documentação desta etapa também registra como pendente a tela de parâmetros/configurações dos modelos de aprendizado de máquina. A publicação da atualização da PR #20 no Apps Script e os testes integrados na planilha real ainda precisam ser confirmados conforme as pendências abaixo. A implantação permanece restrita ao proprietário (`MYSELF`).
 
 ## Arquitetura adotada
 
@@ -588,3 +588,189 @@ Substituir os códigos de funcionário, cliente e serviço pelos respectivos nom
 
 ### Próximo passo
 Integrar a alteração após aprovação do workflow e publicar no Apps Script. Em seguida, validar visualmente a grade com os dados reais da planilha.
+
+---
+
+## Atualização de estado — PR #20: Data_cadastro automática
+
+### Resultado integrado à branch `main`
+
+- A PR #20 foi integrada por squash.
+- Commit de integração: `a44c1dabe958561365362d1dd502bcbc9ec1c713`.
+- Mensagem: `Registra e protege Data_cadastro dos agendamentos (#20)`.
+- A alteração registra automaticamente a data de cadastro do agendamento na coluna I (`Data_cadastro`) da aba `AGENDA`.
+- O valor é gerado no servidor durante a gravação; não existe campo correspondente no formulário.
+- A coluna I é protegida contra edição manual, com a descrição `AGENDA_DATA_CADASTRO_SOMENTE_LEITURA`.
+- A consulta do agendamento devolve `dataCadastro`, e a edição preserva o valor já gravado na coluna I.
+- A interface apresenta a data de cadastro no detalhamento do agendamento.
+
+### Arquivos da PR #20
+
+- **Criado:** `tests/agendamento-repository.test.js`.
+- **Alterados:** `AgendamentoRepository.js`, `index.html`, `tests/agendamento.test.js`, `tests/agendamento-interface.test.js`.
+- **Mantidos:** `AgendamentoService.js`, `AgendamentoRules.js`, `AgendamentoValidator.js`, `Main.gs.js`, demais entidades e integrações, configurações e `PROJECT_GUIDE.md`.
+- **Excluídos:** nenhum. Não foi identificada responsabilidade antiga obsoleta nesta etapa.
+- **Documentação:** esta atualização registra o resultado da PR #20; o guia do projeto permanece inalterado.
+
+### Validação automatizada
+
+- GitHub Actions, execução de validação #92 (run ID `43128894716`): concluída com sucesso.
+- Sintaxe JavaScript, testes automatizados e validação de configuração aprovados.
+- A execução de Pull Request não publicou o conteúdo no Apps Script.
+- Os testes de repositório utilizam dependências simuladas; não comprovam, por si só, a aplicação efetiva das permissões na planilha real.
+
+### Pendências de validação no Google Apps Script
+
+1. Executar o workflow manual de publicação da branch `main`, com a confirmação `publicar=true`, caso ainda não tenha sido executado.
+2. Confirmar no GitHub Actions que os jobs de validação e publicação terminaram com sucesso.
+3. Na implantação atual, criar um agendamento e conferir se a coluna I recebe a data automaticamente.
+4. Conferir se a coluna I está protegida contra edição manual e se a edição de um agendamento preserva a data original.
+5. Conferir se a data aparece no detalhamento da interface.
+
+**Importante:** a integração da PR #20 no GitHub não significa que a implantação Web App já esteja atualizada. Não registrar uma nova versão publicada até confirmar o sucesso do job de publicação.
+
+## Estado das frentes de evolução já combinadas
+
+### 1. Qualidade e histórico dos dados — em evolução
+
+O CSV da aba `AGENDA` enviado pelo usuário foi analisado e contém 207 registros e as nove colunas esperadas, incluindo `Data_cadastro`. Nesse recorte:
+
+- `FALTOU` já existe como status, com 57 registros; portanto, sua criação não é uma pendência;
+- `CONCLUÍDO`: 107 registros;
+- `CANCELADO`: 17 registros;
+- `AGENDADO`: 15 registros;
+- `CONFIRMADO`: 11 registros;
+- `Data_cadastro` está preenchida em 203 registros e vazia em 4;
+- `Valor` está vazio em 48 registros.
+
+Esses números descrevem somente o CSV analisado e podem mudar conforme a planilha evoluir. A presença de `Data_cadastro` registra a data de criação, mas não informa quando cada alteração de status ocorreu.
+
+Pendências desta frente:
+
+- concluído nesta etapa: novas mudanças de status passam a ser registradas com data/hora na aba `AGENDA_HISTORICO_STATUS`, sem sobrescrever o histórico anterior;
+- mudanças antigas continuam sem timestamp confiável e não serão reconstruídas por estimativa;
+- investigar os quatro registros sem `Data_cadastro` e os 48 sem `Valor`, definindo tratamento sem inventar ou preencher dados históricos;
+- verificar consistência e completude antes de utilizar os registros no treinamento.
+
+O histórico passa a registrar transições a partir da publicação desta implementação. Dados históricos sem a data em que o status foi definido continuam sem permitir reconstruir com segurança o que era conhecido em cada momento.
+
+### 2. Previsão de faltas com K-NN — implementada na PR #22; aguardando integração e publicação
+
+A implementação do algoritmo K-NN (K vizinhos mais próximos) deverá ocorrer somente depois da preparação e avaliação dos dados. A arquitetura planejada inclui:
+
+- `AprendizadoMaquinaService.js`;
+- `AprendizadoMaquinaRepository.js`;
+- `AprendizadoMaquinaRules.js`;
+- `AprendizadoMaquinaValidator.js`;
+- `KNNClassifier.js`;
+- integração controlada com o fluxo de agendamentos e a interface, quando definida.
+
+Implementação da PR #22: distância mista para atributos numéricos e categóricos; separação cronológica 60/20/20; comparação com baseline; métricas de acurácia, precisão, recall, F1 e matriz de confusão. O treinamento usa somente registros com resultado final `FALTOU` ou `CONCLUÍDO`; estados em aberto e cancelados não são rótulos. O escore apresentado é a proporção de faltas entre vizinhos, não uma probabilidade calibrada. A Agenda só recebe escores quando o modelo supera o baseline e atinge os critérios mínimos de avaliação. A validação automatizada da PR #22 foi aprovada; testes reais no Apps Script ainda estão pendentes.
+
+### 3. Tela de parâmetros/configurações dos modelos — implementada inicialmente na PR #22; aguardando publicação
+
+Está pendente desenvolver uma tela própria para administrar os parâmetros dos modelos de aprendizado de máquina. Essa funcionalidade deve ser tratada como uma frente da aplicação, e não apenas como parte interna da implementação do K-NN.
+
+Funcionalidades implementadas nesta primeira versão:
+
+- selecionar o modelo disponível;
+- configurar os parâmetros específicos de cada modelo (no K-NN, por exemplo, a quantidade de vizinhos `K`);
+- selecionar as características dos agendamentos utilizadas pelo modelo;
+- configurar critérios de distância e pesos, quando aplicáveis;
+- definir parâmetros de treinamento e avaliação;
+- salvar, recuperar e identificar a configuração ativa;
+- permitir comparar configurações/experimentos e seus resultados.
+
+A tela atual permite selecionar K-NN, definir K, limiar, características, ponderação por distância, salvar configurações, treinar/avaliar e comparar experimentos. As abas `ML_CONFIGURACOES`, `ML_EXPERIMENTOS` e `ML_MODELO` são criadas sob demanda pelo Repository. A arquitetura permite incorporar outros modelos futuramente, mas ainda será necessário criar suas implementações e parâmetros específicos.
+
+### 4. Jornada e disponibilidade dos profissionais — ainda pendente
+
+Para oferecer horários livres e alternativas confiáveis pelo BOT, ainda é necessário definir uma fonte de dados para:
+
+- dias de trabalho da semana;
+- início e fim do expediente;
+- intervalos;
+- folgas e exceções;
+- serviços que cada profissional está habilitado a executar, quando aplicável.
+
+Até essa fonte existir, a ferramenta de verificação informa apenas conflitos com agendamentos já registrados; ausência de conflito não comprova que o profissional trabalha naquele horário. Não implementar busca de primeiro horário livre com base apenas na ausência de conflitos.
+
+### 5. Segurança para eventual acesso público — ainda pendente
+
+A implantação permanece com acesso `MYSELF`. Antes de liberar o BOT ou a aplicação a visitantes externos, é necessário revisar autenticação e autorização no servidor e proteger todos os pontos de entrada administrativos. Não alterar o acesso para público antes dessa etapa.
+
+### 6. Testes integrados reais — pendentes de confirmação
+
+Os testes automatizados aprovados não substituem a validação no ambiente Google. Permanecem como verificações manuais ou integradas a registrar:
+
+- CRUD de agendamentos na implantação e na planilha reais;
+- gravação, preservação e proteção de `Data_cadastro`;
+- preenchimento de CEP com ViaCEP e gravação de cliente/bairro;
+- conversa real do BOT com Groq, consultas e confirmação antes da gravação;
+- processamento tradicional de e-mails Gmail e prevenção de duplicidade;
+- confirmação visual da interface e dos dados exibidos.
+
+A integração experimental de leitura de e-mails com IA continua sendo uma frente separada, sujeita às pendências já descritas neste documento; não considerá-la concluída.
+
+## Próxima etapa recomendada
+
+Concluir a revisão da PR #22, integrar a implementação à `main` e publicar somente após a validação automatizada. Em seguida, executar o treinamento inicial na planilha real, conferir as métricas calculadas pelo Apps Script e validar visualmente os escores na Agenda. A publicação ainda depende do fluxo autorizado do GitHub Actions; a aprovação do Pull Request, isoladamente, não publica o Apps Script.
+
+
+---
+
+## Implementação inicial do K-NN e da tela de configuração — PR #22
+
+### Escopo implementado na branch `feature/knn-previsao-faltas`
+
+- Criados `KNNClassifier.js`, `AprendizadoMaquinaRules.js`, `AprendizadoMaquinaValidator.js`, `AprendizadoMaquinaService.js` e `AprendizadoMaquinaRepository.js`.
+- Criado `tests/aprendizado-maquina.test.js` para o classificador, métricas, preparação dos rótulos, separação temporal e validação.
+- Alterados `AgendamentoRepository.js` e `AgendamentoRules.js` para leitura dos dados de treinamento, registro de transições futuras e reconhecimento de `FALTOU`.
+- Alterados `index.html` e `tests/agendamento-interface.test.js` para a tela de parâmetros e a coluna de escore na Agenda.
+- Nenhum arquivo antigo foi removido.
+
+### Persistência criada sob demanda
+
+- `ML_CONFIGURACOES`: configurações salvas.
+- `ML_EXPERIMENTOS`: histórico das avaliações e métricas.
+- `ML_MODELO`: modelo treinado utilizado nas previsões.
+- `AGENDA_HISTORICO_STATUS`: histórico append-only das mudanças de status posteriores à publicação.
+
+### Configuração inicial avaliada no CSV disponível
+
+- 164 registros com rótulo final (`FALTOU` ou `CONCLUÍDO`).
+- Divisão temporal: 98 para treino, 33 para validação e 33 para teste.
+- Configuração inicial: K=3; horário, dia da semana, funcionário e serviço.
+- Avaliação preliminar reproduzida localmente com a mesma distância mista: acurácia 72,7%, precisão 54,5%, recall 60,0%, F1 57,1%; baseline 69,7%.
+- A avaliação no ambiente Apps Script deverá ser conferida após a publicação. O escore dos vizinhos não deve ser interpretado como probabilidade calibrada.
+
+### Critérios de liberação na Agenda
+
+O modelo só libera escores quando houver pelo menos 20 exemplos no teste, F1, recall e precisão iguais ou superiores a 0,50 e acurácia superior ao baseline. Se não atingir os critérios, a grade informa que a estimativa está indisponível, evitando exibir números sem desempenho mínimo.
+
+### Validação automatizada
+
+- PR #22: GitHub Actions, execução #99 (run ID `43133466477`), concluída com sucesso.
+- Verificação de sintaxe JavaScript: sucesso.
+- Testes automatizados `node --test tests/*.test.js`: sucesso.
+- Validação de `appsscript.json` e `.clasp.json`: sucesso.
+- Job de publicação: ignorado por se tratar de Pull Request.
+
+### Como validar após integrar e publicar
+
+1. Abrir **Previsão de faltas** e conferir os parâmetros carregados.
+2. Salvar uma configuração válida e confirmar a persistência nas abas técnicas.
+3. Executar **Treinar e avaliar modelo**; conferir amostras, divisão temporal, métricas e baseline.
+4. Conferir se o modelo foi aprovado pelos critérios e se o experimento foi registrado.
+5. Abrir a Agenda e verificar a coluna **Risco estimado de falta** nos agendamentos futuros em aberto.
+6. Alterar o status de um agendamento para `FALTOU` e conferir a criação de uma linha em `AGENDA_HISTORICO_STATUS`.
+7. Repetir a alteração sem mudar o status e confirmar que não é criada uma transição duplicada.
+8. Conferir que edição de agendamento preserva `Data_cadastro` e que as demais funções do CRUD continuam funcionando.
+
+### Pendências
+
+- Integrar a PR #22 e publicar o conteúdo da `main` pelo workflow autorizado.
+- Conferir o treinamento e as métricas na planilha real, pois a avaliação local não substitui a execução no Apps Script.
+- Validar visualmente a grade e o tempo de carregamento com os registros reais.
+- Melhorar a qualidade e ampliar o histórico de dados; a base atual é pequena e possui somente cinco clientes distintos no CSV analisado.
+- Avaliar calibração do escore e monitorar desempenho com novos resultados antes de tratá-lo como probabilidade.

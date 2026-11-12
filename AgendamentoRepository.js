@@ -280,6 +280,65 @@ var AgendamentoRepository = (function() {
 
 
   /**
+   * Lista os campos necessários ao treinamento e à previsão de faltas.
+   * A leitura permanece nesta camada; datas e horários são devolvidos
+   * como valores exibidos para interpretação explícita nas Rules.
+   *
+   * @return {Object[]} Registros normalizados da aba AGENDA.
+   */
+  function listarDadosAprendizado() {
+    var aba = obterAba_(ABA_AGENDA);
+    verificarCabecalhos_(aba, [
+      "Código", "Data", "Hora", "Codigo_funcionario",
+      "Codigo_cliente", "Codigo_servico", "Valor", "Status",
+      "Data_cadastro"
+    ]);
+    if (aba.getLastRow() < 2) return [];
+    return aba.getRange(2, 1, aba.getLastRow() - 1, 9).getDisplayValues()
+      .filter(function(linha) { return String(linha[0]).trim() !== ""; })
+      .map(function(linha) {
+        return {
+          codigo: linha[0], data: linha[1], hora: linha[2],
+          codigoFuncionario: linha[3], codigoCliente: linha[4],
+          codigoServico: linha[5], status: linha[7], dataCadastro: linha[8]
+        };
+      });
+  }
+
+
+  /**
+   * Registra a transição de status em uma aba de histórico append-only.
+   * O histórico novo permite saber quando as próximas alterações ocorreram;
+   * não reconstrói datas de alterações antigas que nunca foram registradas.
+   *
+   * @param {number|string} codigo Código do agendamento.
+   * @param {string} statusAnterior Status antes da alteração.
+   * @param {string} statusNovo Novo status.
+   * @return {void}
+   */
+  function registrarHistoricoStatus(codigo, statusAnterior, statusNovo) {
+    if (String(statusAnterior) === String(statusNovo)) return;
+    var planilha = SpreadsheetApp.getActiveSpreadsheet();
+    var nomeAba = "AGENDA_HISTORICO_STATUS";
+    var aba = planilha.getSheetByName(nomeAba);
+    var cabecalhos = ["Data_hora", "Codigo_agendamento", "Status_anterior", "Status_novo"];
+    if (!aba) {
+      aba = planilha.insertSheet(nomeAba);
+      aba.getRange(1, 1, 1, cabecalhos.length).setValues([cabecalhos]);
+      aba.setFrozenRows(1);
+    }
+    var atuais = aba.getRange(1, 1, 1, cabecalhos.length).getDisplayValues()[0];
+    cabecalhos.forEach(function(titulo, indice) {
+      if (String(atuais[indice] || "").trim() !== titulo) {
+        throw new Error("Confira os cabeçalhos da aba " + nomeAba + ".");
+      }
+    });
+    aba.appendRow([new Date(), codigo, statusAnterior, statusNovo]);
+    aba.getRange(aba.getLastRow(), 1).setNumberFormat("dd/MM/yyyy HH:mm:ss");
+  }
+
+
+  /**
    * Atualiza exclusivamente o status, preservando os demais campos.
    *
    * @param {number|string} codigo Código do agendamento.
@@ -295,7 +354,9 @@ var AgendamentoRepository = (function() {
     ]);
     var linha = localizarLinhaPorCodigo_(aba, codigo);
     if (!linha) throw new Error("Agendamento não encontrado.");
+    var statusAnterior = String(aba.getRange(linha, 8).getDisplayValues()[0][0] || "");
     aba.getRange(linha, 8).setValue(status);
+    registrarHistoricoStatus(codigo, statusAnterior, status);
     return true;
   }
 
@@ -518,6 +579,7 @@ var AgendamentoRepository = (function() {
     buscarClientePorCodigo: buscarClientePorCodigo,
     buscarServicoPorCodigo: buscarServicoPorCodigo,
     listarPorData: listarPorData,
+    listarDadosAprendizado: listarDadosAprendizado,
     buscarPorCodigo: buscarPorCodigo,
     atualizar: atualizar,
     atualizarStatus: atualizarStatus,
