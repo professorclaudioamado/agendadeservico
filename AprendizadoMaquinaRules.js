@@ -72,5 +72,5 @@ var AprendizadoMaquinaRules = (function() {
     };
   }
 
-  return { prepararExemplos: prepararExemplos, dividirTemporal: dividirTemporal };
+  return { prepararExemplos: prepararExemplos, dividirTemporal: dividirTemporal, converterData: converterData, converterHora: converterHora };
 })();
