@@ -29,7 +29,7 @@ function criarContexto() {
       listarFuncionarios: () => [],
       listarClientes: () => [],
       listarServicos: () => [],
-      salvar: () => 13
+      salvar: dados => { chamadas.salvar = dados; return 13; }
     }
   };
   carregar(contexto, "AgendamentoRules.js");
@@ -71,4 +71,21 @@ test("alterar status modifica somente o status e valida os valores permitidos", 
     () => contexto.AgendamentoService.alterarStatus("12", "EM_ATENDIMENTO"),
     /status válido/i
   );
+});
+
+
+test("cadastro não aceita data de cadastro enviada pela interface", () => {
+  const contexto = criarContexto();
+  const dados = {
+    ...dadosValidos,
+    data_cadastro: "01/01/2000",
+    dataCadastro: "01/01/2000"
+  };
+
+  const resposta = contexto.AgendamentoService.cadastrar(dados);
+
+  assert.match(resposta, /cadastrado com sucesso/i);
+  assert.equal(contexto.chamadas.salvar.data, contexto.AgendamentoRules.criarDataPlanilha(dados.data));
+  assert.equal(Object.prototype.hasOwnProperty.call(contexto.chamadas.salvar, "dataCadastro"), false);
+  assert.equal(Object.prototype.hasOwnProperty.call(contexto.chamadas.salvar, "data_cadastro"), false);
 });
