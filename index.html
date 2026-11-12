@@ -711,12 +711,12 @@
         <p class="observacao">Configure o K-NN (K vizinhos mais próximos), selecione as características e execute uma avaliação cronológica. O escore exibido na Agenda representa a proporção de faltas entre os vizinhos, não uma probabilidade calibrada.</p>
         <div class="campos-grid">
           <div><label for="mlModelo">Modelo</label><select id="mlModelo" disabled><option value="KNN">K-NN — K vizinhos mais próximos</option></select></div>
-          <div><label for="mlK">Quantidade de vizinhos (K)</label><input type="number" id="mlK" min="1" max="50" step="1" value="7"></div>
+          <div><label for="mlK">Quantidade de vizinhos (K)</label><input type="number" id="mlK" min="1" max="50" step="1" value="3"></div>
           <div><label for="mlLimiar">Limiar para risco elevado (0 a 1)</label><input type="number" id="mlLimiar" min="0.01" max="0.99" step="0.01" value="0.5"></div>
           <div class="campo-completo">
             <label>Características utilizadas</label>
             <div class="ml-features">
-              <label><input type="checkbox" name="mlFeature" value="antecedenciaDias" checked> Antecedência do agendamento</label>
+              <label><input type="checkbox" name="mlFeature" value="antecedenciaDias"> Antecedência do agendamento</label>
               <label><input type="checkbox" name="mlFeature" value="hora" checked> Horário</label>
               <label><input type="checkbox" name="mlFeature" value="diaSemana" checked> Dia da semana</label>
               <label><input type="checkbox" name="mlFeature" value="funcionario" checked> Funcionário</label>
