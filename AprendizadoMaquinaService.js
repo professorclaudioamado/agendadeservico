@@ -51,7 +51,9 @@ var AprendizadoMaquinaService = (function() {
     var modeloCompleto = KNNClassifier.treinar(treino.concat(validacao), config);
     var metricas = KNNClassifier.avaliar(modeloCompleto, teste, config.limiar);
     var positivosTreino = treino.filter(function(x) { return x.rotulo === 1; }).length;
-    var baseline = Math.max(positivosTreino, treino.length - positivosTreino) / treino.length;
+    var classeBaseline = positivosTreino >= treino.length - positivosTreino ? 1 : 0;
+    var acertosBaseline = teste.filter(function(x) { return x.rotulo === classeBaseline; }).length;
+    var baseline = teste.length ? acertosBaseline / teste.length : 0;
     var aprovado = metricas.quantidade >= 20 && metricas.f1 >= 0.5 &&
       metricas.recall >= 0.5 && metricas.precisao >= 0.5 &&
       metricas.acuracia > baseline;
@@ -136,3 +138,6 @@ var AprendizadoMaquinaService = (function() {
 function obterPainelAprendizadoMaquina() { return AprendizadoMaquinaService.obterPainel(); }
 function salvarConfiguracaoAprendizadoMaquina(config) { return AprendizadoMaquinaService.salvarConfiguracao(config); }
 function treinarAvaliarAprendizadoMaquina() { return AprendizadoMaquinaService.treinarAvaliar(); }
+function preverAgendamentosAgenda() {
+  return AprendizadoMaquinaService.preverAgendamentos(AgendamentoRepository.listarDadosAprendizado());
+}
