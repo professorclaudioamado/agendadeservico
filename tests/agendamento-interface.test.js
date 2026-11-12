@@ -59,3 +59,9 @@ test("ação de consulta da Agenda é apresentada como Detalhar", () => {
   assert.match(html, /texto: "Detalhar", classe: "botao-acao-grade", acao: consultarAgendamentoTela/);
   assert.doesNotMatch(html, /texto: "Consultar", classe: "botao-acao-grade", acao: consultarAgendamentoTela/);
 });
+
+
+test("Data_cadastro não é campo de formulário e aparece no detalhamento como somente leitura", () => {
+  assert.doesNotMatch(html, /id=["']dataCadastroAgenda["']/);
+  assert.match(html, /Data de cadastro:.*item\.dataCadastro/);
+});
