@@ -19,6 +19,9 @@ var AprendizadoMaquinaValidator = (function() {
     }
     config.features.forEach(function(feature) {
       if (FEATURES.indexOf(feature) === -1) throw new Error("Característica não reconhecida: " + feature);
+      var peso = Number(config.pesos && config.pesos[feature] != null ? config.pesos[feature] : 1);
+      if (!isFinite(peso) || peso < 0 || peso > 5) throw new Error("O peso de cada característica deve ficar entre 0 e 5.");
+      if (peso === 0) throw new Error("As características selecionadas precisam ter peso maior que zero.");
     });
     var limiar = Number(config.limiar);
     if (!(limiar > 0 && limiar < 1)) throw new Error("O limiar deve estar entre 0 e 1.");
