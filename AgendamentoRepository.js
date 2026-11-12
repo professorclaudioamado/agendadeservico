@@ -176,10 +176,14 @@ var AgendamentoRepository = (function() {
 
     verificarCabecalhos_(aba, [
       "Código", "Data", "Hora", "Codigo_funcionario",
-      "Codigo_cliente", "Codigo_servico", "Valor", "Status"
+      "Codigo_cliente", "Codigo_servico", "Valor", "Status",
+      "Data_cadastro"
     ]);
 
+    garantirProtecaoDataCadastro_(aba);
+
     var codigoAgendamento = gerarProximoCodigo_(aba);
+    var dataCadastro = new Date();
 
     aba.appendRow([
       codigoAgendamento,
@@ -189,14 +193,16 @@ var AgendamentoRepository = (function() {
       agendamento.codigoCliente,
       agendamento.codigoServico,
       agendamento.valor,
-      agendamento.status
+      agendamento.status,
+      dataCadastro
     ]);
 
     var ultimaLinha = aba.getLastRow();
 
-    // Formata somente a linha recém-gravada.
+    // Formata somente a linha recém-gravada, incluindo a data de cadastro.
     aba.getRange(ultimaLinha, 2).setNumberFormat("dd/MM/yyyy");
     aba.getRange(ultimaLinha, 7).setNumberFormat('"R$" #,##0.00');
+    aba.getRange(ultimaLinha, 9).setNumberFormat("dd/MM/yyyy");
 
     return codigoAgendamento;
   }
@@ -213,11 +219,12 @@ var AgendamentoRepository = (function() {
     var aba = obterAba_(ABA_AGENDA);
     verificarCabecalhos_(aba, [
       "Código", "Data", "Hora", "Codigo_funcionario",
-      "Codigo_cliente", "Codigo_servico", "Valor", "Status"
+      "Codigo_cliente", "Codigo_servico", "Valor", "Status",
+      "Data_cadastro"
     ]);
     if (aba.getLastRow() < 2) return null;
 
-    var linhas = aba.getRange(2, 1, aba.getLastRow() - 1, 8).getDisplayValues();
+    var linhas = aba.getRange(2, 1, aba.getLastRow() - 1, 9).getDisplayValues();
     var codigoBusca = String(codigo).trim();
     for (var i = 0; i < linhas.length; i++) {
       if (String(linhas[i][0]).trim() !== codigoBusca) continue;
@@ -232,7 +239,8 @@ var AgendamentoRepository = (function() {
         codigo_cliente: linhas[i][4],
         codigo_servico: linhas[i][5],
         valor: linhas[i][6],
-        status: linhas[i][7]
+        status: linhas[i][7],
+        dataCadastro: linhas[i][8]
       };
     }
     return null;
@@ -251,7 +259,8 @@ var AgendamentoRepository = (function() {
     var aba = obterAba_(ABA_AGENDA);
     verificarCabecalhos_(aba, [
       "Código", "Data", "Hora", "Codigo_funcionario",
-      "Codigo_cliente", "Codigo_servico", "Valor", "Status"
+      "Codigo_cliente", "Codigo_servico", "Valor", "Status",
+      "Data_cadastro"
     ]);
     var linha = localizarLinhaPorCodigo_(aba, codigo);
     if (!linha) throw new Error("Agendamento não encontrado.");
@@ -281,7 +290,8 @@ var AgendamentoRepository = (function() {
     var aba = obterAba_(ABA_AGENDA);
     verificarCabecalhos_(aba, [
       "Código", "Data", "Hora", "Codigo_funcionario",
-      "Codigo_cliente", "Codigo_servico", "Valor", "Status"
+      "Codigo_cliente", "Codigo_servico", "Valor", "Status",
+      "Data_cadastro"
     ]);
     var linha = localizarLinhaPorCodigo_(aba, codigo);
     if (!linha) throw new Error("Agendamento não encontrado.");
@@ -317,7 +327,8 @@ var AgendamentoRepository = (function() {
     var aba = obterAba_(ABA_AGENDA);
     verificarCabecalhos_(aba, [
       "Código", "Data", "Hora", "Codigo_funcionario",
-      "Codigo_cliente", "Codigo_servico", "Valor", "Status"
+      "Codigo_cliente", "Codigo_servico", "Valor", "Status",
+      "Data_cadastro"
     ]);
     if (aba.getLastRow() < 2) return [];
 
@@ -427,6 +438,39 @@ var AgendamentoRepository = (function() {
           ". Título esperado: " + esperados[i]
         );
       }
+    }
+  }
+
+
+  /**
+   * Garante que a coluna Data_cadastro seja protegida contra edição manual.
+   *
+   * A proteção é criada uma única vez e mantém o proprietário do arquivo
+   * como responsável pela manutenção. O Apps Script, executado pela conta
+   * proprietária/de implantação, continua podendo gravar a data no cadastro.
+   *
+   * @param {GoogleAppsScript.Spreadsheet.Sheet} aba Aba AGENDA.
+   * @return {void}
+   * @private
+   */
+  function garantirProtecaoDataCadastro_(aba) {
+    var descricao = "AGENDA_DATA_CADASTRO_SOMENTE_LEITURA";
+    var protecoes = aba.getProtections(SpreadsheetApp.ProtectionType.RANGE);
+    var protecaoExistente = protecoes.some(function(protecao) {
+      return protecao.getDescription() === descricao;
+    });
+
+    if (protecaoExistente) return;
+
+    var protecao = aba.getRange("I:I").protect();
+    protecao.setDescription(descricao);
+    protecao.setWarningOnly(false);
+
+    var editores = protecao.getEditors();
+    if (editores.length) protecao.removeEditors(editores);
+
+    if (protecao.canDomainEdit()) {
+      protecao.setDomainEdit(false);
     }
   }
 
