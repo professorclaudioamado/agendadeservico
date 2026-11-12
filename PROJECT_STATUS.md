@@ -2,7 +2,7 @@
 
 ## Versão atual
 
-A aplicação utiliza Google Apps Script e Google Sheets, com entidades organizadas em camadas. A `main` contém os cadastros, o CRUD de agendamentos, as integrações com Gmail e ViaCEP, o BOT conversacional com IA/Groq e chamadas de ferramentas, o registro automático e protegido de `Data_cadastro` e a primeira versão do K-NN com tela de configuração. A PR #22 foi integrada e publicada no Apps Script pelo workflow #101. Os testes funcionais na planilha real e no navegador ainda precisam ser realizados. A implantação permanece restrita ao proprietário (`MYSELF`).
+A aplicação utiliza Google Apps Script e Google Sheets, com entidades organizadas em camadas. A `main` contém os cadastros, o CRUD de agendamentos, as integrações com Gmail e ViaCEP, o BOT conversacional com IA/Groq e chamadas de ferramentas, o registro automático e protegido de `Data_cadastro` e o módulo K-NN com tela de configuração e histórico de experimentos. A PR #23 foi integrada e publicada; a correção do histórico da PR #24 também foi integrada e publicada na implantação Web App existente, versão `@91` (workflow #110). Os testes automatizados e a publicação técnica foram aprovados. Os testes funcionais integrados na planilha real e no navegador ainda precisam ser realizados. A implantação permanece restrita ao proprietário (`MYSELF`).
 
 ## Arquitetura adotada
 
@@ -882,3 +882,41 @@ Nenhum arquivo removido.
 - Atualização da implantação Web App existente: concluída com sucesso na versão `@88`.
 - A implantação permanece com o acesso previamente configurado; não foi alterada a política de acesso.
 - Próximo passo: abrir o Web App e executar a validação funcional com a planilha real, verificando o painel, salvamento, treinamento, critérios, histórico e Agenda.
+
+
+---
+
+## Correção do histórico de experimentos do Aprendizado de Máquina — PR #24 concluída
+
+### Problema identificado
+O Repository utilizava `getDisplayValues()` para ler métricas numéricas do histórico e, em seguida, convertia os textos com `Number()`. Em planilhas com localidade pt-BR, valores percentuais podem ser apresentados como texto localizado (por exemplo, `72,7%`), que não é convertido corretamente e pode resultar em `NaN`.
+
+### Correção implementada
+- `AprendizadoMaquinaRepository.listarExperimentos()` agora utiliza `getValues()` para recuperar os valores numéricos originais da planilha.
+- As métricas permanecem numéricas até a interface formatá-las para exibição.
+- A data de execução é formatada explicitamente com o fuso horário do Apps Script.
+- Foi adicionado teste automatizado que simula valores exibidos no padrão pt-BR e verifica que os números originais são preservados.
+
+### Arquivos desta etapa
+- **Criados:** `tests/aprendizado-maquina-repository.test.js`.
+- **Alterados:** `AprendizadoMaquinaRepository.js` e este `PROJECT_STATUS.md`.
+- **Mantidos:** `AprendizadoMaquinaService.js`, `AprendizadoMaquinaRules.js`, `AprendizadoMaquinaValidator.js`, `KNNClassifier.js`, `index.html`, demais entidades e `PROJECT_GUIDE.md`.
+- **Excluídos:** nenhum. Nenhum arquivo ficou obsoleto por esta correção.
+
+### Validação e publicação
+- PR #24 integrada por squash à branch `main`.
+- Commit de integração: `052aa8585eae94cc034a135aaddbb4fa01dd7119`.
+- GitHub Actions, execução de Pull Request #108: sintaxe JavaScript, testes automatizados e configuração aprovados.
+- GitHub Actions, execução de publicação #110: validação e publicação concluídas com sucesso.
+- O envio pelo `clasp push` e a atualização da implantação Web App existente foram concluídos; a versão implantada foi `@91`.
+- A política de acesso permaneceu `MYSELF`; não houve abertura de acesso público.
+
+### Como testar no Web App
+1. Abrir a implantação Web App existente.
+2. Acessar **Previsão de faltas**.
+3. Conferir o histórico de experimentos.
+4. Verificar se data, amostras, treino, validação, teste e métricas aparecem corretamente.
+5. Executar um novo treinamento, se apropriado, e confirmar que o novo experimento aparece no início do histórico.
+
+### Pendências que permanecem
+A correção do formato de leitura foi validada com teste automatizado, mas a conferência visual do histórico com os dados da planilha real ainda precisa ser realizada. Permanecem também as validações integradas reais já listadas neste documento, a definição da jornada/expediente dos profissionais e a proteção de todos os pontos administrativos antes de qualquer liberação pública.
