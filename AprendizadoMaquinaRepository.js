@@ -98,11 +98,29 @@ var AprendizadoMaquinaRepository = (function() {
     var aba = obterAba_("experimentos");
     if (aba.getLastRow() < 2) return [];
     var inicio = Math.max(2, aba.getLastRow() - (limite || 20) + 1);
-    return aba.getRange(inicio, 1, aba.getLastRow() - inicio + 1, 14).getDisplayValues()
+    return aba.getRange(inicio, 1, aba.getLastRow() - inicio + 1, 14).getValues()
       .reverse().map(function(r) {
-        return { id:r[0], data:r[1], modelo:r[2], amostras:r[4], treino:r[5],
-          validacao:r[6], teste:r[7], acuracia:Number(r[8]), precisao:Number(r[9]),
-          recall:Number(r[10]), f1:Number(r[11]), baseline:Number(r[12]), observacoes:r[13] };
+        // getValues() preserva números reais; getDisplayValues() pode retornar
+        // percentuais localizados (por exemplo, "72,7%"), que Number() não converte.
+        var dataExecucao = r[1] instanceof Date
+          ? Utilities.formatDate(r[1], Session.getScriptTimeZone(), "dd/MM/yyyy HH:mm")
+          : String(r[1] || "");
+
+        return {
+          id: r[0],
+          data: dataExecucao,
+          modelo: r[2],
+          amostras: Number(r[4] || 0),
+          treino: Number(r[5] || 0),
+          validacao: Number(r[6] || 0),
+          teste: Number(r[7] || 0),
+          acuracia: Number(r[8] || 0),
+          precisao: Number(r[9] || 0),
+          recall: Number(r[10] || 0),
+          f1: Number(r[11] || 0),
+          baseline: Number(r[12] || 0),
+          observacoes: r[13] || ""
+        };
       });
   }
 
