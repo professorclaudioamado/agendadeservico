@@ -71,6 +71,7 @@ var KNNClassifier = (function() {
     });
     var risco = pesoTotal ? soma / pesoTotal : 0;
     return {
+      escore: risco,
       riscoPercentual: Math.round(risco * 100),
       classe: risco >= Number(cfg.limiar || 0.5) ? "RISCO_ELEVADO" : "RISCO_MENOR",
       quantidadeVizinhos: vizinhos.length
@@ -81,7 +82,7 @@ var KNNClassifier = (function() {
   function avaliar(modelo, exemplos, limiar) {
     var vp = 0, fp = 0, vn = 0, fn = 0;
     exemplos.forEach(function(item) {
-      var previsto = prever(modelo, item.features).riscoPercentual / 100 >= limiar;
+      var previsto = prever(modelo, item.features).escore >= limiar;
       if (previsto && item.rotulo === 1) vp++;
       else if (previsto) fp++;
       else if (item.rotulo === 0) vn++;
