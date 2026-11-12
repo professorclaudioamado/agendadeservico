@@ -920,3 +920,50 @@ O Repository utilizava `getDisplayValues()` para ler métricas numéricas do his
 
 ### Pendências que permanecem
 A correção do formato de leitura foi validada com teste automatizado, mas a conferência visual do histórico com os dados da planilha real ainda precisa ser realizada. Permanecem também as validações integradas reais já listadas neste documento, a definição da jornada/expediente dos profissionais e a proteção de todos os pontos administrativos antes de qualquer liberação pública.
+
+## Classificação visual do risco de falta na Agenda — PR #25 concluída
+
+### Objetivo
+Facilitar a leitura do risco estimado de falta, exibindo uma classificação textual e visual ao lado do percentual de cada agendamento elegível.
+
+### Implementado
+- A rotina de previsão existente continua calculando o escore pelo K-NN.
+- AprendizadoMaquinaRules.js classifica o percentual em três faixas: **Baixo** (abaixo de 30%), **Médio** (de 30% até 60%) e **Alto** (acima de 60%).
+- AprendizadoMaquinaService.js inclui o nível e o rótulo da classificação no resultado da previsão.
+- index.html apresenta um indicador visual com classificação e percentual na coluna **Risco estimado de falta**.
+- Agendamentos novos e edições continuam acionando a atualização da grade da Agenda; quando elegíveis e com modelo aprovado, recebem a classificação após o salvamento.
+- Quando o modelo não está aprovado ou faltam dados para previsão, a interface continua mostrando **Indisponível**.
+- O aviso deixa explícito que o percentual é um escore experimental baseado na proporção de vizinhos com falta, e não uma probabilidade calibrada.
+
+### Limites de classificação
+- Baixo: 0% a 29%.
+- Médio: 30% a 60%.
+- Alto: 61% a 100%.
+
+Esses limites são faixas visuais de apoio à leitura e não alteram o algoritmo K-NN, o limiar de classificação do modelo ou seus critérios de aprovação.
+
+### Arquivos desta etapa
+- **Criados:** nenhum.
+- **Alterados:** AprendizadoMaquinaRules.js, AprendizadoMaquinaService.js, index.html, tests/aprendizado-maquina.test.js, tests/agendamento-interface.test.js e este PROJECT_STATUS.md.
+- **Mantidos:** KNNClassifier.js, AprendizadoMaquinaRepository.js, AgendamentoRepository.js, demais arquivos e PROJECT_GUIDE.md.
+- **Excluídos:** nenhum. Nenhum arquivo ficou obsoleto nesta etapa.
+
+### Validação e publicação
+- PR #25 integrada por squash à branch main.
+- Commit integrado: d0589574468ec8c084a589a7f8f5fb6edf5b0c5f.
+- GitHub Actions, workflow #113 (run ID 43302633116): sintaxe JavaScript, testes automatizados e validação de configuração aprovados.
+- GitHub Actions, workflow #114 (run ID 43302696439): validação e publicação concluídas com sucesso.
+- O clasp push enviou 41 arquivos ao Apps Script e a implantação Web App existente foi atualizada para a versão @95.
+- A política de acesso permaneceu inalterada.
+
+### Como testar no Web App
+1. Abrir a implantação Web App atualizada.
+2. Acessar **Previsão de faltas** e confirmar que o modelo está aprovado.
+3. Abrir **Agenda** e conferir a coluna **Risco estimado de falta**.
+4. Conferir visualmente os níveis Baixo, Médio e Alto com os percentuais correspondentes.
+5. Cadastrar um novo agendamento futuro com os dados completos e conferir se a grade atualiza a classificação.
+6. Editar data, horário, profissional, serviço ou cliente de um agendamento elegível e confirmar que o risco é recalculado.
+7. Conferir que registros sem previsão elegível ou sem modelo aprovado aparecem como **Indisponível**.
+
+### Pendência
+Os testes automatizados e a publicação técnica foram aprovados. Ainda é necessário realizar a conferência visual e funcional na implantação real, com os dados da planilha, para confirmar a experiência na Agenda.
