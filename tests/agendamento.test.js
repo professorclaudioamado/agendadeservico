@@ -85,7 +85,10 @@ test("cadastro não aceita data de cadastro enviada pela interface", () => {
   const resposta = contexto.AgendamentoService.cadastrar(dados);
 
   assert.match(resposta, /cadastrado com sucesso/i);
-  assert.equal(contexto.chamadas.salvar.data, contexto.AgendamentoRules.criarDataPlanilha(dados.data));
+  assert.equal(
+    contexto.chamadas.salvar.data.getTime(),
+    contexto.AgendamentoRules.criarDataPlanilha(dados.data).getTime()
+  );
   assert.equal(Object.prototype.hasOwnProperty.call(contexto.chamadas.salvar, "dataCadastro"), false);
   assert.equal(Object.prototype.hasOwnProperty.call(contexto.chamadas.salvar, "data_cadastro"), false);
 });
