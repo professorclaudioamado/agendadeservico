@@ -73,7 +73,7 @@ test("interface oferece acesso à configuração K-NN e exibe escore na grade", 
   assert.match(html, /treinarAvaliarAprendizadoMaquina/);
   assert.match(html, /preverAgendamentosAgenda/);
   assert.match(html, /Risco estimado de falta/);
-  assert.match(html, /escore experimental/);
+  assert.match(html, /Escore experimental/);
 });
 
 
