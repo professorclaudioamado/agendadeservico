@@ -134,7 +134,12 @@ var AprendizadoMaquinaService = (function() {
         cliente: String(r.codigoCliente || "")
       };
       if (config.features.some(function(f) { return features[f] === null || features[f] === ""; })) return;
-      mapa[String(r.codigo)] = KNNClassifier.prever(modelo, features);
+      var previsao = KNNClassifier.prever(modelo, features);
+      var classificacao = AprendizadoMaquinaRules.classificarRisco(previsao.riscoPercentual);
+      if (!classificacao) return;
+      previsao.nivelRisco = classificacao.nivel;
+      previsao.classificacaoRisco = classificacao.rotulo;
+      mapa[String(r.codigo)] = previsao;
     });
     return mapa;
   }
