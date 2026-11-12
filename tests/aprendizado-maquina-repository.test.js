@@ -34,16 +34,23 @@ test("histórico preserva métricas numéricas independentemente da localidade",
     },
     Session: { getScriptTimeZone: () => "America/Cuiaba" }
   };
+  const cabecalhos = [
+    "ID", "Data_execucao", "Modelo", "Configuracao", "Amostras",
+    "Treino", "Validacao", "Teste", "Acuracia", "Precisao",
+    "Recall", "F1", "Baseline", "Observacoes"
+  ];
   const aba = {
     getLastRow: () => 2,
-    getRange: () => ({
+    getRange: (inicio, coluna, quantidadeLinhas, quantidadeColunas) => ({
       // O Sheets pode exibir esses mesmos números como "72,7%" em pt-BR.
-      getDisplayValues: () => [[
-        "EXP-1", "12/11/2026", "KNN", '{"k":3}',
-        "100", "60", "20", "20", "72,7%", "54,5%",
-        "60,0%", "57,1%", "69,7%", "avaliação"
-      ]],
-      getValues: () => [linha]
+      getDisplayValues: () => inicio === 1
+        ? [cabecalhos]
+        : [[
+          "EXP-1", "12/11/2026", "KNN", '{"k":3}',
+          "100", "60", "20", "20", "72,7%", "54,5%",
+          "60,0%", "57,1%", "69,7%", "avaliação"
+        ]],
+      getValues: () => inicio === 1 ? [cabecalhos] : [linha]
     })
   };
 
