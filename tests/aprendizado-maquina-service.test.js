@@ -96,3 +96,68 @@ test("treinamento seleciona K e limiar na validação antes de avaliar o teste",
   assert.equal(experimentoSalvo.configuracao.k, 1);
   assert.match(experimentoSalvo.observacoes, /Parâmetros escolhidos na validação/);
 });
+
+
+test("previsões experimentais são exibidas mesmo quando o modelo não foi aprovado", () => {
+  const amanha = new Date();
+  amanha.setDate(amanha.getDate() + 1);
+  const data = [
+    String(amanha.getDate()).padStart(2, "0"),
+    String(amanha.getMonth() + 1).padStart(2, "0"),
+    amanha.getFullYear()
+  ].join("/");
+
+  const modelo = {
+    aprovado: false,
+    configuracao: { features: ["hora", "diaSemana", "funcionario", "servico"] }
+  };
+  const contexto = {
+    Date,
+    JSON,
+    Math,
+    isFinite,
+    AprendizadoMaquinaRepository: {
+      obterModelo: () => modelo,
+      obterConfiguracao: () => modelo.configuracao,
+      listarExperimentos: () => []
+    },
+    AprendizadoMaquinaRules: {
+      converterData: valor => {
+        const partes = String(valor || "").split("/");
+        if (partes.length !== 3) return null;
+        return new Date(Number(partes[2]), Number(partes[1]) - 1, Number(partes[0]), 12);
+      },
+      converterHora: valor => {
+        const partes = String(valor || "").split(":");
+        return partes.length === 2 ? Number(partes[0]) + Number(partes[1]) / 60 : null;
+      },
+      classificarRisco: percentual => ({
+        nivel: percentual < 30 ? "BAIXO" : percentual <= 60 ? "MEDIO" : "ALTO",
+        rotulo: percentual < 30 ? "Baixo" : percentual <= 60 ? "Médio" : "Alto"
+      })
+    },
+    KNNClassifier: {
+      prever: () => ({ riscoPercentual: 45 })
+    }
+  };
+
+  vm.runInNewContext(
+    fs.readFileSync(path.join(raiz, "AprendizadoMaquinaService.js"), "utf8"),
+    contexto,
+    { filename: "AprendizadoMaquinaService.js" }
+  );
+
+  const previsoes = contexto.AprendizadoMaquinaService.preverAgendamentos([{
+    codigo: 203,
+    data,
+    hora: "13:00",
+    status: "AGENDADO",
+    codigoFuncionario: "F1",
+    codigoServico: "S1",
+    codigoCliente: "C1"
+  }]);
+
+  assert.equal(previsoes["203"].riscoPercentual, 45);
+  assert.equal(previsoes["203"].nivelRisco, "MEDIO");
+  assert.equal(previsoes["203"].classificacaoRisco, "Médio");
+});

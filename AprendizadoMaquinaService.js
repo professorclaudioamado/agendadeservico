@@ -186,7 +186,10 @@ var AprendizadoMaquinaService = (function() {
    */
   function preverAgendamentos(registros) {
     var modelo = AprendizadoMaquinaRepository.obterModelo();
-    if (!modelo || !modelo.aprovado) return {};
+    // A aprovação mede a qualidade estatística do modelo, mas não impede
+    // a consulta experimental. A interface identifica o escore como
+    // experimental e o painel continua exibindo os critérios não atingidos.
+    if (!modelo || !modelo.configuracao || !Array.isArray(modelo.configuracao.features)) return {};
     var config = modelo.configuracao;
     var hoje = new Date();
     hoje.setHours(0, 0, 0, 0);
