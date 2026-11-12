@@ -2,7 +2,7 @@
 
 ## Versão atual
 
-A aplicação utiliza Google Apps Script e Google Sheets, com entidades organizadas em camadas. A `main` contém os cadastros, o CRUD de agendamentos, as integrações com Gmail e ViaCEP, o BOT conversacional com IA/Groq e chamadas de ferramentas, além do registro automático e protegido de `Data_cadastro` na aba `AGENDA`. O CSV da aba `AGENDA` enviado para análise contém 207 registros e confirma a presença do status `FALTOU`. A atualização de documentação desta etapa também registra como pendente a tela de parâmetros/configurações dos modelos de aprendizado de máquina. A publicação da atualização da PR #20 no Apps Script e os testes integrados na planilha real ainda precisam ser confirmados conforme as pendências abaixo. A implantação permanece restrita ao proprietário (`MYSELF`).
+A aplicação utiliza Google Apps Script e Google Sheets, com entidades organizadas em camadas. A `main` contém os cadastros, o CRUD de agendamentos, as integrações com Gmail e ViaCEP, o BOT conversacional com IA/Groq e chamadas de ferramentas, o registro automático e protegido de `Data_cadastro` e a primeira versão do K-NN com tela de configuração. A PR #22 foi integrada e publicada no Apps Script pelo workflow #101. Os testes funcionais na planilha real e no navegador ainda precisam ser realizados. A implantação permanece restrita ao proprietário (`MYSELF`).
 
 ## Arquitetura adotada
 
@@ -654,9 +654,9 @@ Pendências desta frente:
 
 O histórico passa a registrar transições a partir da publicação desta implementação. Dados históricos sem a data em que o status foi definido continuam sem permitir reconstruir com segurança o que era conhecido em cada momento.
 
-### 2. Previsão de faltas com K-NN — implementada na PR #22; aguardando integração e publicação
+### 2. Previsão de faltas com K-NN — implementada e publicada na PR #22
 
-A implementação do algoritmo K-NN (K vizinhos mais próximos) deverá ocorrer somente depois da preparação e avaliação dos dados. A arquitetura planejada inclui:
+A implementação do algoritmo K-NN (K vizinhos mais próximos) foi integrada na PR #22. A arquitetura inclui:
 
 - `AprendizadoMaquinaService.js`;
 - `AprendizadoMaquinaRepository.js`;
@@ -667,9 +667,9 @@ A implementação do algoritmo K-NN (K vizinhos mais próximos) deverá ocorrer 
 
 Implementação da PR #22: distância mista para atributos numéricos e categóricos; separação cronológica 60/20/20; comparação com baseline; métricas de acurácia, precisão, recall, F1 e matriz de confusão. O treinamento usa somente registros com resultado final `FALTOU` ou `CONCLUÍDO`; estados em aberto e cancelados não são rótulos. O escore apresentado é a proporção de faltas entre vizinhos, não uma probabilidade calibrada. A Agenda só recebe escores quando o modelo supera o baseline e atinge os critérios mínimos de avaliação. A validação automatizada da PR #22 foi aprovada; testes reais no Apps Script ainda estão pendentes.
 
-### 3. Tela de parâmetros/configurações dos modelos — implementada inicialmente na PR #22; aguardando publicação
+### 3. Tela de parâmetros/configurações dos modelos — implementada e publicada inicialmente
 
-Está pendente desenvolver uma tela própria para administrar os parâmetros dos modelos de aprendizado de máquina. Essa funcionalidade deve ser tratada como uma frente da aplicação, e não apenas como parte interna da implementação do K-NN.
+A tela própria para administrar os parâmetros dos modelos foi criada como parte da PR #22. A implementação atual contempla o K-NN; novos modelos exigirão suas próprias implementações e parâmetros.
 
 Funcionalidades implementadas nesta primeira versão:
 
@@ -681,7 +681,7 @@ Funcionalidades implementadas nesta primeira versão:
 - salvar, recuperar e identificar a configuração ativa;
 - permitir comparar configurações/experimentos e seus resultados.
 
-A tela atual permite selecionar K-NN, definir K, limiar, características, ponderação por distância, salvar configurações, treinar/avaliar e comparar experimentos. As abas `ML_CONFIGURACOES`, `ML_EXPERIMENTOS` e `ML_MODELO` são criadas sob demanda pelo Repository. A arquitetura permite incorporar outros modelos futuramente, mas ainda será necessário criar suas implementações e parâmetros específicos.
+A tela atual permite configurar K, limiar, características, ponderação por distância, salvar configurações, treinar/avaliar e comparar experimentos. As abas `ML_CONFIGURACOES`, `ML_EXPERIMENTOS` e `ML_MODELO` são criadas sob demanda pelo Repository. A arquitetura permite incorporar outros modelos futuramente, mas suas implementações específicas ainda não existem.
 
 ### 4. Jornada e disponibilidade dos profissionais — ainda pendente
 
@@ -714,7 +714,7 @@ A integração experimental de leitura de e-mails com IA continua sendo uma fren
 
 ## Próxima etapa recomendada
 
-Concluir a revisão da PR #22, integrar a implementação à `main` e publicar somente após a validação automatizada. Em seguida, executar o treinamento inicial na planilha real, conferir as métricas calculadas pelo Apps Script e validar visualmente os escores na Agenda. A publicação ainda depende do fluxo autorizado do GitHub Actions; a aprovação do Pull Request, isoladamente, não publica o Apps Script.
+Executar a validação funcional no Web App publicado: abrir a tela Previsão de faltas, treinar o modelo na planilha real, conferir as métricas calculadas pelo Apps Script e validar visualmente a coluna de escores na Agenda. A avaliação local do CSV é preliminar e não substitui o resultado calculado no ambiente real.
 
 
 ---
@@ -774,3 +774,57 @@ O modelo só libera escores quando houver pelo menos 20 exemplos no teste, F1, r
 - Validar visualmente a grade e o tempo de carregamento com os registros reais.
 - Melhorar a qualidade e ampliar o histórico de dados; a base atual é pequena e possui somente cinco clientes distintos no CSV analisado.
 - Avaliar calibração do escore e monitorar desempenho com novos resultados antes de tratá-lo como probabilidade.
+
+
+---
+
+## Registro de implementação e publicação — PR #22
+
+- PR #22 integrada por squash à branch `main`.
+- Commit de integração: `fd861078dd71405f53640b756841fee75c503a56`.
+- PR #21 foi fechada como substituída; seu conteúdo atualizado foi incorporado à documentação da PR #22.
+- GitHub Actions, execução #101 (run ID `43133627283`), evento `push` na `main`: concluída com sucesso.
+- Validação de sintaxe JavaScript, testes automatizados e configuração: sucesso.
+- Envio dos arquivos ao Google Apps Script: sucesso.
+- Atualização da implantação existente do Web App: sucesso.
+- A publicação técnica está confirmada. Os testes funcionais na planilha real e no navegador permanecem pendentes.
+
+### Arquivos da implementação
+
+**Criados**
+- `KNNClassifier.js`
+- `AprendizadoMaquinaRules.js`
+- `AprendizadoMaquinaValidator.js`
+- `AprendizadoMaquinaService.js`
+- `AprendizadoMaquinaRepository.js`
+- `tests/aprendizado-maquina.test.js`
+
+**Alterados**
+- `AgendamentoRepository.js`
+- `AgendamentoRules.js`
+- `index.html`
+- `tests/agendamento-interface.test.js`
+- `PROJECT_STATUS.md`
+
+**Mantidos**
+- Demais arquivos e integrações existentes, incluindo BOT, Gmail, cadastros, configurações e `PROJECT_GUIDE.md`.
+
+**Excluídos**
+- Nenhum. Não foi identificada duplicação antiga que pudesse ser removida com segurança nesta etapa.
+
+### Como testar no Web App publicado
+
+1. Abrir a implantação Web App já utilizada pelo projeto.
+2. Acessar **Previsão de faltas**.
+3. Conferir a configuração inicial, salvar e executar **Treinar e avaliar modelo**.
+4. Conferir as métricas, a aprovação ou reprovação e o registro do experimento.
+5. Acessar **Agenda** e conferir a coluna **Risco estimado de falta** nos agendamentos futuros com status AGENDADO ou CONFIRMADO.
+6. Alterar o status de um agendamento de teste para FALTOU e verificar a criação do histórico em `AGENDA_HISTORICO_STATUS`.
+7. Confirmar que os demais fluxos de cadastro, edição, detalhamento e cancelamento continuam funcionando.
+
+### Limitações conhecidas
+
+- O histórico de status registra transições a partir desta publicação; não existem timestamps confiáveis para reconstruir alterações antigas.
+- A base analisada tem 164 exemplos rotulados e somente cinco clientes distintos no CSV. Os resultados podem variar conforme novos dados sejam adicionados.
+- O valor percentual apresentado é escore experimental de vizinhos, não probabilidade calibrada.
+- A execução automatizada não testa a planilha real nem a interação visual do Web App; essa conferência funcional permanece pendente.
