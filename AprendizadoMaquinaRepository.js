@@ -72,8 +72,9 @@ var AprendizadoMaquinaRepository = (function() {
   /** Salva o modelo treinado em uma única linha identificada pela chave ATUAL. */
   function salvarModelo(modelo) {
     var aba = obterAba_("modelo");
-    if (aba.getLastRow() >= 2) aba.getRange(2, 1, aba.getLastRow() - 1, 3).clearContent();
-    aba.appendRow(["ATUAL", JSON.stringify(modelo), new Date()]);
+    // Mantém o modelo ativo em uma linha fixa e evita acumular linhas vazias.
+    aba.getRange(2, 1, 1, 3).setValues([["ATUAL", JSON.stringify(modelo), new Date()]]);
+    if (aba.getLastRow() > 2) aba.getRange(3, 1, aba.getLastRow() - 2, 3).clearContent();
     return true;
   }
 
@@ -81,11 +82,15 @@ var AprendizadoMaquinaRepository = (function() {
   function obterModelo() {
     var aba = obterAba_("modelo");
     if (aba.getLastRow() < 2) return null;
-    var json = aba.getRange(aba.getLastRow(), 2).getValue();
-    if (!json) return null;
-    try { return JSON.parse(json); } catch (erro) {
-      throw new Error("O modelo salvo está inválido. Execute um novo treinamento.");
+    // Busca a chave ATUAL explicitamente, sem depender da última linha usada.
+    var linhas = aba.getRange(2, 1, aba.getLastRow() - 1, 2).getValues();
+    for (var i = linhas.length - 1; i >= 0; i--) {
+      if (String(linhas[i][0] || "").trim() !== "ATUAL" || !linhas[i][1]) continue;
+      try { return JSON.parse(linhas[i][1]); } catch (erro) {
+        throw new Error("O modelo salvo está inválido. Execute um novo treinamento.");
+      }
     }
+    return null;
   }
 
   /** Lista os experimentos mais recentes para comparação na tela administrativa. */

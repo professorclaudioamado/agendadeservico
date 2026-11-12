@@ -54,13 +54,33 @@ var AprendizadoMaquinaService = (function() {
     var classeBaseline = positivosTreino >= treino.length - positivosTreino ? 1 : 0;
     var acertosBaseline = teste.filter(function(x) { return x.rotulo === classeBaseline; }).length;
     var baseline = teste.length ? acertosBaseline / teste.length : 0;
-    var aprovado = metricas.quantidade >= 20 && metricas.f1 >= 0.5 &&
-      metricas.recall >= 0.5 && metricas.precisao >= 0.5 &&
-      metricas.acuracia > baseline;
+    // Cada critério é retornado à interface para explicar a aprovação ou reprovação.
+    var criterios = [
+      { id:"amostra", nome:"Quantidade de exemplos no teste", valor:metricas.quantidade, minimo:20, operador:">=", atingido:metricas.quantidade>=20,
+        explicacao:"O conjunto de teste precisa ter pelo menos 20 agendamentos com resultado conhecido.",
+        recomendacao:"Registre mais resultados reais (FALTOU ou CONCLUÍDO) e execute nova avaliação." },
+      { id:"f1", nome:"F1", valor:metricas.f1, minimo:0.5, operador:">=", atingido:metricas.f1>=0.5,
+        explicacao:"Equilibra precisão e recall.",
+        recomendacao:"Compare as características selecionadas e teste outra quantidade de vizinhos (K)." },
+      { id:"recall", nome:"Recall", valor:metricas.recall, minimo:0.5, operador:">=", atingido:metricas.recall>=0.5,
+        explicacao:"Mede quantas faltas reais o modelo conseguiu identificar.",
+        recomendacao:"Verifique se há exemplos suficientes de FALTOU e teste outras características." },
+      { id:"precisao", nome:"Precisão", valor:metricas.precisao, minimo:0.5, operador:">=", atingido:metricas.precisao>=0.5,
+        explicacao:"Mede quantos agendamentos sinalizados como risco elevado realmente resultaram em falta.",
+        recomendacao:"Teste outro K ou limiar e compare os resultados." },
+      { id:"baseline", nome:"Acurácia acima do resultado básico", valor:metricas.acuracia, minimo:baseline, operador:">", atingido:metricas.acuracia>baseline,
+        explicacao:"O modelo precisa superar a estratégia simples que sempre prevê a classe mais frequente no treino.",
+        recomendacao:"Teste combinações diferentes de características e K. Se não superar o básico, não use os escores na Agenda." }
+    ];
+    var aprovado = criterios.every(function(item) { return item.atingido; });
     modeloCompleto.metricas = metricas;
     modeloCompleto.baseline = baseline;
     modeloCompleto.aprovado = aprovado;
     modeloCompleto.treinadoEm = new Date().toISOString();
+    modeloCompleto.criterios = criterios;
+    modeloCompleto.divisao = { treino: treino.length, validacao: validacao.length, teste: teste.length };
+    modeloCompleto.amostras = preparado.exemplos.length;
+    modeloCompleto.excluidos = preparado.excluidos;
     var modelo = modeloCompleto;
     var observacoes = "Excluídos: " + JSON.stringify(preparado.excluidos) +
       ". Escore de vizinhos não é probabilidade calibrada.";
@@ -75,6 +95,8 @@ var AprendizadoMaquinaService = (function() {
       sucesso: true, experimentoId: id, metricas: metricas, baseline: baseline,
       aprovado: aprovado, amostras: preparado.exemplos.length,
       excluidos: preparado.excluidos,
+      divisao: { treino: treino.length, validacao: validacao.length, teste: teste.length },
+      criterios: criterios,
       mensagem: aprovado
         ? "Modelo avaliado e liberado para exibir escores experimentais."
         : "Modelo treinado, mas não atingiu os critérios mínimos para exibição na Agenda."
@@ -122,7 +144,7 @@ var AprendizadoMaquinaService = (function() {
     var modelo = AprendizadoMaquinaRepository.obterModelo();
     return {
       configuracao: obterConfiguracao(),
-      modelo: modelo ? { treinadoEm: modelo.treinadoEm, aprovado: modelo.aprovado, metricas: modelo.metricas, baseline: modelo.baseline } : null,
+      modelo: modelo ? { treinadoEm: modelo.treinadoEm, aprovado: modelo.aprovado, metricas: modelo.metricas, baseline: modelo.baseline, configuracao: modelo.configuracao, criterios: modelo.criterios || [], divisao: modelo.divisao || null, amostras: modelo.amostras || null, excluidos: modelo.excluidos || null } : null,
       experimentos: AprendizadoMaquinaRepository.listarExperimentos(20)
     };
   }

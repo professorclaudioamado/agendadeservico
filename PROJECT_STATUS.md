@@ -828,3 +828,41 @@ O modelo só libera escores quando houver pelo menos 20 exemplos no teste, F1, r
 - A base analisada tem 164 exemplos rotulados e somente cinco clientes distintos no CSV. Os resultados podem variar conforme novos dados sejam adicionados.
 - O valor percentual apresentado é escore experimental de vizinhos, não probabilidade calibrada.
 - A execução automatizada não testa a planilha real nem a interação visual do Web App; essa conferência funcional permanece pendente.
+
+
+---
+
+## Previsão de faltas — orientação e diagnóstico detalhado preparados
+
+### Implementado na branch feature/previsao-faltas-interface-didatica
+- A tela explica o algoritmo K-NN atualmente disponível e informa que outros algoritmos não devem ser selecionados antes de serem implementados e testados.
+- Os parâmetros K, limiar, características e ponderação possuem explicação, orientação inicial e recomendação de uso.
+- A tela apresenta instruções passo a passo para salvar, treinar, avaliar e comparar configurações.
+- O Service retorna os critérios individuais de aprovação, resultados, limites, explicações e recomendações.
+- O painel diferencia modelo inexistente de modelo treinado e reprovado.
+- O Repository grava o modelo ativo em uma linha fixa e procura explicitamente a chave ATUAL, evitando depender da última linha utilizada da aba.
+
+### Critérios preservados
+- Mínimo de 20 exemplos no conjunto de teste.
+- F1, recall e precisão iguais ou superiores a 0,50.
+- Acurácia superior ao baseline.
+- Modelos reprovados permanecem disponíveis para consulta, mas não liberam escores na Agenda.
+
+### Arquivos alterados
+- `index.html`
+- `AprendizadoMaquinaService.js`
+- `AprendizadoMaquinaRepository.js`
+- `tests/aprendizado-maquina.test.js`
+- `PROJECT_STATUS.md`
+
+### Arquivos mantidos
+- `AprendizadoMaquinaRules.js`
+- `AprendizadoMaquinaValidator.js`
+- `KNNClassifier.js`
+- `PROJECT_GUIDE.md`
+
+### Exclusões
+Nenhum arquivo removido.
+
+### Validação
+Aguardando execução do GitHub Actions no Pull Request. A publicação no Apps Script só será considerada concluída após confirmação do workflow de publicação na branch principal.

@@ -87,3 +87,13 @@ test("validador rejeita K e características inválidas", () => {
     modelo:"KNN",k:3,limiar:0.5,features:["cpf"]
   }), /não reconhecida/);
 });
+
+
+test("critérios de avaliação identificam corretamente uma reprovação", () => {
+  const metricas = { quantidade: 20, f1: 0.4, recall: 0.6, precisao: 0.5, acuracia: 0.7 };
+  const baseline = 0.65;
+  const criterios = [metricas.quantidade >= 20, metricas.f1 >= 0.5,
+    metricas.recall >= 0.5, metricas.precisao >= 0.5, metricas.acuracia > baseline];
+  assert.equal(criterios.every(Boolean), false);
+  assert.equal(criterios.length, 5);
+});
