@@ -967,3 +967,44 @@ Esses limites são faixas visuais de apoio à leitura e não alteram o algoritmo
 
 ### Pendência
 Os testes automatizados e a publicação técnica foram aprovados. Ainda é necessário realizar a conferência visual e funcional na implantação real, com os dados da planilha, para confirmar a experiência na Agenda.
+
+---
+
+## Seleção automática de parâmetros do K-NN — PR #26 concluída
+
+### Problema identificado
+O treinamento separava os dados em treino (60%), validação (20%) e teste (20%), mas a validação não era utilizada para selecionar os parâmetros. O modelo era treinado com treino + validação e avaliado no teste usando diretamente o K e o limiar salvos na configuração. Isso limitava a possibilidade de encontrar uma combinação mais adequada aos dados.
+
+### Correção implementada
+- O Service agora compara combinações de K (1, 3, 5, 7 e 9, além do K informado quando aplicável) e limiar (0,3 a 0,7, incluindo o limiar informado).
+- A seleção é feita pelo melhor F1 no conjunto de validação; em caso de empate, considera acurácia, recall e proximidade dos parâmetros informados.
+- Depois da seleção, o modelo final é treinado com treino + validação e avaliado uma única vez no conjunto de teste.
+- O modelo persistido utiliza os parâmetros selecionados.
+- O resultado do treinamento e as observações do experimento registram K e limiar escolhidos.
+- Os critérios de aprovação permanecem inalterados: pelo menos 20 exemplos no teste, F1, recall e precisão >= 0,50 e acurácia estritamente superior ao baseline.
+- O conjunto de teste não participa da seleção de parâmetros.
+
+### Arquivos desta etapa
+- **Criados:** `tests/aprendizado-maquina-service.test.js`.
+- **Alterados:** `AprendizadoMaquinaService.js` e este `PROJECT_STATUS.md`.
+- **Mantidos:** `KNNClassifier.js`, `AprendizadoMaquinaRules.js`, `AprendizadoMaquinaValidator.js`, `AprendizadoMaquinaRepository.js`, `AgendamentoRepository.js`, `index.html` e `PROJECT_GUIDE.md`.
+- **Excluídos:** nenhum. Nenhum arquivo ficou obsoleto nesta etapa.
+
+### Validação e publicação
+- PR #26 integrada por squash à branch `main`.
+- Commit de integração: `6712f9152e62367cbc07044209bb3bf4e12ecfe1`.
+- GitHub Actions, workflow de Pull Request #26 (run ID `43305282719`): sintaxe JavaScript, testes automatizados e validação de configuração aprovados.
+- GitHub Actions, workflow de publicação (run ID `43305339807`): validação e publicação concluídas com sucesso.
+- O `clasp push` enviou 41 arquivos e a implantação Web App existente foi atualizada para a versão `@98`.
+- A política de acesso permaneceu inalterada.
+
+### Como testar no Web App
+1. Abrir a implantação Web App atualizada.
+2. Acessar **Previsão de faltas**.
+3. Clicar em **Treinar e avaliar modelo** sem precisar alterar novamente os parâmetros.
+4. Conferir no resultado os parâmetros selecionados automaticamente (K e limiar), as métricas de validação e as métricas finais do teste.
+5. Conferir os cinco critérios de aprovação. A aprovação não é garantida: se o modelo não superar o baseline ou falhar em outro critério, a Agenda continuará exibindo **Indisponível**.
+6. Se aprovado, abrir a Agenda e verificar a classificação dos agendamentos futuros elegíveis.
+
+### Limitações
+A validação automatizada usa dados simulados para verificar a seleção de parâmetros e o isolamento do conjunto de teste. A combinação efetivamente escolhida e o desempenho final dependem dos dados atuais da planilha e só serão conhecidos após novo treinamento no Apps Script real. O escore continua sendo experimental e não uma probabilidade calibrada.
