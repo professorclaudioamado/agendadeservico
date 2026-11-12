@@ -102,7 +102,7 @@ var AprendizadoMaquinaRepository = (function() {
       .reverse().map(function(r) {
         // getValues() preserva números reais; getDisplayValues() pode retornar
         // percentuais localizados (por exemplo, "72,7%"), que Number() não converte.
-        var dataExecucao = r[1] instanceof Date
+        var dataExecucao = Object.prototype.toString.call(r[1]) === "[object Date]"
           ? Utilities.formatDate(r[1], Session.getScriptTimeZone(), "dd/MM/yyyy HH:mm")
           : String(r[1] || "");
 
