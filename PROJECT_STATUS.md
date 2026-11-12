@@ -871,3 +871,14 @@ Nenhum arquivo removido.
 - A etapa de publicação foi ignorada no evento de Pull Request, conforme esperado.
 - A PR foi integrada à `main`; a publicação no Apps Script depende da execução de publicação disparada pela branch principal ou do acionamento manual do workflow.
 - Testes funcionais na planilha real e no navegador permanecem pendentes.
+
+
+### Publicação da melhoria — confirmada
+- GitHub Actions, execução #105 (run ID `43136447833`), evento `push` na `main`: concluída com sucesso.
+- Verificação de sintaxe JavaScript: sucesso.
+- Testes automatizados `node --test tests/*.test.js`: sucesso.
+- Validação de `appsscript.json` e `.clasp.json`: sucesso.
+- Envio ao Google Apps Script: concluído; o `clasp push` informou que os arquivos já estavam sincronizados.
+- Atualização da implantação Web App existente: concluída com sucesso na versão `@88`.
+- A implantação permanece com o acesso previamente configurado; não foi alterada a política de acesso.
+- Próximo passo: abrir o Web App e executar a validação funcional com a planilha real, verificando o painel, salvamento, treinamento, critérios, histórico e Agenda.
