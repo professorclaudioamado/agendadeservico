@@ -832,15 +832,17 @@ O modelo só libera escores quando houver pelo menos 20 exemplos no teste, F1, r
 
 ---
 
-## Previsão de faltas — orientação e diagnóstico detalhado preparados
+## Previsão de faltas — orientação e diagnóstico detalhado integrados à main
 
-### Implementado na branch feature/previsao-faltas-interface-didatica
-- A tela explica o algoritmo K-NN atualmente disponível e informa que outros algoritmos não devem ser selecionados antes de serem implementados e testados.
-- Os parâmetros K, limiar, características e ponderação possuem explicação, orientação inicial e recomendação de uso.
+### Implementado pela PR #23
+- PR #23 integrada por squash à branch `main`.
+- Commit de integração: `a6f75f7e9d0c05a3ce179891e0437988947de300`.
+- A tela explica o algoritmo K-NN atualmente disponível e informa que outros algoritmos só serão listados quando implementados e testados.
+- Os parâmetros K, limiar, características e ponderação possuem explicações e orientação inicial.
 - A tela apresenta instruções passo a passo para salvar, treinar, avaliar e comparar configurações.
 - O Service retorna os critérios individuais de aprovação, resultados, limites, explicações e recomendações.
 - O painel diferencia modelo inexistente de modelo treinado e reprovado.
-- O Repository grava o modelo ativo em uma linha fixa e procura explicitamente a chave ATUAL, evitando depender da última linha utilizada da aba.
+- O Repository grava o modelo ativo em uma linha fixa e procura explicitamente a chave ATUAL.
 
 ### Critérios preservados
 - Mínimo de 20 exemplos no conjunto de teste.
@@ -865,4 +867,7 @@ O modelo só libera escores quando houver pelo menos 20 exemplos no teste, F1, r
 Nenhum arquivo removido.
 
 ### Validação
-Aguardando execução do GitHub Actions no Pull Request. A publicação no Apps Script só será considerada concluída após confirmação do workflow de publicação na branch principal.
+- PR #23: GitHub Actions, execução #103 (run ID `43136139633`): sintaxe JavaScript, testes automatizados e validação de configuração aprovados.
+- A etapa de publicação foi ignorada no evento de Pull Request, conforme esperado.
+- A PR foi integrada à `main`; a publicação no Apps Script depende da execução de publicação disparada pela branch principal ou do acionamento manual do workflow.
+- Testes funcionais na planilha real e no navegador permanecem pendentes.
