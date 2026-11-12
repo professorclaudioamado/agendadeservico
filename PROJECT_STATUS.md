@@ -1008,3 +1008,39 @@ O treinamento separava os dados em treino (60%), validação (20%) e teste (20%)
 
 ### Limitações
 A validação automatizada usa dados simulados para verificar a seleção de parâmetros e o isolamento do conjunto de teste. A combinação efetivamente escolhida e o desempenho final dependem dos dados atuais da planilha e só serão conhecidos após novo treinamento no Apps Script real. O escore continua sendo experimental e não uma probabilidade calibrada.
+
+## Correção da exibição de previsões K-NN não aprovadas — PR #27 concluída
+
+### Problema identificado
+A Agenda retornava um mapa vazio de previsões sempre que o modelo salvo tinha `aprovado = false`. Isso fazia todos os agendamentos elegíveis aparecerem como `Indisponível`, mesmo existindo um modelo treinado e persistido. No experimento apresentado pelo usuário, o modelo tinha métricas calculadas, mas não superava o baseline e não atendia a todos os critérios de aprovação.
+
+### Correção implementada
+- `AprendizadoMaquinaService.preverAgendamentos()` deixou de bloquear a geração de escores apenas porque `modelo.aprovado` é falso.
+- A função continua exigindo um modelo salvo com configuração e lista válida de características.
+- Os critérios estatísticos de aprovação do treinamento foram mantidos sem alteração.
+- Os escores continuam identificados na interface como experimentais; não são apresentados como probabilidades calibradas.
+- O painel continua informando a aprovação/reprovação e as métricas do experimento.
+
+### Arquivos desta etapa
+- **Criados:** nenhum.
+- **Alterados:** `AprendizadoMaquinaService.js`, `tests/aprendizado-maquina-service.test.js` e `PROJECT_STATUS.md`.
+- **Mantidos:** `AprendizadoMaquinaRepository.js`, `AprendizadoMaquinaRules.js`, `AprendizadoMaquinaValidator.js`, `KNNClassifier.js`, `index.html` e `PROJECT_GUIDE.md`.
+- **Excluídos:** nenhum. Nenhum arquivo ficou obsoleto.
+
+### Validação e publicação
+- PR #27 integrada por squash à branch `main`.
+- Commit de integração: `cd0a36012f8255f111b827ad6c7cee8440caf524`.
+- GitHub Actions, execução #120 (run ID `43321377313`): sintaxe JavaScript, testes automatizados e validação de configuração concluídos com sucesso.
+- O `clasp push` enviou 41 arquivos ao Apps Script.
+- A implantação Web App existente foi atualizada com sucesso para a versão `@102`.
+- A política de acesso permaneceu inalterada.
+
+### Como testar no Web App
+1. Abrir a implantação Web App atualizada.
+2. Atualizar a página da Agenda (recarregar sem cache, se necessário).
+3. Conferir a coluna de risco nos agendamentos futuros com status `AGENDADO` ou `CONFIRMADO` e com as características exigidas pela configuração.
+4. Confirmar que aparece a classificação e o escore experimental, em vez de `Indisponível`, quando houver dados suficientes para comparar.
+5. Conferir no painel de Aprendizado de Máquina que o modelo continua marcado como não aprovado, se os critérios ainda não forem atingidos.
+
+### Limitação importante
+A publicação técnica está confirmada, mas a validação visual na planilha e no navegador reais ainda depende de conferência do usuário. A alteração permite consultar o escore experimental; não melhora por si só a qualidade estatística do modelo nem transforma o escore em probabilidade calibrada.
