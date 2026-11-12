@@ -10,8 +10,8 @@
  */
 var AprendizadoMaquinaService = (function() {
   var CONFIG_PADRAO = {
-    modelo: "KNN", k: 7, limiar: 0.5, ponderarDistancia: false,
-    features: ["antecedenciaDias", "hora", "diaSemana", "funcionario", "servico"],
+    modelo: "KNN", k: 3, limiar: 0.5, ponderarDistancia: false,
+    features: ["hora", "diaSemana", "funcionario", "servico"],
     pesos: { antecedenciaDias: 1, hora: 1, diaSemana: 1, funcionario: 1, servico: 1, cliente: 1 }
   };
 
