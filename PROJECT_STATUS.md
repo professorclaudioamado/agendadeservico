@@ -2,7 +2,7 @@
 
 ## Versão atual
 
-A aplicação utiliza Google Apps Script e Google Sheets, com entidades organizadas em camadas. A `main` contém os cadastros, o CRUD de agendamentos, as integrações com Gmail e ViaCEP, o BOT conversacional com IA/Groq e chamadas de ferramentas, além do registro automático e protegido de `Data_cadastro` na aba `AGENDA`. A atualização mais recente registrada neste documento é a integração da PR #20. A publicação dessa atualização no Apps Script e os testes integrados na planilha real ainda precisam ser confirmados conforme as pendências abaixo. A implantação permanece restrita ao proprietário (`MYSELF`).
+A aplicação utiliza Google Apps Script e Google Sheets, com entidades organizadas em camadas. A `main` contém os cadastros, o CRUD de agendamentos, as integrações com Gmail e ViaCEP, o BOT conversacional com IA/Groq e chamadas de ferramentas, além do registro automático e protegido de `Data_cadastro` na aba `AGENDA`. O CSV da aba `AGENDA` enviado para análise contém 207 registros e confirma a presença do status `FALTOU`. A atualização de documentação desta etapa também registra como pendente a tela de parâmetros/configurações dos modelos de aprendizado de máquina. A publicação da atualização da PR #20 no Apps Script e os testes integrados na planilha real ainda precisam ser confirmados conforme as pendências abaixo. A implantação permanece restrita ao proprietário (`MYSELF`).
 
 ## Arquitetura adotada
 
@@ -631,14 +631,26 @@ Integrar a alteração após aprovação do workflow e publicar no Apps Script. 
 
 ## Estado das frentes de evolução já combinadas
 
-### 1. Qualidade e histórico dos dados — próxima frente
+### 1. Qualidade e histórico dos dados — em análise
 
-Ainda não foi implementada a preparação dos dados para o modelo de previsão de faltas. O trabalho combinado deve começar pela análise e melhoria do registro dos resultados dos agendamentos:
+O CSV da aba `AGENDA` enviado pelo usuário foi analisado e contém 207 registros e as nove colunas esperadas, incluindo `Data_cadastro`. Nesse recorte:
 
-- avaliar a inclusão do status `FALTOU`, distinto de `CANCELADO`;
-- registrar quando o status do agendamento é alterado, para preservar a informação temporal;
-- avaliar como manter o histórico das alterações, sem sobrescrever evidências necessárias às análises;
-- verificar consistência e completude dos registros existentes antes de utilizá-los no treinamento.
+- `FALTOU` já existe como status, com 57 registros; portanto, sua criação não é uma pendência;
+- `CONCLUÍDO`: 107 registros;
+- `CANCELADO`: 17 registros;
+- `AGENDADO`: 15 registros;
+- `CONFIRMADO`: 11 registros;
+- `Data_cadastro` está preenchida em 203 registros e vazia em 4;
+- `Valor` está vazio em 48 registros.
+
+Esses números descrevem somente o CSV analisado e podem mudar conforme a planilha evoluir. A presença de `Data_cadastro` registra a data de criação, mas não informa quando cada alteração de status ocorreu.
+
+Pendências desta frente:
+
+- analisar e definir como registrar a data/hora de cada mudança de status;
+- avaliar a manutenção de um histórico de alterações sem sobrescrever evidências anteriores;
+- investigar os quatro registros sem `Data_cadastro` e os 48 sem `Valor`, definindo tratamento sem inventar ou preencher dados históricos;
+- verificar consistência e completude antes de utilizar os registros no treinamento.
 
 A alteração de status atualmente conhecida grava o novo status, mas não mantém um histórico temporal completo das mudanças. Dados históricos sem a data em que o status foi definido não permitem reconstruir com segurança o que era conhecido em cada momento.
 
@@ -655,7 +667,23 @@ A implementação do algoritmo K-NN (K vizinhos mais próximos) deverá ocorrer 
 
 Critérios já discutidos: separar treino e avaliação respeitando a ordem temporal; evitar vazamento de informações futuras; comparar com uma previsão básica; avaliar precisão, sensibilidade (recall), F1 e matriz de confusão. A distância deverá considerar adequadamente atributos numéricos e categóricos. Nenhum desses arquivos ou do modelo foi implementado até esta atualização.
 
-### 3. Jornada e disponibilidade dos profissionais — ainda pendente
+### 3. Tela de parâmetros/configurações dos modelos — planejada, não implementada
+
+Está pendente desenvolver uma tela própria para administrar os parâmetros dos modelos de aprendizado de máquina. Essa funcionalidade deve ser tratada como uma frente da aplicação, e não apenas como parte interna da implementação do K-NN.
+
+Escopo funcional a detalhar antes da implementação:
+
+- selecionar o modelo disponível;
+- configurar os parâmetros específicos de cada modelo (no K-NN, por exemplo, a quantidade de vizinhos `K`);
+- selecionar as características dos agendamentos utilizadas pelo modelo;
+- configurar critérios de distância e pesos, quando aplicáveis;
+- definir parâmetros de treinamento e avaliação;
+- salvar, recuperar e identificar a configuração ativa;
+- permitir comparar configurações/experimentos e seus resultados.
+
+A solução deverá permitir adicionar outros modelos futuramente sem reconstruir toda a interface. Os parâmetros definitivos, os campos da tela, a persistência e as permissões ainda precisam ser especificados. Nenhuma tela ou estrutura de persistência dessa funcionalidade foi implementada até esta atualização.
+
+### 4. Jornada e disponibilidade dos profissionais — ainda pendente
 
 Para oferecer horários livres e alternativas confiáveis pelo BOT, ainda é necessário definir uma fonte de dados para:
 
@@ -667,11 +695,11 @@ Para oferecer horários livres e alternativas confiáveis pelo BOT, ainda é nec
 
 Até essa fonte existir, a ferramenta de verificação informa apenas conflitos com agendamentos já registrados; ausência de conflito não comprova que o profissional trabalha naquele horário. Não implementar busca de primeiro horário livre com base apenas na ausência de conflitos.
 
-### 4. Segurança para eventual acesso público — ainda pendente
+### 5. Segurança para eventual acesso público — ainda pendente
 
 A implantação permanece com acesso `MYSELF`. Antes de liberar o BOT ou a aplicação a visitantes externos, é necessário revisar autenticação e autorização no servidor e proteger todos os pontos de entrada administrativos. Não alterar o acesso para público antes dessa etapa.
 
-### 5. Testes integrados reais — pendentes de confirmação
+### 6. Testes integrados reais — pendentes de confirmação
 
 Os testes automatizados aprovados não substituem a validação no ambiente Google. Permanecem como verificações manuais ou integradas a registrar:
 
@@ -686,4 +714,4 @@ A integração experimental de leitura de e-mails com IA continua sendo uma fren
 
 ## Próxima etapa recomendada
 
-Iniciar a frente de qualidade dos dados com análise do fluxo atual de alteração de status, das colunas da aba `AGENDA` e dos testes existentes. Antes de alterar código, apresentar o diagnóstico, o plano incremental e os arquivos que seriam afetados. Preservar os registros existentes e não iniciar a implementação do K-NN nesta etapa.
+Continuar a frente de qualidade dos dados com análise do fluxo atual de alteração de status, das colunas da aba `AGENDA` e dos testes existentes. Antes de alterar código, apresentar o diagnóstico, o plano incremental e os arquivos que seriam afetados. Preservar os registros existentes e não iniciar a implementação do K-NN nesta etapa. Em planejamento separado, detalhar os requisitos da tela de parâmetros/configurações dos modelos, incluindo campos, persistência, validações e relação com os experimentos.
