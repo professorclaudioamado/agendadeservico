@@ -1044,3 +1044,54 @@ A Agenda retornava um mapa vazio de previsões sempre que o modelo salvo tinha `
 
 ### Limitação importante
 A publicação técnica está confirmada, mas a validação visual na planilha e no navegador reais ainda depende de conferência do usuário. A alteração permite consultar o escore experimental; não melhora por si só a qualidade estatística do modelo nem transforma o escore em probabilidade calibrada.
+
+
+## Inclusão do modelo Árvore de Decisão — em implementação
+
+### Objetivo
+Manter o K-NN existente e adicionar Árvore de Decisão como segundo algoritmo para previsão experimental de faltas, permitindo treinar, avaliar e comparar ambos com dados históricos da Agenda.
+
+### Implementação preparada nesta etapa
+- Criado `DecisionTreeClassifier.js`, com árvore binária, índice Gini, divisões numéricas e categóricas, profundidade máxima, mínimo para divisão e mínimo por folha.
+- O escore da árvore representa a frequência de faltas nos exemplos da folha alcançada. Não é probabilidade calibrada.
+- `AprendizadoMaquinaRepository.js` passa a persistir configurações e modelos em chaves independentes por algoritmo (`ATIVA_KNN`, `ATIVA_ARVORE_DECISAO`, `ATUAL_KNN` e `ATUAL_ARVORE_DECISAO`). O modelo legado `ATUAL` permanece como fallback de leitura do K-NN.
+- `AprendizadoMaquinaValidator.js` valida parâmetros específicos de cada algoritmo.
+- `AprendizadoMaquinaService.js` coordena os dois classificadores, escolhe parâmetros na validação, preserva o conjunto de teste e disponibiliza previsões separadas.
+- `index.html` permite selecionar o algoritmo, configurar e treinar cada um separadamente, apresenta métricas e mostra duas colunas de risco na Agenda.
+- A interface passa a informar falhas reais na chamada de previsão, em vez de ocultá-las silenciosamente como simples indisponibilidade.
+- Criado `tests/decision-tree-classifier.test.js` para testar divisões, classificação, métricas, folhas puras e Gini.
+
+### Regras de dados e avaliação
+- Os exemplos de treinamento continuam limitados a registros com status `FALTOU` ou `CONCLUÍDO`.
+- Os status `AGENDADO`, `CONFIRMADO` e `CANCELADO` não são rótulos de treinamento.
+- Ambos os algoritmos utilizam a divisão cronológica 60% treino, 20% validação e 20% teste.
+- Os critérios mínimos de aprovação continuam sendo os mesmos já adotados no módulo.
+- Cada algoritmo mantém seu modelo persistido sem sobrescrever o outro.
+
+### Arquivos desta etapa
+- **Criados:** `DecisionTreeClassifier.js`, `tests/decision-tree-classifier.test.js`.
+- **Alterados:** `AprendizadoMaquinaRepository.js`, `AprendizadoMaquinaValidator.js`, `AprendizadoMaquinaService.js`, `index.html`, `PROJECT_STATUS.md`.
+- **Mantidos:** `KNNClassifier.js`, `AprendizadoMaquinaRules.js`, `AgendamentoRepository.js`, `AprendizadoMaquinaRepository.js` mantém compatibilidade com o modelo K-NN legado; `PROJECT_GUIDE.md` não foi alterado.
+- **Excluídos:** nenhum. O K-NN permanece necessário e ativo.
+
+### Validação e publicação
+- A implementação está em branch de desenvolvimento e ainda precisa passar pelo workflow de testes.
+- A publicação no Apps Script depende da aprovação das validações automatizadas e da integração à `main`.
+- Não foi realizado treinamento com os dados reais da planilha nesta etapa; as métricas efetivas só serão conhecidas após executar os dois treinamentos no Web App.
+
+### Como testar após a publicação
+1. Abrir **Previsão de faltas**.
+2. Selecionar K-NN, salvar sua configuração e treinar.
+3. Selecionar Árvore de Decisão, salvar sua configuração e treinar.
+4. Conferir que cada painel apresenta métricas e histórico próprios.
+5. Abrir a Agenda e verificar as colunas **Risco K-NN** e **Risco Árvore de Decisão**.
+6. Conferir que treinar um algoritmo não substitui o modelo do outro.
+7. Se uma previsão falhar, ler a mensagem de erro apresentada pela interface.
+8. Comparar os resultados no conjunto de teste; não selecionar um algoritmo apenas pela aparência dos escores.
+
+### Pendências
+- Executar o workflow completo do GitHub Actions.
+- Integrar a alteração à branch `main) após validação.
+- Confirmar publicação efetiva no Apps Script e versão da implantação.
+- Executar os treinamentos com os dados reais e comparar as métricas.
+- Validar visualmente a Agenda no navegador e a persistência na planilha.

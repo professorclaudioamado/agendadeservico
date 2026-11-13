@@ -725,43 +725,43 @@
     <!-- Entidade: AprendizadoMaquina | Camada: Interface | Responsabilidade: orientar configuração e avaliação do K-NN. -->
     <section id="pagina-aprendizado" class="pagina">
       <div class="cartao">
-        <h2>Previsão de faltas — configuração orientada</h2>
-        <p class="observacao">O sistema compara um agendamento com registros anteriores que terminaram em FALTOU ou CONCLUÍDO. A previsão identifica semelhanças; não garante que alguém faltará.</p>
+        <h2>Previsão de faltas — K-NN e Árvore de Decisão</h2>
+        <p class="observacao">Os dois algoritmos aprendem com agendamentos históricos que terminaram em FALTOU ou CONCLUÍDO. As previsões são escores experimentais e não garantem uma falta.</p>
         <div class="ml-guia">
-          <h3>1. Modelo disponível</h3>
-          <div class="ml-modelo"><strong>K-NN — K vizinhos mais próximos</strong>
-            <p>Compara o agendamento com os registros históricos mais parecidos. É o único algoritmo implementado e testado nesta versão. Outros modelos só aparecerão quando tiverem implementação, parâmetros e testes próprios.</p>
-          </div>
-          <h3>2. Parâmetros recomendados para começar</h3>
-          <p class="observacao">A configuração inicial é um ponto de partida. A avaliação com seus dados dirá se ela é adequada.</p>
+          <h3>1. Escolha do algoritmo</h3>
           <div class="campos-grid">
-            <div><label for="mlModelo">Algoritmo</label><select id="mlModelo" disabled><option value="KNN">K-NN — único disponível</option></select><small class="ml-ajuda">Não há outros algoritmos ativos para selecionar nesta versão.</small></div>
-            <div><label for="mlK">Quantidade de vizinhos (K)</label><input type="number" id="mlK" min="1" max="50" step="1" value="3"><small class="ml-ajuda">Quantos registros semelhantes serão comparados. K menor reage mais aos casos próximos; K maior suaviza diferenças. Comece com 3. K precisa caber na quantidade de exemplos de treino.</small></div>
-            <div><label for="mlLimiar">Limite para risco elevado</label><input type="number" id="mlLimiar" min="0.01" max="0.99" step="0.01" value="0.5"><small class="ml-ajuda">Comece com 0,50: metade ou mais dos vizinhos indicando falta classifica como risco elevado. Limite menor sinaliza mais casos; maior é mais restritivo.</small></div>
-            <div class="campo-completo"><label>Características usadas na comparação</label>
-              <div class="ml-features">
-                <label><input type="checkbox" name="mlFeature" value="antecedenciaDias"> Antecedência do agendamento</label>
-                <label><input type="checkbox" name="mlFeature" value="hora" checked> Horário</label>
-                <label><input type="checkbox" name="mlFeature" value="diaSemana" checked> Dia da semana</label>
-                <label><input type="checkbox" name="mlFeature" value="funcionario" checked> Funcionário</label>
-                <label><input type="checkbox" name="mlFeature" value="servico" checked> Serviço</label>
-                <label><input type="checkbox" name="mlFeature" value="cliente"> Cliente</label>
-              </div>
-              <div class="ml-ajuda"><p><strong>Horário:</strong> compara horários próximos. <strong>Dia da semana:</strong> compara dias semelhantes. <strong>Funcionário:</strong> considera o profissional. <strong>Serviço:</strong> considera o tipo de atendimento.</p>
-                <p><strong>Antecedência:</strong> dias entre cadastro e atendimento; exige Data_cadastro válida. <strong>Cliente:</strong> considera o histórico do mesmo cliente, mas pode ser pouco útil quando há poucos registros por pessoa.</p>
-                <p><strong>Recomendação:</strong> mantenha inicialmente horário, dia da semana, funcionário e serviço. Acrescente antecedência ou cliente apenas se os dados estiverem completos e houver histórico suficiente.</p></div>
-            </div>
-            <div class="campo-completo ml-opcao"><label><input type="checkbox" id="mlPonderar"> Dar mais influência aos vizinhos mais próximos</label><p class="ml-ajuda">Desativado: todos os vizinhos têm a mesma influência. Ativado: os registros mais semelhantes pesam mais no escore. Comece desativado e compare os experimentos.</p></div>
+            <div><label for="mlModelo">Algoritmo</label><select id="mlModelo" onchange="carregarPainelMLTela()"><option value="KNN">K-NN — K vizinhos mais próximos</option><option value="ARVORE_DECISAO">Árvore de Decisão</option></select><small class="ml-ajuda">Cada algoritmo mantém configuração, modelo e avaliação próprios.</small></div>
           </div>
-          <h3>3. Como executar</h3>
-          <ol class="ml-passos"><li>Comece com K = 3, limiar = 0,50 e as quatro características recomendadas.</li><li>Clique em <strong>Salvar configuração</strong>.</li><li>Clique em <strong>Treinar e avaliar modelo</strong>.</li><li>Leia cada critério e siga a recomendação quando algum não for atingido.</li><li>Altere um parâmetro por vez e compare o histórico de experimentos.</li></ol>
-          <p class="ml-aviso"><strong>Importante:</strong> somente FALTOU e CONCLUÍDO são resultados válidos para ensinar ao modelo. Agendado, confirmado e cancelado não informam se houve falta.</p>
-          <p class="ml-ajuda">A avaliação separa os dados por ordem cronológica: 60% treino, 20% validação e 20% teste. O teste representa os registros mais recentes e não participa do treinamento.</p>
+          <h3>2. Parâmetros do algoritmo</h3>
+          <div id="mlParametrosKNN" class="campos-grid">
+            <div><label for="mlK">Quantidade de vizinhos (K)</label><input type="number" id="mlK" min="1" max="50" step="1" value="3"><small class="ml-ajuda">Quantidade de registros históricos semelhantes utilizados.</small></div>
+            <div><label for="mlLimiar">Limite para risco elevado</label><input type="number" id="mlLimiar" min="0.01" max="0.99" step="0.01" value="0.5"><small class="ml-ajuda">Fração mínima de vizinhos com falta para classificar risco elevado.</small></div>
+            <div class="campo-completo ml-opcao"><label><input type="checkbox" id="mlPonderar"> Dar mais influência aos vizinhos mais próximos</label><p class="ml-ajuda">Quando ativado, vizinhos mais próximos têm maior peso no escore.</p></div>
+          </div>
+          <div id="mlParametrosArvore" class="campos-grid" hidden>
+            <div><label for="mlProfundidade">Profundidade máxima</label><input type="number" id="mlProfundidade" min="1" max="10" step="1" value="4"><small class="ml-ajuda">Limita quantas decisões podem existir entre a raiz e uma folha.</small></div>
+            <div><label for="mlMinimoDividir">Mínimo de exemplos para dividir</label><input type="number" id="mlMinimoDividir" min="2" max="100" step="1" value="6"><small class="ml-ajuda">Evita criar divisões com poucos registros.</small></div>
+            <div><label for="mlMinimoFolha">Mínimo de exemplos por folha</label><input type="number" id="mlMinimoFolha" min="1" max="50" step="1" value="2"><small class="ml-ajuda">Exige quantidade mínima em cada grupo final.</small></div>
+          </div>
+          <h3>3. Características usadas pelos modelos</h3>
+          <div class="ml-features">
+            <label><input type="checkbox" name="mlFeature" value="antecedenciaDias"> Antecedência do agendamento</label>
+            <label><input type="checkbox" name="mlFeature" value="hora" checked> Horário</label>
+            <label><input type="checkbox" name="mlFeature" value="diaSemana" checked> Dia da semana</label>
+            <label><input type="checkbox" name="mlFeature" value="funcionario" checked> Funcionário</label>
+            <label><input type="checkbox" name="mlFeature" value="servico" checked> Serviço</label>
+            <label><input type="checkbox" name="mlFeature" value="cliente"> Cliente</label>
+          </div>
+          <div class="ml-ajuda"><p><strong>Antecedência:</strong> dias entre cadastro e atendimento; exige Data_cadastro válida. <strong>Cliente:</strong> identifica o cliente, mas pode favorecer memorização quando há poucos registros por pessoa.</p><p>Os dois algoritmos utilizam as características selecionadas, mas aprendem de maneiras diferentes. Salve configurações separadas para cada um.</p></div>
+          <h3>4. Como executar</h3>
+          <ol class="ml-passos"><li>Escolha o algoritmo e ajuste seus parâmetros.</li><li>Selecione as características que deseja utilizar.</li><li>Clique em <strong>Salvar configuração</strong>.</li><li>Clique em <strong>Treinar e avaliar modelo</strong>.</li><li>Repita para o outro algoritmo e compare as métricas.</li></ol>
+          <p class="ml-aviso"><strong>Importante:</strong> somente FALTOU e CONCLUÍDO são resultados válidos para treinamento. AGENDADO, CONFIRMADO e CANCELADO não informam o resultado final.</p>
+          <p class="ml-ajuda">A avaliação respeita a ordem cronológica: 60% treino, 20% validação e 20% teste. O conjunto de teste mais recente não participa da escolha dos parâmetros.</p>
         </div>
         <div class="ml-acoes"><button type="button" class="botao-principal" id="btnSalvarML" onclick="salvarConfiguracaoMLTela()">Salvar configuração</button><button type="button" class="botao-principal" id="btnTreinarML" onclick="treinarMLTela()">Treinar e avaliar modelo</button><button type="button" class="botao-atualizar-grade" onclick="carregarPainelMLTela()">Atualizar resultados</button></div>
         <div id="mensagemML" class="mensagem"></div>
       </div>
-      <div class="cartao"><h3>Resultado da última avaliação</h3><div id="resumoModeloML" class="ml-resumo">Carregando...</div><div id="criteriosModeloML"></div><p class="observacao">O escore mostrado na Agenda é a proporção de faltas entre vizinhos; não é uma probabilidade calibrada.</p></div>
+      <div class="cartao"><h3>Resultado da última avaliação</h3><div id="resumoModeloML" class="ml-resumo">Carregando...</div><div id="criteriosModeloML"></div><p class="observacao">Os escores exibidos na Agenda são experimentais: no K-NN representam a proporção de faltas entre vizinhos; na Árvore de Decisão representam a frequência de faltas na folha alcançada. Nenhum dos dois é uma probabilidade calibrada.</p></div>
       <div class="cartao"><h3>Histórico de experimentos</h3><div class="grade-tabela-wrap" id="tabelaExperimentosML"><div class="grade-vazia">Carregando experimentos...</div></div></div>
     </section>
 
@@ -1169,8 +1169,14 @@
             carregarReferenciasAgenda(function() {
               google.script.run.withSuccessHandler(function(previsoes) {
                 desenharGradeCadastro(tipo, resultado, previsoes || {});
-              }).withFailureHandler(function() {
+              }).withFailureHandler(function(erro) {
                 desenharGradeCadastro(tipo, resultado, {});
+                mostrarMensagem(
+                  "mensagemAgenda",
+                  "A Agenda foi carregada, mas não foi possível calcular as previsões: " +
+                    (erro && erro.message ? erro.message : "erro não identificado."),
+                  "erro"
+                );
               }).preverAgendamentosAgenda();
             });
             return;
@@ -1219,7 +1225,8 @@
         trCab.appendChild(th);
       });
       if (tipo === "agenda") {
-        var thRisco = document.createElement("th"); thRisco.textContent = "Risco estimado de falta"; trCab.appendChild(thRisco);
+        var thRiscoKNN = document.createElement("th"); thRiscoKNN.textContent = "Risco estimado de falta — K-NN"; trCab.appendChild(thRiscoKNN);
+        var thRiscoArvore = document.createElement("th"); thRiscoArvore.textContent = "Risco Árvore de Decisão"; trCab.appendChild(thRiscoArvore);
       }
       if (tipo === "funcionarios" || tipo === "agenda") {
         var thAcoes = document.createElement("th"); thAcoes.textContent = "Ações"; trCab.appendChild(thAcoes);
@@ -1242,22 +1249,30 @@
           tr.appendChild(td);
         });
         if (tipo === "agenda") {
-          var previsao = previsoes && previsoes[String(linha[0])];
-          var tdRisco = document.createElement("td");
-          if (previsao && previsao.classificacaoRisco) {
-            var indicadorRisco = document.createElement("span");
-            indicadorRisco.className = "risco-agendamento risco-agendamento-" +
-              String(previsao.nivelRisco || "").toLowerCase();
-            indicadorRisco.textContent = previsao.classificacaoRisco + " · " +
-              previsao.riscoPercentual + "%";
-            tdRisco.appendChild(indicadorRisco);
-            tdRisco.title = "Escore experimental: proporção de vizinhos com falta; não é probabilidade calibrada.";
-          } else {
-            tdRisco.textContent = "Indisponível";
-            tdRisco.className = "risco-agendamento-indisponivel";
-            tdRisco.title = "Modelo não aprovado ou dados insuficientes para estimar.";
+          var previsaoKNN = previsoes && previsoes.KNN && previsoes.KNN[String(linha[0])];
+          var previsaoArvore = previsoes && previsoes.ARVORE_DECISAO && previsoes.ARVORE_DECISAO[String(linha[0])];
+
+          function adicionarCelulaRisco(previsao, algoritmo) {
+            var td = document.createElement("td");
+            if (previsao && previsao.classificacaoRisco) {
+              var indicador = document.createElement("span");
+              indicador.className = "risco-agendamento risco-agendamento-" +
+                String(previsao.nivelRisco || "").toLowerCase();
+              indicador.textContent = previsao.classificacaoRisco + " · " + previsao.riscoPercentual + "%";
+              td.appendChild(indicador);
+              td.title = algoritmo === "KNN"
+                ? "Escore experimental: proporção de vizinhos com falta; não é probabilidade calibrada."
+                : "Escore experimental: frequência de faltas na folha da árvore; não é probabilidade calibrada. Exemplos na folha: " +
+                  (previsao.quantidadeExemplosFolha || 0) + ".";
+            } else {
+              td.textContent = "Indisponível";
+              td.className = "risco-agendamento-indisponivel";
+              td.title = "Este algoritmo ainda não possui modelo treinado ou os dados do agendamento são insuficientes.";
+            }
+            tr.appendChild(td);
           }
-          tr.appendChild(tdRisco);
+          adicionarCelulaRisco(previsaoKNN, "KNN");
+          adicionarCelulaRisco(previsaoArvore, "ARVORE_DECISAO");
           var codigoAgendamento = linha[0];
           var statusAtual = String(linha[7] || "AGENDADO");
           var tdAcoesAgenda = document.createElement("td");
@@ -2030,32 +2045,41 @@
       }
     }
 
-    /** Carrega configuração, métricas e experimentos do servidor. */
+    /** Carrega configuração, métricas e experimentos do algoritmo selecionado. */
     function carregarPainelMLTela() {
+      var algoritmo = document.getElementById("mlModelo").value;
+      var knn = algoritmo === "KNN";
+      document.getElementById("mlParametrosKNN").hidden = !knn;
+      document.getElementById("mlParametrosArvore").hidden = knn;
       google.script.run.withSuccessHandler(function(painel) {
         var cfg = painel.configuracao || {};
-        document.getElementById("mlK").value = cfg.k || 7;
+        document.getElementById("mlK").value = cfg.k || 3;
         document.getElementById("mlLimiar").value = cfg.limiar || 0.5;
         document.getElementById("mlPonderar").checked = Boolean(cfg.ponderarDistancia);
+        document.getElementById("mlProfundidade").value = cfg.profundidadeMaxima || 4;
+        document.getElementById("mlMinimoDividir").value = cfg.minimoParaDividir || 6;
+        document.getElementById("mlMinimoFolha").value = cfg.minimoPorFolha || 2;
         document.querySelectorAll("input[name='mlFeature']").forEach(function(campo) {
           campo.checked = (cfg.features || []).indexOf(campo.value) !== -1;
         });
         renderizarPainelMLTela(painel);
       }).withFailureHandler(function(erro) {
         mostrarMensagem("mensagemML", erro.message || "Não foi possível carregar as configurações.", "erro");
-      }).obterPainelAprendizadoMaquina();
+      }).obterPainelAprendizadoMaquina(algoritmo);
     }
 
-    /** Exibe o último treinamento mesmo quando reprovado; reprovação não significa ausência de modelo. */
+    /** Exibe métricas mesmo quando o modelo não atende aos critérios de aprovação. */
     function renderizarPainelMLTela(painel) {
       var resumo=document.getElementById("resumoModeloML");
       var criteriosBox=document.getElementById("criteriosModeloML");
       resumo.innerHTML=""; criteriosBox.innerHTML="";
       var modelo=painel.modelo;
-      if(!modelo){ resumo.textContent="Nenhuma avaliação encontrada. Salve a configuração e execute o treinamento."; }
+      if(!modelo){ resumo.textContent="Este algoritmo ainda não possui avaliação. Salve a configuração e execute o treinamento."; }
       else {
         var alerta=document.createElement("div"); alerta.className="ml-alerta";
-        alerta.textContent=modelo.aprovado ? "Modelo aprovado. Os escores experimentais podem ser exibidos na Agenda." : "Treinamento realizado, mas reprovado. O modelo está salvo para consulta, porém não libera escores na Agenda.";
+        alerta.textContent=modelo.aprovado
+          ? "Modelo aprovado. Os escores experimentais podem ser exibidos na Agenda."
+          : "Modelo treinado, mas não aprovado. O escore experimental continua disponível para análise; considere as métricas antes de utilizá-lo.";
         resumo.appendChild(alerta);
         var m=modelo.metricas||{};
         [["Acurácia",m.acuracia],["Precisão",m.precisao],["Recall",m.recall],["F1",m.f1],["Resultado básico",modelo.baseline]].forEach(function(x){
@@ -2077,22 +2101,30 @@
         });
       }
       var itens=painel.experimentos||[], caixa=document.getElementById("tabelaExperimentosML"); caixa.innerHTML="";
-      if(!itens.length){caixa.textContent="Nenhum experimento registrado.";return;}
+      if(!itens.length){caixa.textContent="Nenhum experimento registrado para este algoritmo.";return;}
       var tabela=document.createElement("table"); tabela.className="grade-tabela"; var cab=document.createElement("tr");
-      ["Data","Amostras","Treino","Validação","Teste","Acurácia","Precisão","Recall","F1","Baseline"].forEach(function(t){var th=document.createElement("th");th.textContent=t;cab.appendChild(th);});
+      ["Data","Algoritmo","Amostras","Treino","Validação","Teste","Acurácia","Precisão","Recall","F1","Baseline"].forEach(function(t){var th=document.createElement("th");th.textContent=t;cab.appendChild(th);});
       var thead=document.createElement("thead");thead.appendChild(cab);tabela.appendChild(thead);var tbody=document.createElement("tbody");
-      itens.forEach(function(item){var tr=document.createElement("tr");[item.data,item.amostras,item.treino,item.validacao,item.teste,item.acuracia,item.precisao,item.recall,item.f1,item.baseline].forEach(function(v,i){var td=document.createElement("td");td.textContent=i>=5?(Number(v||0)*100).toFixed(1)+"%":String(v==null?"":v);tr.appendChild(td);});tbody.appendChild(tr);});
+      itens.forEach(function(item){var tr=document.createElement("tr");[item.data,item.modelo,item.amostras,item.treino,item.validacao,item.teste,item.acuracia,item.precisao,item.recall,item.f1,item.baseline].forEach(function(v,i){var td=document.createElement("td");td.textContent=i>=6?(Number(v||0)*100).toFixed(1)+"%":String(v==null?"":v);tr.appendChild(td);});tbody.appendChild(tr);});
       tabela.appendChild(tbody);caixa.appendChild(tabela);
     }
-    /** Lê os campos e solicita ao servidor a validação e gravação da configuração. */
+
+    /** Salva a configuração do algoritmo selecionado sem alterar a do outro. */
     function salvarConfiguracaoMLTela() {
+      var algoritmo = document.getElementById("mlModelo").value;
       var config = {
-        modelo: "KNN",
-        k: Number(document.getElementById("mlK").value),
-        limiar: Number(document.getElementById("mlLimiar").value),
-        ponderarDistancia: document.getElementById("mlPonderar").checked,
+        modelo: algoritmo,
         features: Array.from(document.querySelectorAll("input[name='mlFeature']:checked")).map(function(c) { return c.value; })
       };
+      if (algoritmo === "KNN") {
+        config.k = Number(document.getElementById("mlK").value);
+        config.limiar = Number(document.getElementById("mlLimiar").value);
+        config.ponderarDistancia = document.getElementById("mlPonderar").checked;
+      } else {
+        config.profundidadeMaxima = Number(document.getElementById("mlProfundidade").value);
+        config.minimoParaDividir = Number(document.getElementById("mlMinimoDividir").value);
+        config.minimoPorFolha = Number(document.getElementById("mlMinimoFolha").value);
+      }
       var botao = document.getElementById("btnSalvarML"); botao.disabled = true;
       google.script.run.withSuccessHandler(function(resposta) {
         mostrarMensagem("mensagemML", resposta.mensagem, "sucesso");
@@ -2103,8 +2135,9 @@
       }).salvarConfiguracaoAprendizadoMaquina(config);
     }
 
-    /** Executa treinamento e avaliação cronológica no servidor. */
+    /** Treina e avalia somente o algoritmo selecionado. */
     function treinarMLTela() {
+      var algoritmo = document.getElementById("mlModelo").value;
       var botao = document.getElementById("btnTreinarML"); botao.disabled = true;
       botao.textContent = "Treinando e avaliando...";
       google.script.run.withSuccessHandler(function(resposta) {
@@ -2114,7 +2147,7 @@
       }).withFailureHandler(function(erro) {
         mostrarMensagem("mensagemML", erro.message || "Falha no treinamento.", "erro");
         botao.disabled = false; botao.textContent = "Treinar e avaliar modelo";
-      }).treinarAvaliarAprendizadoMaquina();
+      }).treinarAvaliarAprendizadoMaquina(algoritmo);
     }
 
   </script>
