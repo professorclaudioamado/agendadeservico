@@ -35,12 +35,14 @@ var AprendizadoMaquinaRepository = (function() {
   }
 
   /** Recupera a configuração ativa; retorna null se ainda não existir. */
-  function obterConfiguracao() {
+  function obterConfiguracao(modelo) {
     var aba = obterAba_("configuracoes");
     if (aba.getLastRow() < 2) return null;
     var linhas = aba.getRange(2, 1, aba.getLastRow() - 1, 2).getValues();
     for (var i = linhas.length - 1; i >= 0; i--) {
-      if (linhas[i][0] === "ATIVA") {
+      if (linhas[i][0] === ("ATIVA_" + String(modelo || "KNN").toUpperCase()) ||
+          (!modelo && linhas[i][0] === "ATIVA") ||
+          (String(modelo || "KNN").toUpperCase() === "KNN" && linhas[i][0] === "ATIVA")) {
         try { return JSON.parse(linhas[i][1]); } catch (erro) {
           throw new Error("A configuração salva está inválida.");
         }
@@ -52,7 +54,7 @@ var AprendizadoMaquinaRepository = (function() {
   /** Persiste uma configuração em JSON, mantendo o histórico simples de versões. */
   function salvarConfiguracao(config) {
     var aba = obterAba_("configuracoes");
-    aba.appendRow(["ATIVA", JSON.stringify(config), new Date()]);
+    aba.appendRow(["ATIVA_" + String(config.modelo || "KNN").toUpperCase(), JSON.stringify(config), new Date()]);
     return true;
   }
 
@@ -61,7 +63,7 @@ var AprendizadoMaquinaRepository = (function() {
     var aba = obterAba_("experimentos");
     var id = "EXP-" + Utilities.getUuid();
     aba.appendRow([
-      id, new Date(), "KNN", JSON.stringify(item.configuracao),
+      id, new Date(), String(item.modelo || item.configuracao.modelo || "KNN").toUpperCase(), JSON.stringify(item.configuracao),
       item.amostras, item.treino, item.validacao, item.teste,
       item.metricas.acuracia, item.metricas.precisao, item.metricas.recall,
       item.metricas.f1, item.baseline, item.observacoes || ""
@@ -73,19 +75,29 @@ var AprendizadoMaquinaRepository = (function() {
   function salvarModelo(modelo) {
     var aba = obterAba_("modelo");
     // Mantém o modelo ativo em uma linha fixa e evita acumular linhas vazias.
-    aba.getRange(2, 1, 1, 3).setValues([["ATUAL", JSON.stringify(modelo), new Date()]]);
-    if (aba.getLastRow() > 2) aba.getRange(3, 1, aba.getLastRow() - 2, 3).clearContent();
+    var chave = "ATUAL_" + String(modelo.algoritmo || modelo.configuracao.modelo || "KNN").toUpperCase();
+    var ultimaLinha = aba.getLastRow();
+    var linhas = ultimaLinha >= 2 ? aba.getRange(2, 1, ultimaLinha - 1, 3).getValues() : [];
+    var linha = 0;
+    for (var i = 0; i < linhas.length; i++) {
+      if (String(linhas[i][0] || "").trim() === chave) { linha = i + 2; break; }
+    }
+    if (!linha) linha = Math.max(2, ultimaLinha + 1);
+    aba.getRange(linha, 1, 1, 3).setValues([[chave, JSON.stringify(modelo), new Date()]]);
     return true;
   }
 
   /** Recupera o modelo treinado; null significa que ainda não há modelo. */
-  function obterModelo() {
+  function obterModelo(modelo) {
     var aba = obterAba_("modelo");
     if (aba.getLastRow() < 2) return null;
     // Busca a chave ATUAL explicitamente, sem depender da última linha usada.
     var linhas = aba.getRange(2, 1, aba.getLastRow() - 1, 2).getValues();
     for (var i = linhas.length - 1; i >= 0; i--) {
-      if (String(linhas[i][0] || "").trim() !== "ATUAL" || !linhas[i][1]) continue;
+      var algoritmo = String(modelo || "KNN").toUpperCase();
+      var chave = "ATUAL_" + algoritmo;
+      if (String(linhas[i][0] || "").trim() !== chave &&
+          !(algoritmo === "KNN" && String(linhas[i][0] || "").trim() === "ATUAL") ) continue;
       try { return JSON.parse(linhas[i][1]); } catch (erro) {
         throw new Error("O modelo salvo está inválido. Execute um novo treinamento.");
       }
