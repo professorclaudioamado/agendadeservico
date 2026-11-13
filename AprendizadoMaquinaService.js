@@ -91,7 +91,9 @@ var AprendizadoMaquinaService = (function() {
       : selecionarParametrosArvore_(treino, validacao, config);
     var classificador = classificador_(algoritmo);
     var modelo = classificador.treinar(treino.concat(validacao), ajuste.configuracao);
-    var metricas = classificador.avaliar(modelo, teste);
+    var metricas = algoritmo === "KNN"
+      ? classificador.avaliar(modelo, teste, ajuste.configuracao.limiar)
+      : classificador.avaliar(modelo, teste);
     var positivosTreino = treino.filter(function(x) { return x.rotulo === 1; }).length;
     var classeBaseline = positivosTreino >= treino.length - positivosTreino ? 1 : 0;
     var baseline = teste.length ? teste.filter(function(x) {
