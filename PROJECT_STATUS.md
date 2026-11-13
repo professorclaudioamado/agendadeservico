@@ -1046,7 +1046,7 @@ A Agenda retornava um mapa vazio de previsões sempre que o modelo salvo tinha `
 A publicação técnica está confirmada, mas a validação visual na planilha e no navegador reais ainda depende de conferência do usuário. A alteração permite consultar o escore experimental; não melhora por si só a qualidade estatística do modelo nem transforma o escore em probabilidade calibrada.
 
 
-## Inclusão do modelo Árvore de Decisão — em implementação
+## Inclusão do modelo Árvore de Decisão — integrada e publicada
 
 ### Objetivo
 Manter o K-NN existente e adicionar Árvore de Decisão como segundo algoritmo para previsão experimental de faltas, permitindo treinar, avaliar e comparar ambos com dados históricos da Agenda.
@@ -1075,8 +1075,12 @@ Manter o K-NN existente e adicionar Árvore de Decisão como segundo algoritmo p
 - **Excluídos:** nenhum. O K-NN permanece necessário e ativo.
 
 ### Validação e publicação
-- A implementação está em branch de desenvolvimento e ainda precisa passar pelo workflow de testes.
-- A publicação no Apps Script depende da aprovação das validações automatizadas e da integração à `main`.
+- PR #28 integrada por squash à branch `main`.
+- Commit de integração: `3587470359bbbe18fdb2d1a1d941e60db1e5bf3d`.
+- Workflow de PR #123 (run ID `43348223771`): sintaxe, testes automatizados e validação de configuração aprovados.
+- Workflow da branch `main` #124 (run ID `43348256634`): validação completa aprovada; `clasp push` enviou 42 arquivos; implantação Web App existente atualizada com sucesso para `@106`.
+- O arquivo `DecisionTreeClassifier.js` foi incluído no envio ao Apps Script.
+- A política de acesso do Web App não foi alterada.
 - Não foi realizado treinamento com os dados reais da planilha nesta etapa; as métricas efetivas só serão conhecidas após executar os dois treinamentos no Web App.
 
 ### Como testar após a publicação
