@@ -1219,7 +1219,8 @@
         trCab.appendChild(th);
       });
       if (tipo === "agenda") {
-        var thRisco = document.createElement("th"); thRisco.textContent = "Risco estimado de falta"; trCab.appendChild(thRisco);
+        var thRiscoKNN = document.createElement("th"); thRiscoKNN.textContent = "Risco K-NN"; trCab.appendChild(thRiscoKNN);
+        var thRiscoArvore = document.createElement("th"); thRiscoArvore.textContent = "Risco Árvore de Decisão"; trCab.appendChild(thRiscoArvore);
       }
       if (tipo === "funcionarios" || tipo === "agenda") {
         var thAcoes = document.createElement("th"); thAcoes.textContent = "Ações"; trCab.appendChild(thAcoes);
@@ -1242,22 +1243,30 @@
           tr.appendChild(td);
         });
         if (tipo === "agenda") {
-          var previsao = previsoes && previsoes[String(linha[0])];
-          var tdRisco = document.createElement("td");
-          if (previsao && previsao.classificacaoRisco) {
-            var indicadorRisco = document.createElement("span");
-            indicadorRisco.className = "risco-agendamento risco-agendamento-" +
-              String(previsao.nivelRisco || "").toLowerCase();
-            indicadorRisco.textContent = previsao.classificacaoRisco + " · " +
-              previsao.riscoPercentual + "%";
-            tdRisco.appendChild(indicadorRisco);
-            tdRisco.title = "Escore experimental: proporção de vizinhos com falta; não é probabilidade calibrada.";
-          } else {
-            tdRisco.textContent = "Indisponível";
-            tdRisco.className = "risco-agendamento-indisponivel";
-            tdRisco.title = "Modelo não aprovado ou dados insuficientes para estimar.";
+          var previsaoKNN = previsoes && previsoes.KNN && previsoes.KNN[String(linha[0])];
+          var previsaoArvore = previsoes && previsoes.ARVORE_DECISAO && previsoes.ARVORE_DECISAO[String(linha[0])];
+
+          function adicionarCelulaRisco(previsao, algoritmo) {
+            var td = document.createElement("td");
+            if (previsao && previsao.classificacaoRisco) {
+              var indicador = document.createElement("span");
+              indicador.className = "risco-agendamento risco-agendamento-" +
+                String(previsao.nivelRisco || "").toLowerCase();
+              indicador.textContent = previsao.classificacaoRisco + " · " + previsao.riscoPercentual + "%";
+              td.appendChild(indicador);
+              td.title = algoritmo === "KNN"
+                ? "Escore experimental: proporção de vizinhos com falta; não é probabilidade calibrada."
+                : "Escore experimental: frequência de faltas na folha da árvore; não é probabilidade calibrada. Exemplos na folha: " +
+                  (previsao.quantidadeExemplosFolha || 0) + ".";
+            } else {
+              td.textContent = "Indisponível";
+              td.className = "risco-agendamento-indisponivel";
+              td.title = "Este algoritmo ainda não possui modelo treinado ou os dados do agendamento são insuficientes.";
+            }
+            tr.appendChild(td);
           }
-          tr.appendChild(tdRisco);
+          adicionarCelulaRisco(previsaoKNN, "KNN");
+          adicionarCelulaRisco(previsaoArvore, "ARVORE_DECISAO");
           var codigoAgendamento = linha[0];
           var statusAtual = String(linha[7] || "AGENDADO");
           var tdAcoesAgenda = document.createElement("td");
