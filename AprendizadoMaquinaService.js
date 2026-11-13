@@ -2,216 +2,280 @@
  * Entidade: AprendizadoMaquina
  * Camada: Service — Camada de Serviço.
  *
- * Responsabilidade: coordenar configuração, preparação dos dados,
- * avaliação temporal, persistência dos experimentos e previsão de risco.
+ * Responsabilidade:
+ * Coordenar configuração, preparação dos dados, treinamento, avaliação,
+ * persistência e previsão com K-NN e Árvore de Decisão.
  *
- * Dependências: AprendizadoMaquinaValidator, AprendizadoMaquinaRules,
- * AprendizadoMaquinaRepository, AgendamentoRepository e KNNClassifier.
+ * Dependências:
+ * AprendizadoMaquinaValidator, AprendizadoMaquinaRules,
+ * AprendizadoMaquinaRepository, AgendamentoRepository,
+ * KNNClassifier e DecisionTreeClassifier.
  */
 var AprendizadoMaquinaService = (function() {
   var CONFIG_PADRAO = {
-    modelo: "KNN", k: 3, limiar: 0.5, ponderarDistancia: false,
-    features: ["hora", "diaSemana", "funcionario", "servico"],
-    pesos: { antecedenciaDias: 1, hora: 1, diaSemana: 1, funcionario: 1, servico: 1, cliente: 1 }
+    KNN: {
+      modelo: "KNN", k: 3, limiar: 0.5, ponderarDistancia: false,
+      features: ["hora", "diaSemana", "funcionario", "servico"],
+      pesos: { antecedenciaDias: 1, hora: 1, diaSemana: 1, funcionario: 1, servico: 1, cliente: 1 }
+    },
+    ARVORE_DECISAO: {
+      modelo: "ARVORE_DECISAO", profundidadeMaxima: 4,
+      minimoParaDividir: 6, minimoPorFolha: 2,
+      features: ["hora", "diaSemana", "funcionario", "servico"]
+    }
   };
 
-  /** Retorna uma cópia da configuração ativa ou os padrões iniciais. */
-  function obterConfiguracao() {
-    return AprendizadoMaquinaRepository.obterConfiguracao() || JSON.parse(JSON.stringify(CONFIG_PADRAO));
+  /** Retorna uma cópia da configuração do algoritmo solicitado. */
+  function obterConfiguracao(modelo) {
+    var algoritmo = String(modelo || "KNN").toUpperCase();
+    if (!CONFIG_PADRAO[algoritmo]) throw new Error("Algoritmo não reconhecido.");
+    var salva = AprendizadoMaquinaRepository.obterConfiguracao(algoritmo);
+    return salva || JSON.parse(JSON.stringify(CONFIG_PADRAO[algoritmo]));
   }
 
-  /** Valida e persiste os parâmetros informados na tela. */
+  /** Valida e persiste a configuração sem afetar o outro algoritmo. */
   function salvarConfiguracao(config) {
+    var algoritmo = String(config && config.modelo || "KNN").toUpperCase();
+    config.modelo = algoritmo;
     AprendizadoMaquinaValidator.validarConfiguracao(config);
-    var normalizada = {
+    var normalizada = algoritmo === "KNN" ? {
       modelo: "KNN", k: Number(config.k), limiar: Number(config.limiar),
       ponderarDistancia: Boolean(config.ponderarDistancia),
       features: config.features.slice(),
-      pesos: config.pesos || CONFIG_PADRAO.pesos
+      pesos: config.pesos || CONFIG_PADRAO.KNN.pesos
+    } : {
+      modelo: "ARVORE_DECISAO",
+      profundidadeMaxima: Number(config.profundidadeMaxima),
+      minimoParaDividir: Number(config.minimoParaDividir),
+      minimoPorFolha: Number(config.minimoPorFolha),
+      features: config.features.slice()
     };
     AprendizadoMaquinaRepository.salvarConfiguracao(normalizada);
-    return { sucesso: true, mensagem: "Configuração salva com sucesso.", configuracao: normalizada };
+    return {
+      sucesso: true,
+      mensagem: "Configuração de " + nomeAlgoritmo_(algoritmo) + " salva com sucesso.",
+      configuracao: normalizada
+    };
+  }
+
+  /** Treina e avalia o algoritmo selecionado com divisão temporal 60/20/20. */
+  function treinarAvaliar() {
+    var config = obterConfiguracao();
+    return treinarAlgoritmo_(config.modelo, config);
   }
 
   /**
-   * Treina com os 60% mais antigos, valida nos 20% seguintes e mede o teste
-   * nos 20% mais recentes. O conjunto de teste não participa do treinamento.
+   * Treina e avalia explicitamente o algoritmo solicitado.
+   *
+   * @param {string} algoritmo Identificador KNN ou ARVORE_DECISAO.
+   * @return {Object} Métricas, critérios, configuração selecionada e experimento.
    */
-  function treinarAvaliar() {
-    var config = obterConfiguracao();
+  function treinarAvaliarAlgoritmo(algoritmo) {
+    var config = obterConfiguracao(algoritmo);
+    return treinarAlgoritmo_(algoritmo, config);
+  }
+
+  /** Coordena treinamento comum, mantendo os ajustes específicos de cada classificador. */
+  function treinarAlgoritmo_(algoritmo, config) {
+    algoritmo = String(algoritmo || config.modelo || "KNN").toUpperCase();
+    config.modelo = algoritmo;
     AprendizadoMaquinaValidator.validarConfiguracao(config);
     var registros = AgendamentoRepository.listarDadosAprendizado();
     var preparado = AprendizadoMaquinaRules.prepararExemplos(registros, config);
     var partes = AprendizadoMaquinaRules.dividirTemporal(preparado.exemplos);
-    if (partes.treino.length < 1) throw new Error("Não há exemplos suficientes para treinar o modelo.");
-
     var treino = partes.treino.map(paraClassificador_);
     var validacao = partes.validacao.map(paraClassificador_);
     var teste = partes.teste.map(paraClassificador_);
-
-    // A validação escolhe K e limiar. O conjunto de teste permanece isolado
-    // para medir o desempenho final sem participar da escolha dos parâmetros.
-    var ajuste = selecionarParametros_(treino, validacao, config);
-    var configuracaoSelecionada = ajuste.configuracao;
-    var modeloCompleto = KNNClassifier.treinar(treino.concat(validacao), configuracaoSelecionada);
-    var metricas = KNNClassifier.avaliar(modeloCompleto, teste, configuracaoSelecionada.limiar);
+    var ajuste = algoritmo === "KNN"
+      ? selecionarParametrosKNN_(treino, validacao, config)
+      : selecionarParametrosArvore_(treino, validacao, config);
+    var classificador = classificador_(algoritmo);
+    var modelo = classificador.treinar(treino.concat(validacao), ajuste.configuracao);
+    var metricas = classificador.avaliar(modelo, teste);
     var positivosTreino = treino.filter(function(x) { return x.rotulo === 1; }).length;
     var classeBaseline = positivosTreino >= treino.length - positivosTreino ? 1 : 0;
-    var acertosBaseline = teste.filter(function(x) { return x.rotulo === classeBaseline; }).length;
-    var baseline = teste.length ? acertosBaseline / teste.length : 0;
-    // Cada critério é retornado à interface para explicar a aprovação ou reprovação.
-    var criterios = [
-      { id:"amostra", nome:"Quantidade de exemplos no teste", valor:metricas.quantidade, minimo:20, operador:">=", atingido:metricas.quantidade>=20,
-        explicacao:"O conjunto de teste precisa ter pelo menos 20 agendamentos com resultado conhecido.",
-        recomendacao:"Registre mais resultados reais (FALTOU ou CONCLUÍDO) e execute nova avaliação." },
-      { id:"f1", nome:"F1", valor:metricas.f1, minimo:0.5, operador:">=", atingido:metricas.f1>=0.5,
-        explicacao:"Equilibra precisão e recall.",
-        recomendacao:"Compare as características selecionadas e teste outra quantidade de vizinhos (K)." },
-      { id:"recall", nome:"Recall", valor:metricas.recall, minimo:0.5, operador:">=", atingido:metricas.recall>=0.5,
-        explicacao:"Mede quantas faltas reais o modelo conseguiu identificar.",
-        recomendacao:"Verifique se há exemplos suficientes de FALTOU e teste outras características." },
-      { id:"precisao", nome:"Precisão", valor:metricas.precisao, minimo:0.5, operador:">=", atingido:metricas.precisao>=0.5,
-        explicacao:"Mede quantos agendamentos sinalizados como risco elevado realmente resultaram em falta.",
-        recomendacao:"Teste outro K ou limiar e compare os resultados." },
-      { id:"baseline", nome:"Acurácia acima do resultado básico", valor:metricas.acuracia, minimo:baseline, operador:">", atingido:metricas.acuracia>baseline,
-        explicacao:"O modelo precisa superar a estratégia simples que sempre prevê a classe mais frequente no treino.",
-        recomendacao:"Teste combinações diferentes de características e K. Se não superar o básico, não use os escores na Agenda." }
-    ];
+    var baseline = teste.length ? teste.filter(function(x) {
+      return x.rotulo === classeBaseline;
+    }).length / teste.length : 0;
+    var criterios = criarCriterios_(metricas, baseline, algoritmo);
     var aprovado = criterios.every(function(item) { return item.atingido; });
-    modeloCompleto.metricas = metricas;
-    modeloCompleto.baseline = baseline;
-    modeloCompleto.aprovado = aprovado;
-    modeloCompleto.treinadoEm = new Date().toISOString();
-    modeloCompleto.criterios = criterios;
-    modeloCompleto.divisao = { treino: treino.length, validacao: validacao.length, teste: teste.length };
-    modeloCompleto.amostras = preparado.exemplos.length;
-    modeloCompleto.excluidos = preparado.excluidos;
-    var modelo = modeloCompleto;
-    var observacoes = "Parâmetros escolhidos na validação: K=" + configuracaoSelecionada.k +
-      ", limiar=" + configuracaoSelecionada.limiar + ". Excluídos: " +
-      JSON.stringify(preparado.excluidos) + ". Escore de vizinhos não é probabilidade calibrada.";
+
+    modelo.metricas = metricas;
+    modelo.baseline = baseline;
+    modelo.aprovado = aprovado;
+    modelo.treinadoEm = new Date().toISOString();
+    modelo.criterios = criterios;
+    modelo.divisao = { treino: treino.length, validacao: validacao.length, teste: teste.length };
+    modelo.amostras = preparado.exemplos.length;
+    modelo.excluidos = preparado.excluidos;
+
+    var observacoes = "Parâmetros escolhidos na validação. Excluídos: " +
+      JSON.stringify(preparado.excluidos) +
+      (algoritmo === "KNN"
+        ? ". Escore de vizinhos não é probabilidade calibrada."
+        : ". Frequência da folha não é probabilidade calibrada.");
     var experimento = {
-      configuracao: configuracaoSelecionada, amostras: preparado.exemplos.length,
+      modelo: algoritmo,
+      configuracao: ajuste.configuracao,
+      amostras: preparado.exemplos.length,
       treino: treino.length, validacao: validacao.length, teste: teste.length,
       metricas: metricas, baseline: baseline, observacoes: observacoes
     };
     var id = AprendizadoMaquinaRepository.salvarExperimento(experimento);
     AprendizadoMaquinaRepository.salvarModelo(modelo);
     return {
-      sucesso: true, experimentoId: id, metricas: metricas, baseline: baseline,
-      aprovado: aprovado, amostras: preparado.exemplos.length,
-      excluidos: preparado.excluidos,
-      divisao: { treino: treino.length, validacao: validacao.length, teste: teste.length },
-      criterios: criterios,
-      configuracaoSelecionada: configuracaoSelecionada,
+      sucesso: true, algoritmo: algoritmo, experimentoId: id,
+      metricas: metricas, baseline: baseline, aprovado: aprovado,
+      amostras: preparado.exemplos.length, excluidos: preparado.excluidos,
+      divisao: modelo.divisao, criterios: criterios,
+      configuracaoSelecionada: ajuste.configuracao,
       metricasValidacao: ajuste.metricas,
       mensagem: aprovado
-        ? "Modelo avaliado e liberado para exibir escores experimentais."
-        : "Modelo treinado, mas não atingiu os critérios mínimos para exibição na Agenda."
+        ? nomeAlgoritmo_(algoritmo) + " aprovado para gerar escores experimentais."
+        : nomeAlgoritmo_(algoritmo) + " treinado, mas não atingiu todos os critérios mínimos. O escore permanece experimental."
     };
   }
 
-  /**
-   * Seleciona K e limiar pelo melhor F1 no conjunto de validação.
-   *
-   * A busca usa somente os dados de treino e validação. O conjunto de teste
-   * não é consultado até que os parâmetros estejam definidos, evitando
-   * escolher parâmetros com base no resultado que será usado para aprovação.
-   *
-   * Em caso de empate, prioriza acurácia, depois recall e, por fim, a
-   * configuração mais próxima dos parâmetros informados pelo usuário.
-   *
-   * @param {Object[]} treino Exemplos históricos usados para ajustar candidatos.
-   * @param {Object[]} validacao Exemplos reservados para comparar candidatos.
-   * @param {Object} config Configuração informada pelo usuário.
-   * @return {{configuracao:Object, metricas:Object}} Melhor configuração e métricas.
-   */
-  function selecionarParametros_(treino, validacao, config) {
+  /** Cria critérios de liberação comuns aos dois algoritmos. */
+  function criarCriterios_(metricas, baseline, algoritmo) {
+    return [
+      { id:"amostra", nome:"Quantidade de exemplos no teste", valor:metricas.quantidade, minimo:20, operador:">=", atingido:metricas.quantidade>=20,
+        explicacao:"O conjunto de teste precisa ter pelo menos 20 agendamentos com resultado conhecido.",
+        recomendacao:"Registre mais resultados reais (FALTOU ou CONCLUÍDO) e execute nova avaliação." },
+      { id:"f1", nome:"F1", valor:metricas.f1, minimo:0.5, operador:">=", atingido:metricas.f1>=0.5,
+        explicacao:"Equilibra precisão e recall.",
+        recomendacao:"Revise as características e os parâmetros do algoritmo." },
+      { id:"recall", nome:"Recall", valor:metricas.recall, minimo:0.5, operador:">=", atingido:metricas.recall>=0.5,
+        explicacao:"Mede quantas faltas reais o modelo conseguiu identificar.",
+        recomendacao:"Verifique se há exemplos suficientes de FALTOU e revise as características." },
+      { id:"precisao", nome:"Precisão", valor:metricas.precisao, minimo:0.5, operador:">=", atingido:metricas.precisao>=0.5,
+        explicacao:"Mede quantos agendamentos sinalizados como risco elevado realmente resultaram em falta.",
+        recomendacao:"Revise os parâmetros e compare novos experimentos." },
+      { id:"baseline", nome:"Acurácia acima do resultado básico", valor:metricas.acuracia, minimo:baseline, operador:">", atingido:metricas.acuracia>baseline,
+        explicacao:"O modelo precisa superar a estratégia simples que sempre prevê a classe mais frequente no treino.",
+        recomendacao:"Ajuste as características e os parâmetros; não considere aprovado um modelo que não supere o resultado básico." }
+    ];
+  }
+
+  /** Seleciona K e limiar pela melhor F1 na validação, sem consultar o teste. */
+  function selecionarParametrosKNN_(treino, validacao, config) {
     var valoresK = [1, 3, 5, 7, 9];
     if (valoresK.indexOf(Number(config.k)) === -1) valoresK.push(Number(config.k));
     valoresK = valoresK.filter(function(k, indice, lista) {
       return k <= treino.length && lista.indexOf(k) === indice;
     });
-
     var limiares = [0.3, 0.4, 0.5, 0.6, 0.7];
     if (limiares.indexOf(Number(config.limiar)) === -1) limiares.push(Number(config.limiar));
     limiares.sort(function(a, b) { return a - b; });
-
     var melhor = null;
     valoresK.forEach(function(k) {
       limiares.forEach(function(limiar) {
         var candidata = {
-          modelo: config.modelo,
-          k: k,
-          limiar: limiar,
-          ponderarDistancia: config.ponderarDistancia,
-          features: config.features.slice(),
-          pesos: config.pesos
+          modelo:"KNN", k:k, limiar:limiar,
+          ponderarDistancia:config.ponderarDistancia,
+          features:config.features.slice(), pesos:config.pesos
         };
-        var modeloCandidato = KNNClassifier.treinar(treino, candidata);
-        var metricas = KNNClassifier.avaliar(modeloCandidato, validacao, limiar);
-        var distanciaConfiguracao = Math.abs(k - Number(config.k)) +
-          Math.abs(limiar - Number(config.limiar)) * 10;
-        var pontuacao = {
-          configuracao: candidata,
-          metricas: metricas,
-          distanciaConfiguracao: distanciaConfiguracao
-        };
-
-        if (!melhor ||
-            metricas.f1 > melhor.metricas.f1 ||
-            (metricas.f1 === melhor.metricas.f1 && metricas.acuracia > melhor.metricas.acuracia) ||
-            (metricas.f1 === melhor.metricas.f1 && metricas.acuracia === melhor.metricas.acuracia &&
-              metricas.recall > melhor.metricas.recall) ||
-            (metricas.f1 === melhor.metricas.f1 && metricas.acuracia === melhor.metricas.acuracia &&
-              metricas.recall === melhor.metricas.recall &&
-              distanciaConfiguracao < melhor.distanciaConfiguracao)) {
-          melhor = pontuacao;
+        var classificador = KNNClassifier;
+        var candidato = classificador.treinar(treino, candidata);
+        var metricas = classificador.avaliar(candidato, validacao, limiar);
+        var distancia = Math.abs(k - Number(config.k)) + Math.abs(limiar - Number(config.limiar)) * 10;
+        if (melhorCandidato_(melhor, metricas, distancia)) {
+          melhor = { configuracao:candidata, metricas:metricas, distancia:distancia };
         }
       });
     });
-
-    if (!melhor) throw new Error("Não foi possível selecionar parâmetros com os dados de validação.");
-    return { configuracao: melhor.configuracao, metricas: melhor.metricas };
+    if (!melhor) throw new Error("Não foi possível selecionar parâmetros do K-NN.");
+    return { configuracao:melhor.configuracao, metricas:melhor.metricas };
   }
 
-  /** Converte a estrutura preparada para o contrato do classificador. */
+  /** Seleciona limites da árvore pela melhor F1 na validação. */
+  function selecionarParametrosArvore_(treino, validacao, config) {
+    var profundidades = [2, 3, 4, 5, Number(config.profundidadeMaxima)];
+    var divisaoMinima = [6, 10, 15, Number(config.minimoParaDividir)];
+    var folhasMinimas = [2, 3, 5, Number(config.minimoPorFolha)];
+    var melhor = null;
+    profundidades.forEach(function(profundidade) {
+      divisaoMinima.forEach(function(minimoDividir) {
+        folhasMinimas.forEach(function(minimoFolha) {
+          if (minimoDividir < minimoFolha * 2 || minimoDividir > treino.length) return;
+          var candidata = {
+            modelo:"ARVORE_DECISAO", features:config.features.slice(),
+            profundidadeMaxima:profundidade,
+            minimoParaDividir:minimoDividir,
+            minimoPorFolha:minimoFolha
+          };
+          var modelo = DecisionTreeClassifier.treinar(treino, candidata);
+          var metricas = DecisionTreeClassifier.avaliar(modelo, validacao);
+          var distancia = Math.abs(profundidade - Number(config.profundidadeMaxima)) +
+            Math.abs(minimoDividir - Number(config.minimoParaDividir)) / 10 +
+            Math.abs(minimoFolha - Number(config.minimoPorFolha));
+          if (melhorCandidato_(melhor, metricas, distancia)) {
+            melhor = { configuracao:candidata, metricas:metricas, distancia:distancia };
+          }
+        });
+      });
+    });
+    if (!melhor) throw new Error("Não foi possível selecionar parâmetros da Árvore de Decisão.");
+    return { configuracao:melhor.configuracao, metricas:melhor.metricas };
+  }
+
+  /** Compara candidatos por F1, acurácia, recall e proximidade da configuração inicial. */
+  function melhorCandidato_(melhor, metricas, distancia) {
+    return !melhor ||
+      metricas.f1 > melhor.metricas.f1 ||
+      (metricas.f1 === melhor.metricas.f1 && metricas.acuracia > melhor.metricas.acuracia) ||
+      (metricas.f1 === melhor.metricas.f1 && metricas.acuracia === melhor.metricas.acuracia &&
+        metricas.recall > melhor.metricas.recall) ||
+      (metricas.f1 === melhor.metricas.f1 && metricas.acuracia === melhor.metricas.acuracia &&
+        metricas.recall === melhor.metricas.recall && distancia < melhor.distancia);
+  }
+
+  /** Retorna o classificador correspondente ao identificador do modelo. */
+  function classificador_(algoritmo) {
+    return algoritmo === "ARVORE_DECISAO" ? DecisionTreeClassifier : KNNClassifier;
+  }
+
+  /** Converte um exemplo das Rules para o contrato dos classificadores. */
   function paraClassificador_(item) {
-    return { features: item.features, rotulo: item.rotulo };
+    return { features:item.features, rotulo:item.rotulo };
   }
 
-  /**
-   * Calcula os escores dos agendamentos futuros. Registros passados e estados
-   * finais não recebem previsão. O resultado é um mapa indexado pelo código.
-   */
-  function preverAgendamentos(registros) {
-    var modelo = AprendizadoMaquinaRepository.obterModelo();
-    // A aprovação mede a qualidade estatística do modelo, mas não impede
-    // a consulta experimental. A interface identifica o escore como
-    // experimental e o painel continua exibindo os critérios não atingidos.
-    if (!modelo || !modelo.configuracao || !Array.isArray(modelo.configuracao.features)) return {};
-    var config = modelo.configuracao;
-    var hoje = new Date();
-    hoje.setHours(0, 0, 0, 0);
+  /** Constrói as características atuais de um agendamento usando a mesma regra dos modelos. */
+  function prepararFeaturesPrevisao_(registro) {
+    var data = AprendizadoMaquinaRules.converterData(registro.data);
+    var hora = AprendizadoMaquinaRules.converterHora(registro.hora);
+    var cadastro = AprendizadoMaquinaRules.converterData(registro.dataCadastro);
+    if (!data || hora === null) return null;
+    return {
+      antecedenciaDias: cadastro ? Math.max(0, Math.round((data.getTime() - cadastro.getTime()) / 86400000)) : null,
+      hora:hora, diaSemana:data.getDay(),
+      funcionario:String(registro.codigoFuncionario || ""),
+      servico:String(registro.codigoServico || ""),
+      cliente:String(registro.codigoCliente || "")
+    };
+  }
+
+  /** Calcula previsões para um único modelo, inclusive quando não aprovado. */
+  function preverAgendamentos(registros, algoritmo) {
+    algoritmo = String(algoritmo || "KNN").toUpperCase();
+    var modelo = AprendizadoMaquinaRepository.obterModelo(algoritmo);
     var mapa = {};
+    if (!modelo || !modelo.configuracao || !Array.isArray(modelo.configuracao.features)) return mapa;
+    var classificador = classificador_(algoritmo);
+    var hoje = new Date(); hoje.setHours(0, 0, 0, 0);
     registros.forEach(function(r) {
       var status = String(r.status || "").toUpperCase();
       if (status !== "AGENDADO" && status !== "CONFIRMADO") return;
       var data = AprendizadoMaquinaRules.converterData(r.data);
-      var hora = AprendizadoMaquinaRules.converterHora(r.hora);
-      if (!data || data.getTime() < hoje.getTime() || hora === null) return;
-      var cadastro = AprendizadoMaquinaRules.converterData(r.dataCadastro);
-      var features = {
-        antecedenciaDias: cadastro ? Math.max(0, Math.round((data.getTime() - cadastro.getTime()) / 86400000)) : null,
-        hora: hora, diaSemana: data.getDay(),
-        funcionario: String(r.codigoFuncionario || ""),
-        servico: String(r.codigoServico || ""),
-        cliente: String(r.codigoCliente || "")
-      };
-      if (config.features.some(function(f) { return features[f] === null || features[f] === ""; })) return;
-      var previsao = KNNClassifier.prever(modelo, features);
+      if (!data || data.getTime() < hoje.getTime()) return;
+      var features = prepararFeaturesPrevisao_(r);
+      if (!features || modelo.configuracao.features.some(function(f) {
+        return features[f] === null || features[f] === "";
+      })) return;
+      var previsao = classificador.prever(modelo, features);
       var classificacao = AprendizadoMaquinaRules.classificarRisco(previsao.riscoPercentual);
       if (!classificacao) return;
+      previsao.algoritmo = algoritmo;
       previsao.nivelRisco = classificacao.nivel;
       previsao.classificacaoRisco = classificacao.rotulo;
       mapa[String(r.codigo)] = previsao;
@@ -219,27 +283,61 @@ var AprendizadoMaquinaService = (function() {
     return mapa;
   }
 
-  /** Retorna dados para a tela de configuração e comparação. */
-  function obterPainel() {
-    var modelo = AprendizadoMaquinaRepository.obterModelo();
+  /** Retorna os dois mapas de previsão sem sobrescrever um algoritmo com o outro. */
+  function preverTodosAgendamentos(registros) {
     return {
-      configuracao: obterConfiguracao(),
-      modelo: modelo ? { treinadoEm: modelo.treinadoEm, aprovado: modelo.aprovado, metricas: modelo.metricas, baseline: modelo.baseline, configuracao: modelo.configuracao, criterios: modelo.criterios || [], divisao: modelo.divisao || null, amostras: modelo.amostras || null, excluidos: modelo.excluidos || null } : null,
-      experimentos: AprendizadoMaquinaRepository.listarExperimentos(20)
+      KNN: preverAgendamentos(registros, "KNN"),
+      ARVORE_DECISAO: preverAgendamentos(registros, "ARVORE_DECISAO")
     };
   }
 
+  /** Retorna configuração, modelo e experimentos do algoritmo selecionado. */
+  function obterPainel(algoritmo) {
+    algoritmo = String(algoritmo || "KNN").toUpperCase();
+    var modelo = AprendizadoMaquinaRepository.obterModelo(algoritmo);
+    return {
+      algoritmo:algoritmo,
+      configuracao:obterConfiguracao(algoritmo),
+      modelo:modelo ? {
+        algoritmo:algoritmo, treinadoEm:modelo.treinadoEm,
+        aprovado:modelo.aprovado, metricas:modelo.metricas,
+        baseline:modelo.baseline, configuracao:modelo.configuracao,
+        criterios:modelo.criterios || [], divisao:modelo.divisao || null,
+        amostras:modelo.amostras || null, excluidos:modelo.excluidos || null
+      } : null,
+      experimentos:AprendizadoMaquinaRepository.listarExperimentos(30)
+        .filter(function(item) { return String(item.modelo || "KNN").toUpperCase() === algoritmo; })
+    };
+  }
+
+  /** Traduz identificadores técnicos para rótulos da interface. */
+  function nomeAlgoritmo_(algoritmo) {
+    return algoritmo === "ARVORE_DECISAO" ? "Árvore de Decisão" : "K-NN";
+  }
+
   return {
-    obterConfiguracao: obterConfiguracao, salvarConfiguracao: salvarConfiguracao,
-    treinarAvaliar: treinarAvaliar, preverAgendamentos: preverAgendamentos,
-    obterPainel: obterPainel
+    obterConfiguracao:obterConfiguracao,
+    salvarConfiguracao:salvarConfiguracao,
+    treinarAvaliar:treinarAvaliar,
+    treinarAvaliarAlgoritmo:treinarAvaliarAlgoritmo,
+    preverAgendamentos:preverAgendamentos,
+    preverTodosAgendamentos:preverTodosAgendamentos,
+    obterPainel:obterPainel
   };
 })();
 
 /** Pontos de entrada da tela administrativa de aprendizado de máquina. */
-function obterPainelAprendizadoMaquina() { return AprendizadoMaquinaService.obterPainel(); }
-function salvarConfiguracaoAprendizadoMaquina(config) { return AprendizadoMaquinaService.salvarConfiguracao(config); }
-function treinarAvaliarAprendizadoMaquina() { return AprendizadoMaquinaService.treinarAvaliar(); }
+function obterPainelAprendizadoMaquina(algoritmo) {
+  return AprendizadoMaquinaService.obterPainel(algoritmo);
+}
+function salvarConfiguracaoAprendizadoMaquina(config) {
+  return AprendizadoMaquinaService.salvarConfiguracao(config);
+}
+function treinarAvaliarAprendizadoMaquina(algoritmo) {
+  return AprendizadoMaquinaService.treinarAvaliarAlgoritmo(algoritmo || "KNN");
+}
 function preverAgendamentosAgenda() {
-  return AprendizadoMaquinaService.preverAgendamentos(AgendamentoRepository.listarDadosAprendizado());
+  return AprendizadoMaquinaService.preverTodosAgendamentos(
+    AgendamentoRepository.listarDadosAprendizado()
+  );
 }
