@@ -1169,8 +1169,14 @@
             carregarReferenciasAgenda(function() {
               google.script.run.withSuccessHandler(function(previsoes) {
                 desenharGradeCadastro(tipo, resultado, previsoes || {});
-              }).withFailureHandler(function() {
+              }).withFailureHandler(function(erro) {
                 desenharGradeCadastro(tipo, resultado, {});
+                mostrarMensagem(
+                  "mensagemAgenda",
+                  "A Agenda foi carregada, mas não foi possível calcular as previsões: " +
+                    (erro && erro.message ? erro.message : "erro não identificado."),
+                  "erro"
+                );
               }).preverAgendamentosAgenda();
             });
             return;
