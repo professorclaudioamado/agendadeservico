@@ -761,7 +761,7 @@
         <div class="ml-acoes"><button type="button" class="botao-principal" id="btnSalvarML" onclick="salvarConfiguracaoMLTela()">Salvar configuração</button><button type="button" class="botao-principal" id="btnTreinarML" onclick="treinarMLTela()">Treinar e avaliar modelo</button><button type="button" class="botao-atualizar-grade" onclick="carregarPainelMLTela()">Atualizar resultados</button></div>
         <div id="mensagemML" class="mensagem"></div>
       </div>
-      <div class="cartao"><h3>Resultado da última avaliação</h3><div id="resumoModeloML" class="ml-resumo">Carregando...</div><div id="criteriosModeloML"></div><p class="observacao">O escore mostrado na Agenda é a proporção de faltas entre vizinhos; não é uma probabilidade calibrada.</p></div>
+      <div class="cartao"><h3>Resultado da última avaliação</h3><div id="resumoModeloML" class="ml-resumo">Carregando...</div><div id="criteriosModeloML"></div><p class="observacao">Os escores exibidos na Agenda são experimentais: no K-NN representam a proporção de faltas entre vizinhos; na Árvore de Decisão representam a frequência de faltas na folha alcançada. Nenhum dos dois é uma probabilidade calibrada.</p></div>
       <div class="cartao"><h3>Histórico de experimentos</h3><div class="grade-tabela-wrap" id="tabelaExperimentosML"><div class="grade-vazia">Carregando experimentos...</div></div></div>
     </section>
 
