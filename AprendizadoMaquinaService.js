@@ -4,12 +4,12 @@
  *
  * Responsabilidade:
  * Coordenar configuração, preparação dos dados, treinamento, avaliação,
- * persistência e previsão com K-NN e Árvore de Decisão.
+ * persistência e previsão com K-NN, Árvore de Decisão e Regressão Logística.
  *
  * Dependências:
  * AprendizadoMaquinaValidator, AprendizadoMaquinaRules,
  * AprendizadoMaquinaRepository, AgendamentoRepository,
- * KNNClassifier e DecisionTreeClassifier.
+ * KNNClassifier, DecisionTreeClassifier e LogisticRegressionClassifier.
  */
 var AprendizadoMaquinaService = (function() {
   var CONFIG_PADRAO = {
@@ -22,6 +22,12 @@ var AprendizadoMaquinaService = (function() {
       modelo: "ARVORE_DECISAO", profundidadeMaxima: 4,
       minimoParaDividir: 6, minimoPorFolha: 2,
       features: ["hora", "diaSemana", "funcionario", "servico"]
+    },
+    REGRESSAO_LOGISTICA: {
+      modelo: "REGRESSAO_LOGISTICA",
+      regularizacao: 0.1, taxaAprendizado: 0.1,
+      iteracoesMaximas: 10000, tolerancia: 0.0000001, limiar: 0.5,
+      features: ["antecedenciaDias", "hora", "diaSemana", "servico"]
     }
   };
 
@@ -38,18 +44,33 @@ var AprendizadoMaquinaService = (function() {
     var algoritmo = String(config && config.modelo || "KNN").toUpperCase();
     config.modelo = algoritmo;
     AprendizadoMaquinaValidator.validarConfiguracao(config);
-    var normalizada = algoritmo === "KNN" ? {
-      modelo: "KNN", k: Number(config.k), limiar: Number(config.limiar),
-      ponderarDistancia: Boolean(config.ponderarDistancia),
-      features: config.features.slice(),
-      pesos: config.pesos || CONFIG_PADRAO.KNN.pesos
-    } : {
-      modelo: "ARVORE_DECISAO",
-      profundidadeMaxima: Number(config.profundidadeMaxima),
-      minimoParaDividir: Number(config.minimoParaDividir),
-      minimoPorFolha: Number(config.minimoPorFolha),
-      features: config.features.slice()
-    };
+    var normalizada;
+    if (algoritmo === "KNN") {
+      normalizada = {
+        modelo: "KNN", k: Number(config.k), limiar: Number(config.limiar),
+        ponderarDistancia: Boolean(config.ponderarDistancia),
+        features: config.features.slice(),
+        pesos: config.pesos || CONFIG_PADRAO.KNN.pesos
+      };
+    } else if (algoritmo === "ARVORE_DECISAO") {
+      normalizada = {
+        modelo: "ARVORE_DECISAO",
+        profundidadeMaxima: Number(config.profundidadeMaxima),
+        minimoParaDividir: Number(config.minimoParaDividir),
+        minimoPorFolha: Number(config.minimoPorFolha),
+        features: config.features.slice()
+      };
+    } else {
+      normalizada = {
+        modelo: "REGRESSAO_LOGISTICA",
+        regularizacao: Number(config.regularizacao),
+        taxaAprendizado: Number(config.taxaAprendizado),
+        iteracoesMaximas: Number(config.iteracoesMaximas),
+        tolerancia: Number(config.tolerancia),
+        limiar: Number(config.limiar),
+        features: config.features.slice()
+      };
+    }
     AprendizadoMaquinaRepository.salvarConfiguracao(normalizada);
     return {
       sucesso: true,
@@ -88,10 +109,15 @@ var AprendizadoMaquinaService = (function() {
     var teste = partes.teste.map(paraClassificador_);
     var ajuste = algoritmo === "KNN"
       ? selecionarParametrosKNN_(treino, validacao, config)
-      : selecionarParametrosArvore_(treino, validacao, config);
+      : algoritmo === "ARVORE_DECISAO"
+        ? selecionarParametrosArvore_(treino, validacao, config)
+        : selecionarParametrosRegressao_(treino, validacao, config);
     var classificador = classificador_(algoritmo);
     var modelo = classificador.treinar(treino.concat(validacao), ajuste.configuracao);
-    var metricas = algoritmo === "KNN"
+    if (algoritmo === "REGRESSAO_LOGISTICA" && !modelo.treinamento.convergiu) {
+      throw new Error("A Regressão Logística não convergiu. Ajuste a regularização ou os parâmetros de treinamento e tente novamente.");
+    }
+    var metricas = algoritmo === "KNN" || algoritmo === "REGRESSAO_LOGISTICA"
       ? classificador.avaliar(modelo, teste, ajuste.configuracao.limiar)
       : classificador.avaliar(modelo, teste);
     var positivosTreino = treino.filter(function(x) { return x.rotulo === 1; }).length;
@@ -115,7 +141,9 @@ var AprendizadoMaquinaService = (function() {
       JSON.stringify(preparado.excluidos) +
       (algoritmo === "KNN"
         ? ". Escore de vizinhos não é probabilidade calibrada."
-        : ". Frequência da folha não é probabilidade calibrada.");
+        : algoritmo === "ARVORE_DECISAO"
+          ? ". Frequência da folha não é probabilidade calibrada."
+          : ". Escore da função sigmoide não é probabilidade calibrada.");
     var experimento = {
       modelo: algoritmo,
       configuracao: ajuste.configuracao,
@@ -221,6 +249,54 @@ var AprendizadoMaquinaService = (function() {
     return { configuracao:melhor.configuracao, metricas:melhor.metricas };
   }
 
+  /**
+   * Seleciona regularização e limiar pela melhor F1 na validação.
+   * O conjunto de teste permanece reservado à avaliação final.
+   */
+  function selecionarParametrosRegressao_(treino, validacao, config) {
+    var regularizacoes = [0.01, 0.1, 1, 10];
+    if (regularizacoes.indexOf(Number(config.regularizacao)) === -1) {
+      regularizacoes.push(Number(config.regularizacao));
+    }
+    regularizacoes = regularizacoes.filter(function(valor, indice, lista) {
+      return lista.indexOf(valor) === indice;
+    }).sort(function(a, b) { return a - b; });
+
+    var limiares = [0.3, 0.4, 0.5, 0.6, 0.7];
+    if (limiares.indexOf(Number(config.limiar)) === -1) limiares.push(Number(config.limiar));
+    limiares = limiares.filter(function(valor, indice, lista) {
+      return lista.indexOf(valor) === indice;
+    }).sort(function(a, b) { return a - b; });
+
+    var melhor = null;
+    regularizacoes.forEach(function(regularizacao) {
+      limiares.forEach(function(limiar) {
+        var candidata = {
+          modelo: "REGRESSAO_LOGISTICA",
+          features: config.features.slice(),
+          regularizacao: regularizacao,
+          taxaAprendizado: Number(config.taxaAprendizado),
+          iteracoesMaximas: Number(config.iteracoesMaximas),
+          tolerancia: Number(config.tolerancia),
+          limiar: limiar
+        };
+        var candidato = LogisticRegressionClassifier.treinar(treino, candidata);
+        if (!candidato.treinamento.convergiu) return;
+        var metricas = LogisticRegressionClassifier.avaliar(candidato, validacao, limiar);
+        var distancia = Math.abs(Math.log1p(regularizacao) -
+          Math.log1p(Number(config.regularizacao))) +
+          Math.abs(limiar - Number(config.limiar)) * 10;
+        if (melhorCandidato_(melhor, metricas, distancia)) {
+          melhor = { configuracao: candidata, metricas: metricas, distancia: distancia };
+        }
+      });
+    });
+    if (!melhor) {
+      throw new Error("Não foi possível treinar um candidato convergente de Regressão Logística na validação.");
+    }
+    return { configuracao: melhor.configuracao, metricas: melhor.metricas };
+  }
+
   /** Compara candidatos por F1, acurácia, recall e proximidade da configuração inicial. */
   function melhorCandidato_(melhor, metricas, distancia) {
     return !melhor ||
@@ -234,7 +310,9 @@ var AprendizadoMaquinaService = (function() {
 
   /** Retorna o classificador correspondente ao identificador do modelo. */
   function classificador_(algoritmo) {
-    return algoritmo === "ARVORE_DECISAO" ? DecisionTreeClassifier : KNNClassifier;
+    if (algoritmo === "ARVORE_DECISAO") return DecisionTreeClassifier;
+    if (algoritmo === "REGRESSAO_LOGISTICA") return LogisticRegressionClassifier;
+    return KNNClassifier;
   }
 
   /** Converte um exemplo das Rules para o contrato dos classificadores. */
@@ -263,6 +341,7 @@ var AprendizadoMaquinaService = (function() {
     var modelo = AprendizadoMaquinaRepository.obterModelo(algoritmo);
     var mapa = {};
     if (!modelo || !modelo.configuracao || !Array.isArray(modelo.configuracao.features)) return mapa;
+    if (algoritmo === "REGRESSAO_LOGISTICA" && modelo.aprovado !== true) return mapa;
     var classificador = classificador_(algoritmo);
     var hoje = new Date(); hoje.setHours(0, 0, 0, 0);
     registros.forEach(function(r) {
@@ -289,7 +368,8 @@ var AprendizadoMaquinaService = (function() {
   function preverTodosAgendamentos(registros) {
     return {
       KNN: preverAgendamentos(registros, "KNN"),
-      ARVORE_DECISAO: preverAgendamentos(registros, "ARVORE_DECISAO")
+      ARVORE_DECISAO: preverAgendamentos(registros, "ARVORE_DECISAO"),
+      REGRESSAO_LOGISTICA: preverAgendamentos(registros, "REGRESSAO_LOGISTICA")
     };
   }
 
@@ -305,7 +385,8 @@ var AprendizadoMaquinaService = (function() {
         aprovado:modelo.aprovado, metricas:modelo.metricas,
         baseline:modelo.baseline, configuracao:modelo.configuracao,
         criterios:modelo.criterios || [], divisao:modelo.divisao || null,
-        amostras:modelo.amostras || null, excluidos:modelo.excluidos || null
+        amostras:modelo.amostras || null, excluidos:modelo.excluidos || null,
+        treinamento:modelo.treinamento || null
       } : null,
       experimentos:AprendizadoMaquinaRepository.listarExperimentos(30)
         .filter(function(item) { return String(item.modelo || "KNN").toUpperCase() === algoritmo; })
@@ -314,7 +395,9 @@ var AprendizadoMaquinaService = (function() {
 
   /** Traduz identificadores técnicos para rótulos da interface. */
   function nomeAlgoritmo_(algoritmo) {
-    return algoritmo === "ARVORE_DECISAO" ? "Árvore de Decisão" : "K-NN";
+    if (algoritmo === "ARVORE_DECISAO") return "Árvore de Decisão";
+    if (algoritmo === "REGRESSAO_LOGISTICA") return "Regressão Logística";
+    return "K-NN";
   }
 
   return {
