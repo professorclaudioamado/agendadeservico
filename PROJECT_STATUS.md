@@ -1228,3 +1228,27 @@ Planejado:
 ### Próxima etapa — integração da interface
 
 Analisar o HTML/JavaScript da tela administrativa de Aprendizado de Máquina e a construção das colunas da Agenda. Planejar a inclusão do seletor, parâmetros, métricas, histórico, terceiro indicador e explicação clicável, sem modificar as operações de cadastro/edição existentes.
+
+
+### Etapa 3 — interface em validação
+
+- `index.html` passou a oferecer Regressão Logística como terceiro algoritmo no painel administrativo.
+- Incluídos campos de regularização L2, taxa de aprendizado, máximo de iterações, tolerância e limiar.
+- Os parâmetros e as características são carregados da configuração independente salva para o algoritmo selecionado.
+- O painel identifica que um modelo logístico não aprovado não gera indicador na Agenda e apresenta o estado de convergência e o número de iterações.
+- A grade da Agenda passou a construir as colunas na ordem K-NN, Árvore de Decisão, Regressão Logística e Ações.
+- A célula de Regressão Logística apresenta **Indisponível** quando o servidor não retorna previsão aprovada.
+- Para previsões disponíveis, a opção **Ver cálculo** abre uma explicação clicável com código do agendamento, atributos de entrada, valores preparados, coeficientes, contribuições, intercepto, z, sigmoide, escore, limiar, classe e versão do modelo.
+- A explicação identifica o resultado como escore experimental, sem afirmar probabilidade calibrada.
+- Criados testes estáticos da interface para verificar a configuração, a ordem das colunas e a presença dos componentes da explicação.
+- A validação automatizada da etapa ainda será executada na PR #29.
+
+**Arquivos criados:** nenhum.
+
+**Arquivos alterados:** `index.html`, `tests/agendamento-interface.test.js`, `PROJECT_STATUS.md`.
+
+**Arquivos mantidos:** `AprendizadoMaquinaService.js`, `AprendizadoMaquinaValidator.js`, `AprendizadoMaquinaRepository.js`, `AprendizadoMaquinaRules.js`, classificadores e demais telas/operações de cadastro.
+
+**Arquivos excluídos:** nenhum.
+
+**Como testar:** executar `node --test tests/*.test.js`; no Web App, selecionar Regressão Logística, conferir os parâmetros, treinar e validar a terceira coluna e o detalhe **Ver cálculo** em agendamentos elegíveis.
