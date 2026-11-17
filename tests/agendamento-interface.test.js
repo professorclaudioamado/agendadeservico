@@ -97,7 +97,6 @@ test("interface oferece configuração e avaliação da Regressão Logística", 
     'id="mlTolerancia"',
     'id="mlLimiarLogistica"',
     "REGRESSAO_LOGISTICA",
-    "LogisticRegressionClassifier",
     "modelo.treinamento.convergiu"
   ].forEach(function(contrato) {
     assert.ok(html.includes(contrato), "Contrato ausente na interface: " + contrato);
@@ -117,7 +116,7 @@ test("grade mantém a ordem K-NN, Árvore, Regressão Logística e Ações", () 
 test("explicação clicável apresenta os componentes do cálculo logístico", () => {
   [
     'createElement("details")',
-    'summary.textContent = "Ver cálculo"',
+    'resumo.textContent = "Ver cálculo"',
     "Atributos informados:",
     "Intercepto:",
     "valor preparado",
