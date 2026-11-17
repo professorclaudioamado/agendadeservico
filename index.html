@@ -301,6 +301,12 @@
     .ml-criterio { border:1px solid #e2e8f0; border-radius:9px; padding:12px; margin:9px 0; font-size:13px; line-height:1.5; }
     .ml-criterio strong { display:block; }
     .ml-criterio p { margin:5px 0 0; color:#475569; }
+    .ml-explicacao-risco { margin-top:7px; font-size:11px; text-align:left; }
+    .ml-explicacao-risco summary { cursor:pointer; color:#1d4ed8; font-weight:700; }
+    .ml-explicacao-conteudo { min-width:240px; max-width:360px; padding:9px; margin-top:6px; border:1px solid #dbe3ef; border-radius:8px; background:#f8fafc; color:#334155; white-space:normal; }
+    .ml-explicacao-conteudo p { margin:5px 0; line-height:1.45; overflow-wrap:anywhere; }
+    .ml-explicacao-conteudo ul { margin:5px 0; padding-left:18px; }
+    .ml-explicacao-conteudo li { margin:4px 0; line-height:1.4; overflow-wrap:anywhere; }
     @media (max-width:600px) { .ml-features { grid-template-columns:1fr; } }
   </style>
 </head>
@@ -725,12 +731,12 @@
     <!-- Entidade: AprendizadoMaquina | Camada: Interface | Responsabilidade: orientar configuração e avaliação do K-NN. -->
     <section id="pagina-aprendizado" class="pagina">
       <div class="cartao">
-        <h2>Previsão de faltas — K-NN e Árvore de Decisão</h2>
-        <p class="observacao">Os dois algoritmos aprendem com agendamentos históricos que terminaram em FALTOU ou CONCLUÍDO. As previsões são escores experimentais e não garantem uma falta.</p>
+        <h2>Previsão de faltas — K-NN, Árvore de Decisão e Regressão Logística</h2>
+        <p class="observacao">Os três algoritmos aprendem com agendamentos históricos que terminaram em FALTOU ou CONCLUÍDO. As previsões são escores experimentais e não garantem uma falta.</p>
         <div class="ml-guia">
           <h3>1. Escolha do algoritmo</h3>
           <div class="campos-grid">
-            <div><label for="mlModelo">Algoritmo</label><select id="mlModelo" onchange="carregarPainelMLTela()"><option value="KNN">K-NN — K vizinhos mais próximos</option><option value="ARVORE_DECISAO">Árvore de Decisão</option></select><small class="ml-ajuda">Cada algoritmo mantém configuração, modelo e avaliação próprios.</small></div>
+            <div><label for="mlModelo">Algoritmo</label><select id="mlModelo" onchange="carregarPainelMLTela()"><option value="KNN">K-NN — K vizinhos mais próximos</option><option value="ARVORE_DECISAO">Árvore de Decisão</option><option value="REGRESSAO_LOGISTICA">Regressão Logística</option></select><small class="ml-ajuda">Cada algoritmo mantém configuração, modelo e avaliação próprios.</small></div>
           </div>
           <h3>2. Parâmetros do algoritmo</h3>
           <div id="mlParametrosKNN" class="campos-grid">
@@ -743,6 +749,13 @@
             <div><label for="mlMinimoDividir">Mínimo de exemplos para dividir</label><input type="number" id="mlMinimoDividir" min="2" max="100" step="1" value="6"><small class="ml-ajuda">Evita criar divisões com poucos registros.</small></div>
             <div><label for="mlMinimoFolha">Mínimo de exemplos por folha</label><input type="number" id="mlMinimoFolha" min="1" max="50" step="1" value="2"><small class="ml-ajuda">Exige quantidade mínima em cada grupo final.</small></div>
           </div>
+          <div id="mlParametrosLogistica" class="campos-grid" hidden>
+            <div><label for="mlRegularizacao">Regularização L2</label><input type="number" id="mlRegularizacao" min="0" max="100" step="0.01" value="0.1"><small class="ml-ajuda">Reduz coeficientes muito elevados e ajuda a controlar sobreajuste.</small></div>
+            <div><label for="mlTaxaAprendizado">Taxa de aprendizado</label><input type="number" id="mlTaxaAprendizado" min="0.001" max="1" step="0.01" value="0.1"><small class="ml-ajuda">Define o tamanho inicial dos passos no ajuste dos coeficientes.</small></div>
+            <div><label for="mlIteracoes">Máximo de iterações</label><input type="number" id="mlIteracoes" min="100" max="50000" step="100" value="10000"><small class="ml-ajuda">Limite de atualizações durante o treinamento.</small></div>
+            <div><label for="mlTolerancia">Tolerância de convergência</label><input type="number" id="mlTolerancia" min="0.00000001" max="0.01" step="0.00000001" value="0.0000001"><small class="ml-ajuda">Critério numérico para encerrar o ajuste quando estabilizar.</small></div>
+            <div><label for="mlLimiarLogistica">Limiar para risco elevado</label><input type="number" id="mlLimiarLogistica" min="0.01" max="0.99" step="0.01" value="0.5"><small class="ml-ajuda">Valor de corte usado para converter o escore em classe.</small></div>
+          </div>
           <h3>3. Características usadas pelos modelos</h3>
           <div class="ml-features">
             <label><input type="checkbox" name="mlFeature" value="antecedenciaDias"> Antecedência do agendamento</label>
@@ -752,16 +765,16 @@
             <label><input type="checkbox" name="mlFeature" value="servico" checked> Serviço</label>
             <label><input type="checkbox" name="mlFeature" value="cliente"> Cliente</label>
           </div>
-          <div class="ml-ajuda"><p><strong>Antecedência:</strong> dias entre cadastro e atendimento; exige Data_cadastro válida. <strong>Cliente:</strong> identifica o cliente, mas pode favorecer memorização quando há poucos registros por pessoa.</p><p>Os dois algoritmos utilizam as características selecionadas, mas aprendem de maneiras diferentes. Salve configurações separadas para cada um.</p></div>
+          <div class="ml-ajuda"><p><strong>Antecedência:</strong> dias entre cadastro e atendimento; exige Data_cadastro válida. <strong>Cliente:</strong> identifica o cliente, mas pode favorecer memorização quando há poucos registros por pessoa.</p><p>Os algoritmos utilizam as características selecionadas, mas aprendem de maneiras diferentes. A configuração padrão da Regressão Logística usa antecedência, horário, dia da semana e serviço.</p></div>
           <h3>4. Como executar</h3>
-          <ol class="ml-passos"><li>Escolha o algoritmo e ajuste seus parâmetros.</li><li>Selecione as características que deseja utilizar.</li><li>Clique em <strong>Salvar configuração</strong>.</li><li>Clique em <strong>Treinar e avaliar modelo</strong>.</li><li>Repita para o outro algoritmo e compare as métricas.</li></ol>
+          <ol class="ml-passos"><li>Escolha o algoritmo e ajuste seus parâmetros.</li><li>Selecione as características que deseja utilizar.</li><li>Clique em <strong>Salvar configuração</strong>.</li><li>Clique em <strong>Treinar e avaliar modelo</strong>.</li><li>Repita para os outros algoritmos e compare as métricas.</li></ol>
           <p class="ml-aviso"><strong>Importante:</strong> somente FALTOU e CONCLUÍDO são resultados válidos para treinamento. AGENDADO, CONFIRMADO e CANCELADO não informam o resultado final.</p>
           <p class="ml-ajuda">A avaliação respeita a ordem cronológica: 60% treino, 20% validação e 20% teste. O conjunto de teste mais recente não participa da escolha dos parâmetros.</p>
         </div>
         <div class="ml-acoes"><button type="button" class="botao-principal" id="btnSalvarML" onclick="salvarConfiguracaoMLTela()">Salvar configuração</button><button type="button" class="botao-principal" id="btnTreinarML" onclick="treinarMLTela()">Treinar e avaliar modelo</button><button type="button" class="botao-atualizar-grade" onclick="carregarPainelMLTela()">Atualizar resultados</button></div>
         <div id="mensagemML" class="mensagem"></div>
       </div>
-      <div class="cartao"><h3>Resultado da última avaliação</h3><div id="resumoModeloML" class="ml-resumo">Carregando...</div><div id="criteriosModeloML"></div><p class="observacao">Os escores exibidos na Agenda são experimentais: no K-NN representam a proporção de faltas entre vizinhos; na Árvore de Decisão representam a frequência de faltas na folha alcançada. Nenhum dos dois é uma probabilidade calibrada.</p></div>
+      <div class="cartao"><h3>Resultado da última avaliação</h3><div id="resumoModeloML" class="ml-resumo">Carregando...</div><div id="criteriosModeloML"></div><p class="observacao">Os escores exibidos na Agenda são experimentais: no K-NN representam a proporção de faltas entre vizinhos; na Árvore de Decisão representam a frequência de faltas na folha alcançada; na Regressão Logística representam a saída da função sigmoide. Nenhum desses escores deve ser tratado como probabilidade calibrada sem avaliação específica.</p></div>
       <div class="cartao"><h3>Histórico de experimentos</h3><div class="grade-tabela-wrap" id="tabelaExperimentosML"><div class="grade-vazia">Carregando experimentos...</div></div></div>
     </section>
 
@@ -1227,6 +1240,7 @@
       if (tipo === "agenda") {
         var thRiscoKNN = document.createElement("th"); thRiscoKNN.textContent = "Risco estimado de falta — K-NN"; trCab.appendChild(thRiscoKNN);
         var thRiscoArvore = document.createElement("th"); thRiscoArvore.textContent = "Risco Árvore de Decisão"; trCab.appendChild(thRiscoArvore);
+        var thRiscoLogistica = document.createElement("th"); thRiscoLogistica.textContent = "Risco Regressão Logística"; trCab.appendChild(thRiscoLogistica);
       }
       if (tipo === "funcionarios" || tipo === "agenda") {
         var thAcoes = document.createElement("th"); thAcoes.textContent = "Ações"; trCab.appendChild(thAcoes);
@@ -1251,6 +1265,48 @@
         if (tipo === "agenda") {
           var previsaoKNN = previsoes && previsoes.KNN && previsoes.KNN[String(linha[0])];
           var previsaoArvore = previsoes && previsoes.ARVORE_DECISAO && previsoes.ARVORE_DECISAO[String(linha[0])];
+          var previsaoLogistica = previsoes && previsoes.REGRESSAO_LOGISTICA && previsoes.REGRESSAO_LOGISTICA[String(linha[0])];
+
+          function adicionarExplicacaoLogistica(td, previsao) {
+            var explicacao = previsao.explicacao || {};
+            var detalhes = document.createElement("details");
+            detalhes.className = "ml-explicacao-risco";
+            var resumo = document.createElement("summary");
+            resumo.textContent = "Ver cálculo";
+            detalhes.appendChild(resumo);
+
+            var conteudo = document.createElement("div");
+            conteudo.className = "ml-explicacao-conteudo";
+            function adicionarTexto(texto) {
+              var paragrafo = document.createElement("p");
+              paragrafo.textContent = texto;
+              conteudo.appendChild(paragrafo);
+            }
+            adicionarTexto("Agendamento: " + String(linha[0]));
+            adicionarTexto("Atributos informados: " + JSON.stringify(explicacao.atributos || {}));
+            adicionarTexto("Intercepto: " + Number(explicacao.intercepto || 0).toFixed(8));
+
+            var lista = document.createElement("ul");
+            (explicacao.contribuicoes || []).forEach(function(item) {
+              var li = document.createElement("li");
+              li.textContent = item.coluna + ": valor preparado " +
+                Number(item.valorPreparado || 0).toFixed(6) + " × coeficiente " +
+                Number(item.coeficiente || 0).toFixed(8) + " = contribuição " +
+                Number(item.contribuicao || 0).toFixed(8);
+              lista.appendChild(li);
+            });
+            conteudo.appendChild(lista);
+            adicionarTexto("z = intercepto + soma das contribuições = " +
+              Number(explicacao.z || 0).toFixed(8));
+            adicionarTexto("Sigmoide(z) = " + Number(explicacao.sigmoide || 0).toFixed(8));
+            adicionarTexto("Escore do modelo: " + Number(previsao.escore || 0).toFixed(6) +
+              " (" + Number(previsao.riscoPercentual || 0) + "%). Não é probabilidade calibrada.");
+            adicionarTexto("Limiar: " + (Number(previsao.limiar || 0) * 100).toFixed(2) +
+              "% | Classe: " + String(previsao.classe || "—"));
+            adicionarTexto("Versão do modelo: " + String(previsao.versaoModelo || "—"));
+            detalhes.appendChild(conteudo);
+            td.appendChild(detalhes);
+          }
 
           function adicionarCelulaRisco(previsao, algoritmo) {
             var td = document.createElement("td");
@@ -1260,10 +1316,15 @@
                 String(previsao.nivelRisco || "").toLowerCase();
               indicador.textContent = previsao.classificacaoRisco + " · " + previsao.riscoPercentual + "%";
               td.appendChild(indicador);
-              td.title = algoritmo === "KNN"
-                ? "Escore experimental: proporção de vizinhos com falta; não é probabilidade calibrada."
-                : "Escore experimental: frequência de faltas na folha da árvore; não é probabilidade calibrada. Exemplos na folha: " +
+              if (algoritmo === "KNN") {
+                td.title = "Escore experimental: proporção de vizinhos com falta; não é probabilidade calibrada.";
+              } else if (algoritmo === "ARVORE_DECISAO") {
+                td.title = "Escore experimental: frequência de faltas na folha da árvore; não é probabilidade calibrada. Exemplos na folha: " +
                   (previsao.quantidadeExemplosFolha || 0) + ".";
+              } else {
+                td.title = "Escore experimental da função sigmoide. Selecione Ver cálculo para consultar a explicação matemática.";
+                adicionarExplicacaoLogistica(td, previsao);
+              }
             } else {
               td.textContent = "Indisponível";
               td.className = "risco-agendamento-indisponivel";
@@ -1273,6 +1334,7 @@
           }
           adicionarCelulaRisco(previsaoKNN, "KNN");
           adicionarCelulaRisco(previsaoArvore, "ARVORE_DECISAO");
+          adicionarCelulaRisco(previsaoLogistica, "REGRESSAO_LOGISTICA");
           var codigoAgendamento = linha[0];
           var statusAtual = String(linha[7] || "AGENDADO");
           var tdAcoesAgenda = document.createElement("td");
@@ -2049,8 +2111,11 @@
     function carregarPainelMLTela() {
       var algoritmo = document.getElementById("mlModelo").value;
       var knn = algoritmo === "KNN";
+      var arvore = algoritmo === "ARVORE_DECISAO";
+      var logistica = algoritmo === "REGRESSAO_LOGISTICA";
       document.getElementById("mlParametrosKNN").hidden = !knn;
-      document.getElementById("mlParametrosArvore").hidden = knn;
+      document.getElementById("mlParametrosArvore").hidden = !arvore;
+      document.getElementById("mlParametrosLogistica").hidden = !logistica;
       google.script.run.withSuccessHandler(function(painel) {
         var cfg = painel.configuracao || {};
         document.getElementById("mlK").value = cfg.k || 3;
@@ -2059,6 +2124,11 @@
         document.getElementById("mlProfundidade").value = cfg.profundidadeMaxima || 4;
         document.getElementById("mlMinimoDividir").value = cfg.minimoParaDividir || 6;
         document.getElementById("mlMinimoFolha").value = cfg.minimoPorFolha || 2;
+        document.getElementById("mlRegularizacao").value = cfg.regularizacao == null ? 0.1 : cfg.regularizacao;
+        document.getElementById("mlTaxaAprendizado").value = cfg.taxaAprendizado == null ? 0.1 : cfg.taxaAprendizado;
+        document.getElementById("mlIteracoes").value = cfg.iteracoesMaximas == null ? 10000 : cfg.iteracoesMaximas;
+        document.getElementById("mlTolerancia").value = cfg.tolerancia == null ? 0.0000001 : cfg.tolerancia;
+        document.getElementById("mlLimiarLogistica").value = cfg.limiar == null ? 0.5 : cfg.limiar;
         document.querySelectorAll("input[name='mlFeature']").forEach(function(campo) {
           campo.checked = (cfg.features || []).indexOf(campo.value) !== -1;
         });
@@ -2079,7 +2149,9 @@
         var alerta=document.createElement("div"); alerta.className="ml-alerta";
         alerta.textContent=modelo.aprovado
           ? "Modelo aprovado. Os escores experimentais podem ser exibidos na Agenda."
-          : "Modelo treinado, mas não aprovado. O escore experimental continua disponível para análise; considere as métricas antes de utilizá-lo.";
+          : painel.algoritmo === "REGRESSAO_LOGISTICA"
+            ? "Modelo treinado, mas não aprovado. A previsão logística ficará indisponível na Agenda até que os critérios de aprovação sejam atingidos."
+            : "Modelo treinado, mas não aprovado. O escore experimental continua disponível para análise; considere as métricas antes de utilizá-lo.";
         resumo.appendChild(alerta);
         var m=modelo.metricas||{};
         [["Acurácia",m.acuracia],["Precisão",m.precisao],["Recall",m.recall],["F1",m.f1],["Resultado básico",modelo.baseline]].forEach(function(x){
@@ -2088,7 +2160,11 @@
           var label=document.createElement("span"); label.textContent=x[0]; card.appendChild(val); card.appendChild(label); resumo.appendChild(card);
         });
         var d=modelo.divisao||{}; var info=document.createElement("p"); info.className="observacao";
-        info.textContent="Amostras válidas: "+(modelo.amostras==null?"—":modelo.amostras)+" | Treino: "+(d.treino||"—")+" | Validação: "+(d.validacao||"—")+" | Teste: "+(d.teste||"—")+" | Avaliado em: "+(modelo.treinadoEm||"—"); resumo.appendChild(info);
+        info.textContent="Amostras válidas: "+(modelo.amostras==null?"—":modelo.amostras)+" | Treino: "+(d.treino||"—")+" | Validação: "+(d.validacao||"—")+" | Teste: "+(d.teste||"—")+" | Avaliado em: "+(modelo.treinadoEm||"—");
+        if(painel.algoritmo==="REGRESSAO_LOGISTICA" && modelo.treinamento){
+          info.textContent += " | Convergência: "+(modelo.treinamento.convergiu?"sim":"não")+" | Iterações: "+(modelo.treinamento.iteracoes||0);
+        }
+        resumo.appendChild(info);
         (modelo.criterios||[]).forEach(function(c){
           var item=document.createElement("div"); item.className="ml-criterio";
           var title=document.createElement("strong"); title.textContent=(c.atingido?"✓ ATINGIDO — ":"✕ NÃO ATINGIDO — ")+c.nome; item.appendChild(title);
@@ -2120,10 +2196,16 @@
         config.k = Number(document.getElementById("mlK").value);
         config.limiar = Number(document.getElementById("mlLimiar").value);
         config.ponderarDistancia = document.getElementById("mlPonderar").checked;
-      } else {
+      } else if (algoritmo === "ARVORE_DECISAO") {
         config.profundidadeMaxima = Number(document.getElementById("mlProfundidade").value);
         config.minimoParaDividir = Number(document.getElementById("mlMinimoDividir").value);
         config.minimoPorFolha = Number(document.getElementById("mlMinimoFolha").value);
+      } else {
+        config.regularizacao = Number(document.getElementById("mlRegularizacao").value);
+        config.taxaAprendizado = Number(document.getElementById("mlTaxaAprendizado").value);
+        config.iteracoesMaximas = Number(document.getElementById("mlIteracoes").value);
+        config.tolerancia = Number(document.getElementById("mlTolerancia").value);
+        config.limiar = Number(document.getElementById("mlLimiarLogistica").value);
       }
       var botao = document.getElementById("btnSalvarML"); botao.disabled = true;
       google.script.run.withSuccessHandler(function(resposta) {
