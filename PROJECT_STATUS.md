@@ -1290,3 +1290,42 @@ Analisar o HTML/JavaScript da tela administrativa de Aprendizado de Máquina e a
 A implementação do classificador, a integração nas camadas do servidor e a interface estão concluídas na branch `feature/regressao-logistica`, com PR #29 aberta. A validação automatizada do GitHub Actions passou com 55 testes.
 
 **Ainda pendente:** revisão e integração da PR à `main`, seguida de decisão explícita sobre publicação no Apps Script e teste funcional com a planilha real. O treinamento real não foi executado nesta etapa; portanto, não há métricas ou aprovação estatística reais a declarar.
+
+
+## Atualização — Regressão Logística integrada e publicada
+
+**Situação atual (17/11/2026):** a PR #29 foi integrada à branch `main` pelo método Squash. O commit resultante é `e99e0f3238c65e7a8ae02b72161f1cdea5de1f7c`.
+
+### Validação e publicação
+
+- GitHub Actions, execução #143 (run ID `44007358806`): validação concluída com sucesso.
+- Sintaxe JavaScript aprovada.
+- Testes automatizados: 55 aprovados, 0 falhas.
+- Arquivos de configuração validados.
+- O job de publicação executou `clasp push --force` e enviou 43 arquivos ao Google Apps Script.
+- A implantação Web App existente foi atualizada com sucesso para a versão **@109**, descrita com o commit `e99e0f3`.
+- A publicação atualiza o código da implantação existente; não altera os dados da planilha.
+
+### Arquivos da implementação integrada (PR #29)
+
+**Criado:**
+- `LogisticRegressionClassifier.js`.
+- `tests/logistic-regression-classifier.test.js`.
+- `tests/regressao-logistica-service.test.js`.
+
+**Alterados:**
+- `AprendizadoMaquinaService.js`.
+- `AprendizadoMaquinaValidator.js`.
+- `index.html`.
+- `tests/agendamento-interface.test.js`.
+- `PROJECT_STATUS.md`.
+
+**Mantidos:** `AprendizadoMaquinaRules.js`, `AprendizadoMaquinaRepository.js`, `KNNClassifier.js`, `DecisionTreeClassifier.js`, demais módulos e operações existentes.
+
+**Excluídos:** nenhum. Não foi identificada necessidade de remover arquivos.
+
+### Pendências de validação funcional
+
+A publicação técnica está concluída, mas ainda é necessário abrir o Web App atualizado e realizar o teste funcional com a planilha real: selecionar Regressão Logística, conferir os parâmetros, executar o treinamento e verificar métricas, histórico, terceira coluna de risco e explicação **Ver cálculo**. O treinamento real ainda não foi executado; portanto, não há métricas reais nem aprovação estatística a declarar.
+
+As observações anteriores deste documento que indicavam a PR #29 como aberta, sem merge ou sem publicação ficam substituídas por esta atualização.
