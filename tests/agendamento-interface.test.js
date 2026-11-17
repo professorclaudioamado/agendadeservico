@@ -85,3 +85,50 @@ test("grade da Agenda apresenta classificação visual do risco e mantém aviso 
   assert.match(html, /Escore experimental: proporção de vizinhos com falta; não é probabilidade calibrada/);
   assert.match(html, /carregarGradeCadastro\("agenda"\)/);
 });
+
+
+test("interface oferece configuração e avaliação da Regressão Logística", () => {
+  [
+    'option value="REGRESSAO_LOGISTICA"',
+    'id="mlParametrosLogistica"',
+    'id="mlRegularizacao"',
+    'id="mlTaxaAprendizado"',
+    'id="mlIteracoes"',
+    'id="mlTolerancia"',
+    'id="mlLimiarLogistica"',
+    "REGRESSAO_LOGISTICA",
+    "modelo.treinamento.convergiu"
+  ].forEach(function(contrato) {
+    assert.ok(html.includes(contrato), "Contrato ausente na interface: " + contrato);
+  });
+});
+
+test("grade mantém a ordem K-NN, Árvore, Regressão Logística e Ações", () => {
+  const posKnn = html.indexOf('thRiscoKNN.textContent = "Risco estimado de falta — K-NN"');
+  const posArvore = html.indexOf('thRiscoArvore.textContent = "Risco Árvore de Decisão"');
+  const posLogistica = html.indexOf('thRiscoLogistica.textContent = "Risco Regressão Logística"');
+  const posAcoes = html.indexOf('thAcoes.textContent = "Ações"');
+  assert.ok(posKnn >= 0 && posArvore > posKnn && posLogistica > posArvore && posAcoes > posLogistica);
+  assert.match(html, /previsaoLogistica = previsoes && previsoes\.REGRESSAO_LOGISTICA/);
+  assert.match(html, /adicionarCelulaRisco\(previsaoLogistica, "REGRESSAO_LOGISTICA"\)/);
+});
+
+test("explicação clicável apresenta os componentes do cálculo logístico", () => {
+  [
+    'createElement("details")',
+    'resumo.textContent = "Ver cálculo"',
+    "Atributos informados:",
+    "Intercepto:",
+    "valor preparado",
+    "coeficiente",
+    "contribuição",
+    "z = intercepto + soma das contribuições",
+    "Sigmoide(z)",
+    "Escore do modelo:",
+    "Limiar:",
+    "Versão do modelo:"
+  ].forEach(function(contrato) {
+    assert.ok(html.includes(contrato), "Explicação incompleta: " + contrato);
+  });
+  assert.match(html, /Não é probabilidade calibrada/);
+});

@@ -1099,3 +1099,194 @@ Manter o K-NN existente e adicionar Árvore de Decisão como segundo algoritmo p
 - Confirmar publicação efetiva no Apps Script e versão da implantação.
 - Executar os treinamentos com os dados reais e comparar as métricas.
 - Validar visualmente a Agenda no navegador e a persistência na planilha.
+
+
+---
+
+## Inclusão do modelo Regressão Logística — planejamento iniciado
+
+### Objetivo
+Adicionar um terceiro algoritmo para estimar o risco de falta de agendamentos, mantendo os modelos K-NN e Árvore de Decisão independentes e preservados.
+
+### Regras funcionais definidas
+- Variável alvo: `FALTOU = 1` e `CONCLUÍDO = 0`.
+- Registros `AGENDADO`, `CONFIRMADO` e `CANCELADO` permanecem fora do treinamento.
+- O modelo será treinado separadamente dos modelos existentes; atualizar previsões não deverá disparar novo treinamento.
+- A interface só deverá apresentar o indicador quando houver modelo de Regressão Logística treinado e aprovado e os atributos necessários estiverem válidos. Nos demais casos, deverá apresentar **Indisponível**.
+- O resultado da função sigmoide será identificado como escore do modelo, sem alegar calibração probabilística não demonstrada.
+- A explicação individual deverá apresentar atributos preparados, coeficientes, intercepto, cálculo de z, sigmoide, escore, limiar e versão do modelo.
+- A coluna será posicionada depois de **Risco Árvore de Decisão** e antes de **Ações**.
+- A implementação deverá preservar a aba de dados `Agendamentos` e as operações atuais de cadastro, edição e atualização da grade.
+
+### Estratégia de implementação incremental
+1. Criar e testar isoladamente `LogisticRegressionClassifier.js`, sem alterar os classificadores existentes.
+2. Integrar a configuração e o treinamento à camada Rules, Validator e Service.
+3. Persistir o modelo e os experimentos por chave própria no Repository, sem sobrescrever K-NN ou Árvore.
+4. Integrar as previsões e a explicação individual à interface.
+5. Executar a suíte automatizada, validar a sintaxe e revisar o diff completo antes de concluir.
+
+### Situação nesta atualização
+- Planejamento registrado antes da implementação.
+- Fonte atual consultada: branch `main`, commit `fcf0894948cee9f79ce99f0468704392ce03e883`.
+- O `PROJECT_GUIDE.md` fornecido no contexto do projeto foi consultado. Ele não está presente na raiz nem foi localizado no repositório GitHub atual; portanto, suas regras foram mantidas como referência e o arquivo não será alterado.
+- Nenhum código-fonte da Regressão Logística foi criado nesta atualização.
+- Nenhuma planilha ou implantação Apps Script foi modificada.
+
+### Arquivos desta etapa
+- **Criados:** nenhum.
+- **Alterados:** `PROJECT_STATUS.md`.
+- **Mantidos:** todos os arquivos de aplicação, testes, `PROJECT_GUIDE.md` (sem alteração).
+- **Excluídos:** nenhum.
+
+### Próximo passo
+Desenvolver o classificador isolado e seus testes automatizados, cobrindo estabilidade numérica, treinamento, previsão e explicação matemática reproduzível.
+
+
+### Etapa 1 — classificador isolado em desenvolvimento
+
+- Criado `LogisticRegressionClassifier.js`, independente dos classificadores K-NN e Árvore de Decisão.
+- Criado `tests/logistic-regression-classifier.test.js`, com nove casos de teste.
+- O classificador padroniza atributos numéricos, codifica categorias, utiliza gradiente descendente em lote com regularização L2 e busca de passo decrescente.
+- O resultado inclui intercepto, coeficientes, vetor preparado, contribuições individuais, valor z e escore da sigmoide.
+- O modelo registra versão, parâmetros, esquema de preparação, quantidade de amostras e indicadores de convergência.
+- Os testes locais dos nove casos passaram, incluindo simulação com 208 registros, classes desbalanceadas, valores extremos, atributos constantes e explicação matemática.
+- A validação automatizada do GitHub Actions foi concluída com sucesso na PR #29, execução #127 (run ID `44004676760`): verificação de sintaxe, testes automatizados de todo o projeto e validação dos arquivos de configuração aprovados.
+- Não houve integração ao Service, Rules, Validator, Repository ou interface nesta etapa.
+- Nenhuma alteração foi feita nos dados da planilha ou na implantação do Apps Script.
+
+**Arquivos criados:** `LogisticRegressionClassifier.js`, `tests/logistic-regression-classifier.test.js`.
+
+**Arquivos alterados:** `PROJECT_STATUS.md`.
+
+**Arquivos mantidos:** K-NN, Árvore de Decisão, arquivos das camadas atuais, interface, aba de dados e `PROJECT_GUIDE.md`.
+
+**Arquivos excluídos:** nenhum.
+
+**Como testar:** executar `node --test tests/logistic-regression-classifier.test.js` e, na validação completa, `node --test tests/*.test.js`.
+
+
+### Etapa 1 — classificador isolado concluído
+
+- A execução #127 do GitHub Actions concluiu com sucesso.
+- Verificação de sintaxe JavaScript: aprovada.
+- Suíte completa `node --test tests/*.test.js`: aprovada.
+- Validação de `appsscript.json` e `.clasp.json`: aprovada.
+- O job de publicação foi ignorado por se tratar de uma PR; nenhum arquivo foi enviado ao Apps Script.
+- PR #29 permanece aberta para revisão e integração posterior.
+
+**Resultado:** o classificador isolado está validado tecnicamente e pronto para ser integrado ao módulo de Aprendizado de Máquina.
+
+### Próxima etapa — integração nas camadas do servidor
+
+Planejado:
+- `AprendizadoMaquinaValidator.js`: validar configuração e parâmetros da Regressão Logística.
+- `AprendizadoMaquinaService.js`: configurar, treinar, selecionar regularização e limiar na validação, avaliar no teste e gerar previsões separadas.
+- Testes de integração do Service e do Validator.
+- `AprendizadoMaquinaRepository.js` deverá ser preservado se a inspeção confirmar que suas chaves dinâmicas já isolam automaticamente o novo algoritmo; não será alterado sem necessidade comprovada.
+- `AprendizadoMaquinaRules.js` deverá continuar excluindo estados sem resultado e mantendo o rótulo FALTOU=1 / CONCLUÍDO=0.
+- A interface ainda não será alterada nesta etapa.
+
+
+### Etapa 2 — integração nas camadas do servidor em validação
+
+- `AprendizadoMaquinaValidator.js` passou a reconhecer `REGRESSAO_LOGISTICA` e validar regularização L2, taxa de aprendizado, máximo de iterações, tolerância, limiar e características permitidas.
+- `AprendizadoMaquinaService.js` passou a oferecer configuração padrão própria, salvar configuração sem afetar os outros algoritmos, selecionar regularização e limiar usando somente a validação, treinar o modelo final com treino + validação e avaliar uma única vez no conjunto de teste.
+- O Service interrompe a operação sem persistir o modelo quando o treinamento final não converge.
+- A previsão de Regressão Logística fica bloqueada quando o modelo não está aprovado; o comportamento anterior de K-NN e Árvore de Decisão permanece inalterado.
+- `preverTodosAgendamentos()` agora retorna mapas independentes para os três algoritmos.
+- O Repository foi mantido: suas chaves de configuração, modelo e experimento são geradas pelo identificador do algoritmo e já suportam o novo nome sem alteração de estrutura.
+- As Rules foram mantidas: a seleção de exemplos já usa exclusivamente `FALTOU` e `CONCLUÍDO`, com exclusão dos demais estados.
+- Criado `tests/regressao-logistica-service.test.js` para validar o Validator, seleção de parâmetros, separação temporal, convergência e bloqueio de previsões não aprovadas.
+- A validação automatizada foi concluída com sucesso na PR #29, execução #127 (run ID `44004938776`): sintaxe, 52 testes automatizados e arquivos de configuração aprovados. A publicação foi ignorada; nenhum código foi enviado ao Apps Script.
+
+**Arquivos criados:** `tests/regressao-logistica-service.test.js`.
+
+**Arquivos alterados:** `AprendizadoMaquinaValidator.js`, `AprendizadoMaquinaService.js`, `PROJECT_STATUS.md`.
+
+**Arquivos mantidos:** `AprendizadoMaquinaRules.js`, `AprendizadoMaquinaRepository.js`, `KNNClassifier.js`, `DecisionTreeClassifier.js`, `LogisticRegressionClassifier.js`, interface e dados da planilha.
+
+**Arquivos excluídos:** nenhum.
+
+**Como testar:** executar `node --test tests/*.test.js`. A validação integrada deverá também confirmar que os modelos antigos continuam sendo recuperados e previstos independentemente.
+
+
+### Etapa 2 — integração no servidor concluída
+
+- A Regressão Logística foi integrada ao Validator e ao Service sem alterar o fluxo dos classificadores anteriores.
+- Configuração padrão do novo algoritmo: atributos `antecedenciaDias`, `hora`, `diaSemana` e `servico`; regularização L2 inicial 0,1; taxa de aprendizado 0,1; máximo de 10.000 iterações; tolerância 0,0000001; limiar inicial 0,5.
+- A seleção de regularização e limiar usa a validação temporal; o teste permanece reservado para a avaliação final.
+- O modelo final é treinado com treino + validação. Se não convergir, o Service interrompe e não persiste modelo nem experimento.
+- O modelo logístico só gera previsões para a Agenda quando `aprovado === true`. K-NN e Árvore continuam com o comportamento anterior.
+- O Repository e as Rules não precisaram de alteração.
+- A primeira execução da suíte identificou uma falha no próprio cenário de teste de não convergência; o cenário foi corrigido e a execução seguinte passou integralmente.
+- GitHub Actions, execução #127 (run ID `44004938776`): 52 testes aprovados, 0 falhas; sintaxe JavaScript aprovada; manifesto e configuração clasp aprovados.
+- O job de publicação foi ignorado por se tratar de PR. Não houve publicação no Apps Script nem alteração na planilha.
+- PR #29 permanece aberta, sem merge.
+
+**Resultado:** as camadas do servidor reconhecem e operam o terceiro algoritmo de forma isolada. A interface ainda não foi conectada.
+
+### Próxima etapa — integração da interface
+
+Analisar o HTML/JavaScript da tela administrativa de Aprendizado de Máquina e a construção das colunas da Agenda. Planejar a inclusão do seletor, parâmetros, métricas, histórico, terceiro indicador e explicação clicável, sem modificar as operações de cadastro/edição existentes.
+
+
+### Etapa 3 — interface em validação
+
+- `index.html` passou a oferecer Regressão Logística como terceiro algoritmo no painel administrativo.
+- Incluídos campos de regularização L2, taxa de aprendizado, máximo de iterações, tolerância e limiar.
+- Os parâmetros e as características são carregados da configuração independente salva para o algoritmo selecionado.
+- O painel identifica que um modelo logístico não aprovado não gera indicador na Agenda e apresenta o estado de convergência e o número de iterações.
+- A grade da Agenda passou a construir as colunas na ordem K-NN, Árvore de Decisão, Regressão Logística e Ações.
+- A célula de Regressão Logística apresenta **Indisponível** quando o servidor não retorna previsão aprovada.
+- Para previsões disponíveis, a opção **Ver cálculo** abre uma explicação clicável com código do agendamento, atributos de entrada, valores preparados, coeficientes, contribuições, intercepto, z, sigmoide, escore, limiar, classe e versão do modelo.
+- A explicação identifica o resultado como escore experimental, sem afirmar probabilidade calibrada.
+- Criados testes estáticos da interface para verificar a configuração, a ordem das colunas e a presença dos componentes da explicação.
+- A validação automatizada foi concluída com sucesso na PR #29, execução #140 (run ID `44005249476`): sintaxe JavaScript aprovada, 55 testes aprovados e arquivos de configuração validados. O job de publicação foi ignorado.
+
+**Arquivos criados:** nenhum.
+
+**Arquivos alterados:** `index.html`, `tests/agendamento-interface.test.js`, `PROJECT_STATUS.md`.
+
+**Arquivos mantidos:** `AprendizadoMaquinaService.js`, `AprendizadoMaquinaValidator.js`, `AprendizadoMaquinaRepository.js`, `AprendizadoMaquinaRules.js`, classificadores e demais telas/operações de cadastro.
+
+**Arquivos excluídos:** nenhum.
+
+**Como testar:** executar `node --test tests/*.test.js`; no Web App, selecionar Regressão Logística, conferir os parâmetros, treinar e validar a terceira coluna e o detalhe **Ver cálculo** em agendamentos elegíveis.
+
+
+### Etapa 3 — interface da Regressão Logística concluída
+
+- O painel administrativo apresenta os três algoritmos e permite configurar separadamente os parâmetros da Regressão Logística.
+- A interface carrega a configuração e o histórico do algoritmo selecionado sem misturar os modelos.
+- A Agenda apresenta três colunas de risco na ordem solicitada: K-NN, Árvore de Decisão e Regressão Logística; a coluna Ações permanece imediatamente depois da terceira.
+- A previsão logística só é exibida quando o Service retorna modelo aprovado. Caso contrário, aparece **Indisponível**.
+- O detalhe **Ver cálculo** apresenta o código do agendamento, atributos de entrada, valores preparados, coeficientes, contribuições, intercepto, z, sigmoide, escore, limiar, classe e versão do modelo.
+- O detalhe e os avisos deixam explícito que o escore sigmoide não é probabilidade calibrada.
+- As operações existentes de cadastrar, editar, detalhar, cancelar e alterar status não foram reescritas.
+- GitHub Actions, execução #140 (run ID `44005249476`): sintaxe JavaScript aprovada; 55 testes automatizados aprovados, 0 falhas; manifesto e configuração clasp aprovados.
+- O job de publicação foi ignorado. Nenhuma alteração foi enviada ao Apps Script ou à planilha.
+- PR #29 permanece aberta para revisão; não foi integrada à `main`.
+
+**Arquivos criados:** nenhum nesta etapa.
+
+**Arquivos alterados:** `index.html`, `tests/agendamento-interface.test.js`, `PROJECT_STATUS.md`.
+
+**Arquivos mantidos:** todos os arquivos de Service, Rules, Validator e Repository já integrados; K-NN, Árvore de Decisão e seus testes; demais operações da interface.
+
+**Arquivos excluídos:** nenhum. Não há arquivo obsoleto identificado.
+
+**Como testar após a integração/publicação:**
+1. Abrir o painel **Previsão de faltas** e selecionar Regressão Logística.
+2. Conferir os parâmetros e as quatro características padrão: antecedência, horário, dia da semana e serviço.
+3. Salvar a configuração e executar o treinamento.
+4. Conferir métricas, critérios, convergência e histórico.
+5. Se aprovado, abrir a Agenda e conferir a terceira coluna.
+6. Acionar **Ver cálculo** e conferir os atributos, coeficientes, contribuições, intercepto, z, sigmoide, escore, limiar e versão.
+7. Se reprovado ou sem dados suficientes, confirmar **Indisponível**.
+8. Confirmar que as colunas K-NN e Árvore e as ações de cadastro continuam funcionando.
+
+## Situação geral da Regressão Logística
+
+A implementação do classificador, a integração nas camadas do servidor e a interface estão concluídas na branch `feature/regressao-logistica`, com PR #29 aberta. A validação automatizada do GitHub Actions passou com 55 testes.
+
+**Ainda pendente:** revisão e integração da PR à `main`, seguida de decisão explícita sobre publicação no Apps Script e teste funcional com a planilha real. O treinamento real não foi executado nesta etapa; portanto, não há métricas ou aprovação estatística reais a declarar.
