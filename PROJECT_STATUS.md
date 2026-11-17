@@ -1099,3 +1099,44 @@ Manter o K-NN existente e adicionar Árvore de Decisão como segundo algoritmo p
 - Confirmar publicação efetiva no Apps Script e versão da implantação.
 - Executar os treinamentos com os dados reais e comparar as métricas.
 - Validar visualmente a Agenda no navegador e a persistência na planilha.
+
+
+---
+
+## Inclusão do modelo Regressão Logística — planejamento iniciado
+
+### Objetivo
+Adicionar um terceiro algoritmo para estimar o risco de falta de agendamentos, mantendo os modelos K-NN e Árvore de Decisão independentes e preservados.
+
+### Regras funcionais definidas
+- Variável alvo: `FALTOU = 1` e `CONCLUÍDO = 0`.
+- Registros `AGENDADO`, `CONFIRMADO` e `CANCELADO` permanecem fora do treinamento.
+- O modelo será treinado separadamente dos modelos existentes; atualizar previsões não deverá disparar novo treinamento.
+- A interface só deverá apresentar o indicador quando houver modelo de Regressão Logística treinado e aprovado e os atributos necessários estiverem válidos. Nos demais casos, deverá apresentar **Indisponível**.
+- O resultado da função sigmoide será identificado como escore do modelo, sem alegar calibração probabilística não demonstrada.
+- A explicação individual deverá apresentar atributos preparados, coeficientes, intercepto, cálculo de z, sigmoide, escore, limiar e versão do modelo.
+- A coluna será posicionada depois de **Risco Árvore de Decisão** e antes de **Ações**.
+- A implementação deverá preservar a aba de dados `Agendamentos` e as operações atuais de cadastro, edição e atualização da grade.
+
+### Estratégia de implementação incremental
+1. Criar e testar isoladamente `LogisticRegressionClassifier.js`, sem alterar os classificadores existentes.
+2. Integrar a configuração e o treinamento à camada Rules, Validator e Service.
+3. Persistir o modelo e os experimentos por chave própria no Repository, sem sobrescrever K-NN ou Árvore.
+4. Integrar as previsões e a explicação individual à interface.
+5. Executar a suíte automatizada, validar a sintaxe e revisar o diff completo antes de concluir.
+
+### Situação nesta atualização
+- Planejamento registrado antes da implementação.
+- Fonte atual consultada: branch `main`, commit `fcf0894948cee9f79ce99f0468704392ce03e883`.
+- O `PROJECT_GUIDE.md` fornecido no contexto do projeto foi consultado. Ele não está presente na raiz nem foi localizado no repositório GitHub atual; portanto, suas regras foram mantidas como referência e o arquivo não será alterado.
+- Nenhum código-fonte da Regressão Logística foi criado nesta atualização.
+- Nenhuma planilha ou implantação Apps Script foi modificada.
+
+### Arquivos desta etapa
+- **Criados:** nenhum.
+- **Alterados:** `PROJECT_STATUS.md`.
+- **Mantidos:** todos os arquivos de aplicação, testes, `PROJECT_GUIDE.md` (sem alteração).
+- **Excluídos:** nenhum.
+
+### Próximo passo
+Desenvolver o classificador isolado e seus testes automatizados, cobrindo estabilidade numérica, treinamento, previsão e explicação matemática reproduzível.
