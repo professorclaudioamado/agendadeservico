@@ -166,7 +166,7 @@ var LogisticRegressionClassifier = (function() {
     }
     var config = normalizarConfiguracao(configuracao);
     var rotulos = exemplos.map(function(item) {
-      var rotulo = Number(item && item.rotulo);
+      var rotulo = item && item.rotulo;
       if (rotulo !== 0 && rotulo !== 1) throw new Error("Os rótulos devem ser exclusivamente 0 ou 1.");
       return rotulo;
     });
@@ -248,9 +248,11 @@ var LogisticRegressionClassifier = (function() {
 
   /** Calcula o escore e retorna os componentes exatos usados no valor z. */
   function prever(modelo, features, limiarOpcional) {
-    if (!modelo || modelo.algoritmo !== "REGRESSAO_LOGISTICA" ||
-        !Array.isArray(modelo.coeficientes) || !Array.isArray(modelo.esquema) ||
-        !Array.isArray(modelo.colunas) || modelo.coeficientes.length !== modelo.colunas.length) {
+    if (!modelo || modelo.algoritmo !== "REGRESSAO_LOGISTICA" || !modelo.configuracao ||
+        !Array.isArray(modelo.configuracao.features) || !Array.isArray(modelo.coeficientes) ||
+        !Array.isArray(modelo.esquema) || !Array.isArray(modelo.colunas) ||
+        modelo.coeficientes.length !== modelo.colunas.length ||
+        !isFinite(Number(modelo.intercepto)) || modelo.coeficientes.some(function(valor) { return !isFinite(Number(valor)); })) {
       throw new Error("Modelo de Regressão Logística inválido ou não treinado.");
     }
     var vetor = vetorizar(features, modelo.esquema);
@@ -297,7 +299,7 @@ var LogisticRegressionClassifier = (function() {
     }
     var vp = 0, fp = 0, vn = 0, fn = 0;
     exemplos.forEach(function(item) {
-      var rotulo = Number(item.rotulo);
+      var rotulo = item.rotulo;
       if (rotulo !== 0 && rotulo !== 1) throw new Error("Os rótulos de avaliação devem ser 0 ou 1.");
       var corte = Number(limiar == null ? modelo.configuracao.limiar : limiar);
       var previsto = regressaoPreverInterno_(modelo, item.features, corte).escore >= corte;
