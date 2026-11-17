@@ -1185,3 +1185,26 @@ Planejado:
 - `AprendizadoMaquinaRepository.js` deverá ser preservado se a inspeção confirmar que suas chaves dinâmicas já isolam automaticamente o novo algoritmo; não será alterado sem necessidade comprovada.
 - `AprendizadoMaquinaRules.js` deverá continuar excluindo estados sem resultado e mantendo o rótulo FALTOU=1 / CONCLUÍDO=0.
 - A interface ainda não será alterada nesta etapa.
+
+
+### Etapa 2 — integração nas camadas do servidor em validação
+
+- `AprendizadoMaquinaValidator.js` passou a reconhecer `REGRESSAO_LOGISTICA` e validar regularização L2, taxa de aprendizado, máximo de iterações, tolerância, limiar e características permitidas.
+- `AprendizadoMaquinaService.js` passou a oferecer configuração padrão própria, salvar configuração sem afetar os outros algoritmos, selecionar regularização e limiar usando somente a validação, treinar o modelo final com treino + validação e avaliar uma única vez no conjunto de teste.
+- O Service interrompe a operação sem persistir o modelo quando o treinamento final não converge.
+- A previsão de Regressão Logística fica bloqueada quando o modelo não está aprovado; o comportamento anterior de K-NN e Árvore de Decisão permanece inalterado.
+- `preverTodosAgendamentos()` agora retorna mapas independentes para os três algoritmos.
+- O Repository foi mantido: suas chaves de configuração, modelo e experimento são geradas pelo identificador do algoritmo e já suportam o novo nome sem alteração de estrutura.
+- As Rules foram mantidas: a seleção de exemplos já usa exclusivamente `FALTOU` e `CONCLUÍDO`, com exclusão dos demais estados.
+- Criado `tests/regressao-logistica-service.test.js` para validar o Validator, seleção de parâmetros, separação temporal, convergência e bloqueio de previsões não aprovadas.
+- A validação automatizada desta etapa ainda será executada na PR #29.
+
+**Arquivos criados:** `tests/regressao-logistica-service.test.js`.
+
+**Arquivos alterados:** `AprendizadoMaquinaValidator.js`, `AprendizadoMaquinaService.js`, `PROJECT_STATUS.md`.
+
+**Arquivos mantidos:** `AprendizadoMaquinaRules.js`, `AprendizadoMaquinaRepository.js`, `KNNClassifier.js`, `DecisionTreeClassifier.js`, `LogisticRegressionClassifier.js`, interface e dados da planilha.
+
+**Arquivos excluídos:** nenhum.
+
+**Como testar:** executar `node --test tests/*.test.js`. A validação integrada deverá também confirmar que os modelos antigos continuam sendo recuperados e previstos independentemente.
