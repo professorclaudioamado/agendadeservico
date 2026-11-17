@@ -1140,3 +1140,26 @@ Adicionar um terceiro algoritmo para estimar o risco de falta de agendamentos, m
 
 ### Próximo passo
 Desenvolver o classificador isolado e seus testes automatizados, cobrindo estabilidade numérica, treinamento, previsão e explicação matemática reproduzível.
+
+
+### Etapa 1 — classificador isolado em desenvolvimento
+
+- Criado `LogisticRegressionClassifier.js`, independente dos classificadores K-NN e Árvore de Decisão.
+- Criado `tests/logistic-regression-classifier.test.js`, com nove casos de teste.
+- O classificador padroniza atributos numéricos, codifica categorias, utiliza gradiente descendente em lote com regularização L2 e busca de passo decrescente.
+- O resultado inclui intercepto, coeficientes, vetor preparado, contribuições individuais, valor z e escore da sigmoide.
+- O modelo registra versão, parâmetros, esquema de preparação, quantidade de amostras e indicadores de convergência.
+- Os testes locais dos nove casos passaram, incluindo simulação com 208 registros, classes desbalanceadas, valores extremos, atributos constantes e explicação matemática.
+- A validação automatizada do GitHub Actions está em execução na PR #29. A etapa ainda não será marcada como concluída até o resultado da execução.
+- Não houve integração ao Service, Rules, Validator, Repository ou interface nesta etapa.
+- Nenhuma alteração foi feita nos dados da planilha ou na implantação do Apps Script.
+
+**Arquivos criados:** `LogisticRegressionClassifier.js`, `tests/logistic-regression-classifier.test.js`.
+
+**Arquivos alterados:** `PROJECT_STATUS.md`.
+
+**Arquivos mantidos:** K-NN, Árvore de Decisão, arquivos das camadas atuais, interface, aba de dados e `PROJECT_GUIDE.md`.
+
+**Arquivos excluídos:** nenhum.
+
+**Como testar:** executar `node --test tests/logistic-regression-classifier.test.js` e, na validação completa, `node --test tests/*.test.js`.
