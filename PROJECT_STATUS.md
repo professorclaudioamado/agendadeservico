@@ -1241,7 +1241,7 @@ Analisar o HTML/JavaScript da tela administrativa de Aprendizado de Máquina e a
 - Para previsões disponíveis, a opção **Ver cálculo** abre uma explicação clicável com código do agendamento, atributos de entrada, valores preparados, coeficientes, contribuições, intercepto, z, sigmoide, escore, limiar, classe e versão do modelo.
 - A explicação identifica o resultado como escore experimental, sem afirmar probabilidade calibrada.
 - Criados testes estáticos da interface para verificar a configuração, a ordem das colunas e a presença dos componentes da explicação.
-- A validação automatizada da etapa ainda será executada na PR #29.
+- A validação automatizada foi concluída com sucesso na PR #29, execução #140 (run ID `44005249476`): sintaxe JavaScript aprovada, 55 testes aprovados e arquivos de configuração validados. O job de publicação foi ignorado.
 
 **Arquivos criados:** nenhum.
 
@@ -1252,3 +1252,41 @@ Analisar o HTML/JavaScript da tela administrativa de Aprendizado de Máquina e a
 **Arquivos excluídos:** nenhum.
 
 **Como testar:** executar `node --test tests/*.test.js`; no Web App, selecionar Regressão Logística, conferir os parâmetros, treinar e validar a terceira coluna e o detalhe **Ver cálculo** em agendamentos elegíveis.
+
+
+### Etapa 3 — interface da Regressão Logística concluída
+
+- O painel administrativo apresenta os três algoritmos e permite configurar separadamente os parâmetros da Regressão Logística.
+- A interface carrega a configuração e o histórico do algoritmo selecionado sem misturar os modelos.
+- A Agenda apresenta três colunas de risco na ordem solicitada: K-NN, Árvore de Decisão e Regressão Logística; a coluna Ações permanece imediatamente depois da terceira.
+- A previsão logística só é exibida quando o Service retorna modelo aprovado. Caso contrário, aparece **Indisponível**.
+- O detalhe **Ver cálculo** apresenta o código do agendamento, atributos de entrada, valores preparados, coeficientes, contribuições, intercepto, z, sigmoide, escore, limiar, classe e versão do modelo.
+- O detalhe e os avisos deixam explícito que o escore sigmoide não é probabilidade calibrada.
+- As operações existentes de cadastrar, editar, detalhar, cancelar e alterar status não foram reescritas.
+- GitHub Actions, execução #140 (run ID `44005249476`): sintaxe JavaScript aprovada; 55 testes automatizados aprovados, 0 falhas; manifesto e configuração clasp aprovados.
+- O job de publicação foi ignorado. Nenhuma alteração foi enviada ao Apps Script ou à planilha.
+- PR #29 permanece aberta para revisão; não foi integrada à `main`.
+
+**Arquivos criados:** nenhum nesta etapa.
+
+**Arquivos alterados:** `index.html`, `tests/agendamento-interface.test.js`, `PROJECT_STATUS.md`.
+
+**Arquivos mantidos:** todos os arquivos de Service, Rules, Validator e Repository já integrados; K-NN, Árvore de Decisão e seus testes; demais operações da interface.
+
+**Arquivos excluídos:** nenhum. Não há arquivo obsoleto identificado.
+
+**Como testar após a integração/publicação:**
+1. Abrir o painel **Previsão de faltas** e selecionar Regressão Logística.
+2. Conferir os parâmetros e as quatro características padrão: antecedência, horário, dia da semana e serviço.
+3. Salvar a configuração e executar o treinamento.
+4. Conferir métricas, critérios, convergência e histórico.
+5. Se aprovado, abrir a Agenda e conferir a terceira coluna.
+6. Acionar **Ver cálculo** e conferir os atributos, coeficientes, contribuições, intercepto, z, sigmoide, escore, limiar e versão.
+7. Se reprovado ou sem dados suficientes, confirmar **Indisponível**.
+8. Confirmar que as colunas K-NN e Árvore e as ações de cadastro continuam funcionando.
+
+## Situação geral da Regressão Logística
+
+A implementação do classificador, a integração nas camadas do servidor e a interface estão concluídas na branch `feature/regressao-logistica`, com PR #29 aberta. A validação automatizada do GitHub Actions passou com 55 testes.
+
+**Ainda pendente:** revisão e integração da PR à `main`, seguida de decisão explícita sobre publicação no Apps Script e teste funcional com a planilha real. O treinamento real não foi executado nesta etapa; portanto, não há métricas ou aprovação estatística reais a declarar.
