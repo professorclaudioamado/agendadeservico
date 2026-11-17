@@ -1298,12 +1298,12 @@ A implementação do classificador, a integração nas camadas do servidor e a i
 
 ### Validação e publicação
 
-- GitHub Actions, execução #143 (run ID `44007358806`): validação concluída com sucesso.
+- GitHub Actions, execução #143 (run ID `44007358806`): validação e publicação do código integrado concluídas com sucesso.
 - Sintaxe JavaScript aprovada.
 - Testes automatizados: 55 aprovados, 0 falhas.
 - Arquivos de configuração validados.
 - O job de publicação executou `clasp push --force` e enviou 43 arquivos ao Google Apps Script.
-- A implantação Web App existente foi atualizada com sucesso para a versão **@109**, descrita com o commit `e99e0f3`.
+- A implantação Web App existente foi atualizada para a versão **@109**, descrita com o commit `e99e0f3`.
 - A publicação atualiza o código da implantação existente; não altera os dados da planilha.
 
 ### Arquivos da implementação integrada (PR #29)
@@ -1327,5 +1327,7 @@ A implementação do classificador, a integração nas camadas do servidor e a i
 ### Pendências de validação funcional
 
 A publicação técnica está concluída, mas ainda é necessário abrir o Web App atualizado e realizar o teste funcional com a planilha real: selecionar Regressão Logística, conferir os parâmetros, executar o treinamento e verificar métricas, histórico, terceira coluna de risco e explicação **Ver cálculo**. O treinamento real ainda não foi executado; portanto, não há métricas reais nem aprovação estatística a declarar.
+
+A atualização deste registro gerou a execução #144 (run ID `44007494742`). A validação foi aprovada; o `clasp push` confirmou que os arquivos já estavam atualizados (`Script is already up to date`) e a implantação Web App existente foi registrada novamente como versão **@110**. Esta é a versão implantada mais recente, correspondente ao conteúdo da `main` no commit `fd64e07`.
 
 As observações anteriores deste documento que indicavam a PR #29 como aberta, sem merge ou sem publicação ficam substituídas por esta atualização.
