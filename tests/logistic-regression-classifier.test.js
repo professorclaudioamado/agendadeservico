@@ -108,6 +108,9 @@ test("treinamento rejeita dados sem as duas classes e rótulos inválidos", () =
   assert.throws(() => treinarPadrao(base.map((item, indice) => ({
     features: item.features, rotulo: indice === 0 ? 2 : item.rotulo
   }))), /exclusivamente 0 ou 1/);
+  assert.throws(() => treinarPadrao(base.map((item, indice) => ({
+    features: item.features, rotulo: indice === 0 ? true : item.rotulo
+  }))), /exclusivamente 0 ou 1/);
 });
 
 test("configuração rejeita atributos repetidos e parâmetros fora dos limites", () => {
