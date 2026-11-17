@@ -1150,7 +1150,7 @@ Desenvolver o classificador isolado e seus testes automatizados, cobrindo estabi
 - O resultado inclui intercepto, coeficientes, vetor preparado, contribuições individuais, valor z e escore da sigmoide.
 - O modelo registra versão, parâmetros, esquema de preparação, quantidade de amostras e indicadores de convergência.
 - Os testes locais dos nove casos passaram, incluindo simulação com 208 registros, classes desbalanceadas, valores extremos, atributos constantes e explicação matemática.
-- A validação automatizada do GitHub Actions está em execução na PR #29. A etapa ainda não será marcada como concluída até o resultado da execução.
+- A validação automatizada do GitHub Actions foi concluída com sucesso na PR #29, execução #127 (run ID `44004676760`): verificação de sintaxe, testes automatizados de todo o projeto e validação dos arquivos de configuração aprovados.
 - Não houve integração ao Service, Rules, Validator, Repository ou interface nesta etapa.
 - Nenhuma alteração foi feita nos dados da planilha ou na implantação do Apps Script.
 
@@ -1163,3 +1163,25 @@ Desenvolver o classificador isolado e seus testes automatizados, cobrindo estabi
 **Arquivos excluídos:** nenhum.
 
 **Como testar:** executar `node --test tests/logistic-regression-classifier.test.js` e, na validação completa, `node --test tests/*.test.js`.
+
+
+### Etapa 1 — classificador isolado concluído
+
+- A execução #127 do GitHub Actions concluiu com sucesso.
+- Verificação de sintaxe JavaScript: aprovada.
+- Suíte completa `node --test tests/*.test.js`: aprovada.
+- Validação de `appsscript.json` e `.clasp.json`: aprovada.
+- O job de publicação foi ignorado por se tratar de uma PR; nenhum arquivo foi enviado ao Apps Script.
+- PR #29 permanece aberta para revisão e integração posterior.
+
+**Resultado:** o classificador isolado está validado tecnicamente e pronto para ser integrado ao módulo de Aprendizado de Máquina.
+
+### Próxima etapa — integração nas camadas do servidor
+
+Planejado:
+- `AprendizadoMaquinaValidator.js`: validar configuração e parâmetros da Regressão Logística.
+- `AprendizadoMaquinaService.js`: configurar, treinar, selecionar regularização e limiar na validação, avaliar no teste e gerar previsões separadas.
+- Testes de integração do Service e do Validator.
+- `AprendizadoMaquinaRepository.js` deverá ser preservado se a inspeção confirmar que suas chaves dinâmicas já isolam automaticamente o novo algoritmo; não será alterado sem necessidade comprovada.
+- `AprendizadoMaquinaRules.js` deverá continuar excluindo estados sem resultado e mantendo o rótulo FALTOU=1 / CONCLUÍDO=0.
+- A interface ainda não será alterada nesta etapa.
