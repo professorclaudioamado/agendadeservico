@@ -1197,7 +1197,7 @@ Planejado:
 - O Repository foi mantido: suas chaves de configuração, modelo e experimento são geradas pelo identificador do algoritmo e já suportam o novo nome sem alteração de estrutura.
 - As Rules foram mantidas: a seleção de exemplos já usa exclusivamente `FALTOU` e `CONCLUÍDO`, com exclusão dos demais estados.
 - Criado `tests/regressao-logistica-service.test.js` para validar o Validator, seleção de parâmetros, separação temporal, convergência e bloqueio de previsões não aprovadas.
-- A validação automatizada desta etapa ainda será executada na PR #29.
+- A validação automatizada foi concluída com sucesso na PR #29, execução #127 (run ID `44004938776`): sintaxe, 52 testes automatizados e arquivos de configuração aprovados. A publicação foi ignorada; nenhum código foi enviado ao Apps Script.
 
 **Arquivos criados:** `tests/regressao-logistica-service.test.js`.
 
@@ -1208,3 +1208,23 @@ Planejado:
 **Arquivos excluídos:** nenhum.
 
 **Como testar:** executar `node --test tests/*.test.js`. A validação integrada deverá também confirmar que os modelos antigos continuam sendo recuperados e previstos independentemente.
+
+
+### Etapa 2 — integração no servidor concluída
+
+- A Regressão Logística foi integrada ao Validator e ao Service sem alterar o fluxo dos classificadores anteriores.
+- Configuração padrão do novo algoritmo: atributos `antecedenciaDias`, `hora`, `diaSemana` e `servico`; regularização L2 inicial 0,1; taxa de aprendizado 0,1; máximo de 10.000 iterações; tolerância 0,0000001; limiar inicial 0,5.
+- A seleção de regularização e limiar usa a validação temporal; o teste permanece reservado para a avaliação final.
+- O modelo final é treinado com treino + validação. Se não convergir, o Service interrompe e não persiste modelo nem experimento.
+- O modelo logístico só gera previsões para a Agenda quando `aprovado === true`. K-NN e Árvore continuam com o comportamento anterior.
+- O Repository e as Rules não precisaram de alteração.
+- A primeira execução da suíte identificou uma falha no próprio cenário de teste de não convergência; o cenário foi corrigido e a execução seguinte passou integralmente.
+- GitHub Actions, execução #127 (run ID `44004938776`): 52 testes aprovados, 0 falhas; sintaxe JavaScript aprovada; manifesto e configuração clasp aprovados.
+- O job de publicação foi ignorado por se tratar de PR. Não houve publicação no Apps Script nem alteração na planilha.
+- PR #29 permanece aberta, sem merge.
+
+**Resultado:** as camadas do servidor reconhecem e operam o terceiro algoritmo de forma isolada. A interface ainda não foi conectada.
+
+### Próxima etapa — integração da interface
+
+Analisar o HTML/JavaScript da tela administrativa de Aprendizado de Máquina e a construção das colunas da Agenda. Planejar a inclusão do seletor, parâmetros, métricas, histórico, terceiro indicador e explicação clicável, sem modificar as operações de cadastro/edição existentes.
