@@ -180,7 +180,7 @@ test("Service não persiste modelo logístico que não convergiu", () => {
         chamadas++;
         return {
           algoritmo: "REGRESSAO_LOGISTICA", configuracao: config,
-          treinamento: { convergiu: chamadas < 25 }
+          treinamento: { convergiu: chamadas <= 20 }
         };
       },
       avaliar: () => ({ quantidade: 20, acuracia: 0.8, precisao: 0.8, recall: 0.8, f1: 0.8 })
