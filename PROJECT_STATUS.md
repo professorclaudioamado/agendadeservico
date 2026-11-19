@@ -1336,7 +1336,7 @@ As observações anteriores deste documento que indicavam a PR #29 como aberta, 
 ## Correção — integridade das amostras do K-NN na Agenda
 
 **Data:** 19/11/2026  
-**Situação:** correção preparada na branch `fix/knn-amostras-agenda`; validação e publicação ainda pendentes.
+**Situação:** concluída, integrada à `main` e publicada na implantação Web App existente.
 
 ### Diagnóstico
 - A função `AprendizadoMaquinaService.treinarAlgoritmo_()` atribuía a quantidade total de exemplos a `modelo.amostras`.
@@ -1364,6 +1364,20 @@ As observações anteriores deste documento que indicavam a PR #29 como aberta, 
 4. Após publicação, executar novo treinamento K-NN e conferir a Agenda na implantação Web App existente.
 
 ### Publicação
-- A branch deverá passar pela validação automatizada e ser integrada à `main`.
-- O workflow de publicação respeita a variável `APPS_SCRIPT_DEPLOY_ENABLED`; se ela não estiver definida como `true`, a publicação precisará ser iniciada manualmente em Actions com `publicar=true`.
-- A versão implantada antes desta correção era `@110`. A nova versão somente será registrada após confirmação do workflow de publicação.
+- PR #30 integrada à `main` pelo método Squash. Commit de integração: `d4747ab23b5acebdcefe0b977451b0cf44b7ff0a`.
+- GitHub Actions, execução #44641877136 (PR): sintaxe JavaScript aprovada; 57 testes aprovados, 0 falhas.
+- GitHub Actions, execução #44641915352 (push na `main`): validação aprovada; publicação executada com `clasp push --force`, 43 arquivos enviados e implantação Web App existente atualizada com sucesso para a versão **@114**.
+- A publicação atualizou o código da aplicação; não alterou as linhas de dados da planilha.
+- A versão anterior era `@110`; a versão implantada atual é `@114`.
+
+
+### Validação funcional após publicação — pendente
+
+A publicação técnica da correção foi concluída. Ainda é necessário validar o comportamento com a planilha real e o navegador:
+1. Abrir a URL habitual do Web App e recarregar a página.
+2. Confirmar que a Agenda carrega sem a mensagem `modelo.amostras.map is not a function`.
+3. Abrir a tela de treinamento, selecionar K-NN e executar **Treinar e avaliar modelo** para substituir o modelo legado que contém a contagem numérica no lugar da lista.
+4. Reabrir a Agenda e confirmar que as previsões K-NN são calculadas sem erro.
+5. Conferir se a quantidade de amostras continua correta no painel e se Árvore de Decisão e Regressão Logística continuam funcionando.
+
+A versão **@114** está publicada; o retreinamento do K-NN ainda depende da ação do usuário na tela, pois a publicação não executa funções de treinamento nem altera os modelos armazenados na planilha.
