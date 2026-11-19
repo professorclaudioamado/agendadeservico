@@ -217,7 +217,7 @@ test("Service só exibe previsão logística aprovada e mantém previsões dos m
       aprovado: false,
       configuracao: { features: ["antecedenciaDias", "hora", "diaSemana", "servico"] }
     },
-    KNN: { aprovado: false, configuracao: { features: ["hora", "diaSemana", "funcionario", "servico"] } },
+    KNN: { aprovado: false, amostras: [], configuracao: { features: ["hora", "diaSemana", "funcionario", "servico"] } },
     ARVORE_DECISAO: { aprovado: false, configuracao: { features: ["hora", "diaSemana", "funcionario", "servico"] } }
   };
   const contexto = {
