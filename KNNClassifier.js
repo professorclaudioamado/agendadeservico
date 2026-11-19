@@ -54,7 +54,7 @@ var KNNClassifier = (function() {
 
   /** Retorna escore 0–100 e a classe prevista para um novo agendamento. */
   function prever(modelo, features) {
-    if (!modelo || !modelo.amostras || !modelo.configuracao) {
+    if (!modelo || !Array.isArray(modelo.amostras) || !modelo.configuracao) {
       throw new Error("Modelo K-NN não treinado.");
     }
     var cfg = modelo.configuracao;

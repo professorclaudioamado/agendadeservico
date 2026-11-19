@@ -134,7 +134,9 @@ var AprendizadoMaquinaService = (function() {
     modelo.treinadoEm = new Date().toISOString();
     modelo.criterios = criterios;
     modelo.divisao = { treino: treino.length, validacao: validacao.length, teste: teste.length };
-    modelo.amostras = preparado.exemplos.length;
+    // Não sobrescreve modelo.amostras: no K-NN essa propriedade contém
+    // a lista de exemplos necessária para calcular os vizinhos na previsão.
+    modelo.quantidadeAmostrasTreinamento = preparado.exemplos.length;
     modelo.excluidos = preparado.excluidos;
 
     var observacoes = "Parâmetros escolhidos na validação. Excluídos: " +
@@ -342,6 +344,9 @@ var AprendizadoMaquinaService = (function() {
     var mapa = {};
     if (!modelo || !modelo.configuracao || !Array.isArray(modelo.configuracao.features)) return mapa;
     if (algoritmo === "REGRESSAO_LOGISTICA" && modelo.aprovado !== true) return mapa;
+    // Modelos K-NN gravados antes da correção podem conter a quantidade (número)
+    // no lugar da lista de amostras. Ignore-os até que sejam treinados novamente.
+    if (algoritmo === "KNN" && !Array.isArray(modelo.amostras)) return mapa;
     var classificador = classificador_(algoritmo);
     var hoje = new Date(); hoje.setHours(0, 0, 0, 0);
     registros.forEach(function(r) {
@@ -385,7 +390,10 @@ var AprendizadoMaquinaService = (function() {
         aprovado:modelo.aprovado, metricas:modelo.metricas,
         baseline:modelo.baseline, configuracao:modelo.configuracao,
         criterios:modelo.criterios || [], divisao:modelo.divisao || null,
-        amostras:modelo.amostras || null, excluidos:modelo.excluidos || null,
+        amostras:modelo.quantidadeAmostrasTreinamento ||
+          (Array.isArray(modelo.amostras) ? modelo.amostras.length :
+            (typeof modelo.amostras === "number" ? modelo.amostras : null)),
+        excluidos:modelo.excluidos || null,
         treinamento:modelo.treinamento || null
       } : null,
       experimentos:AprendizadoMaquinaRepository.listarExperimentos(30)

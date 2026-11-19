@@ -46,7 +46,7 @@ test("treinamento seleciona K e limiar na validação antes de avaliar o teste",
       }),
       salvarExperimento: item => { experimentoSalvo = item; return "EXP-TESTE"; },
       salvarModelo: modelo => { modeloSalvo = modelo; return true; },
-      obterModelo: () => null,
+      obterModelo: () => modeloSalvo,
       listarExperimentos: () => []
     },
     AgendamentoRepository: {
@@ -93,6 +93,11 @@ test("treinamento seleciona K e limiar na validação antes de avaliar o teste",
   assert.equal(chamadasAvaliacao.filter(item => item.origem === "teste").length, 1);
   assert.equal(modeloSalvo.configuracao.k, 1);
   assert.equal(modeloSalvo.configuracao.limiar, 0.4);
+  assert.ok(Array.isArray(modeloSalvo.amostras), "o K-NN deve preservar a lista de amostras");
+  assert.equal(modeloSalvo.amostras.length, 80, "o classificador é treinado com treino + validação");
+  assert.equal(modeloSalvo.quantidadeAmostrasTreinamento, 100);
+  const painel = contexto.AprendizadoMaquinaService.obterPainel("KNN");
+  assert.equal(painel.modelo.amostras, 100, "o painel deve exibir a quantidade sem sobrescrever a lista");
   assert.equal(experimentoSalvo.configuracao.k, 1);
   assert.match(experimentoSalvo.observacoes, /Parâmetros escolhidos na validação/);
 });
@@ -109,6 +114,7 @@ test("previsões experimentais são exibidas mesmo quando o modelo não foi apro
 
   const modelo = {
     aprovado: false,
+    amostras: [],
     configuracao: { features: ["hora", "diaSemana", "funcionario", "servico"] }
   };
   const contexto = {
@@ -160,4 +166,32 @@ test("previsões experimentais são exibidas mesmo quando o modelo não foi apro
   assert.equal(previsoes["203"].riscoPercentual, 45);
   assert.equal(previsoes["203"].nivelRisco, "MEDIO");
   assert.equal(previsoes["203"].classificacaoRisco, "Médio");
+});
+
+
+test("modelo K-NN legado com quantidade numérica não interrompe o carregamento da Agenda", () => {
+  const modeloLegado = {
+    aprovado: false,
+    amostras: 164,
+    configuracao: { features: ["hora"] }
+  };
+  const contexto = {
+    Date,
+    JSON,
+    Math,
+    isFinite,
+    AprendizadoMaquinaRepository: { obterModelo: () => modeloLegado },
+    AprendizadoMaquinaRules: {}
+  };
+
+  vm.runInNewContext(
+    fs.readFileSync(path.join(raiz, "AprendizadoMaquinaService.js"), "utf8"),
+    contexto,
+    { filename: "AprendizadoMaquinaService.js" }
+  );
+
+  assert.deepEqual(
+    JSON.parse(JSON.stringify(contexto.AprendizadoMaquinaService.preverAgendamentos([], "KNN"))),
+    {}
+  );
 });
