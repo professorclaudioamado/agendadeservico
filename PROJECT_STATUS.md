@@ -1331,3 +1331,39 @@ A publicação técnica está concluída, mas ainda é necessário abrir o Web A
 A atualização deste registro gerou a execução #144 (run ID `44007494742`). A validação foi aprovada; o `clasp push` confirmou que os arquivos já estavam atualizados (`Script is already up to date`) e a implantação Web App existente foi registrada novamente como versão **@110**. Esta é a versão implantada mais recente, correspondente ao conteúdo da `main` no commit `fd64e07`.
 
 As observações anteriores deste documento que indicavam a PR #29 como aberta, sem merge ou sem publicação ficam substituídas por esta atualização.
+
+
+## Correção — integridade das amostras do K-NN na Agenda
+
+**Data:** 19/11/2026  
+**Situação:** correção preparada na branch `fix/knn-amostras-agenda`; validação e publicação ainda pendentes.
+
+### Diagnóstico
+- A função `AprendizadoMaquinaService.treinarAlgoritmo_()` atribuía a quantidade total de exemplos a `modelo.amostras`.
+- No K-NN, `modelo.amostras` precisa permanecer como uma lista de exemplos, pois `KNNClassifier.prever()` percorre essa lista com `.map()`.
+- A atribuição numérica substituía a lista e provocava `TypeError: modelo.amostras.map is not a function` ao carregar as previsões da Agenda.
+- Modelos K-NN já salvos com a propriedade numérica não recuperam automaticamente os exemplos perdidos; devem ser ignorados com segurança até novo treinamento.
+
+### Correção planejada nesta etapa
+- A quantidade de exemplos passa a ser armazenada em `modelo.quantidadeAmostrasTreinamento`, preservando `modelo.amostras` como lista.
+- O painel administrativo continua apresentando a quantidade de exemplos por meio do novo campo, com compatibilidade de leitura para modelos antigos.
+- O Service ignora, sem interromper o carregamento da Agenda, modelos K-NN legados cuja propriedade `amostras` não seja uma lista.
+- O classificador K-NN valida explicitamente o formato da lista e retorna erro controlado quando receber um modelo inválido.
+- Foram acrescentados testes para preservação da lista, quantidade apresentada no painel, tratamento do modelo legado e rejeição de formato inválido.
+
+### Arquivos desta etapa
+- **Criados:** nenhum.
+- **Alterados:** `AprendizadoMaquinaService.js`, `KNNClassifier.js`, `tests/aprendizado-maquina-service.test.js`, `tests/aprendizado-maquina.test.js`, `PROJECT_STATUS.md`.
+- **Mantidos:** `AprendizadoMaquinaRepository.js`, `AprendizadoMaquinaRules.js`, `AprendizadoMaquinaValidator.js`, `index.html`, demais classificadores e arquivos da aplicação; `PROJECT_GUIDE.md` permanece sem alteração.
+- **Excluídos:** nenhum. Não há arquivo obsoleto nesta correção.
+
+### Como testar
+1. Executar `node --test tests/*.test.js`.
+2. Confirmar que o modelo K-NN recém-treinado mantém `amostras` como lista e armazena a contagem separadamente.
+3. Confirmar que a Agenda não falha ao encontrar um modelo legado inválido.
+4. Após publicação, executar novo treinamento K-NN e conferir a Agenda na implantação Web App existente.
+
+### Publicação
+- A branch deverá passar pela validação automatizada e ser integrada à `main`.
+- O workflow de publicação respeita a variável `APPS_SCRIPT_DEPLOY_ENABLED`; se ela não estiver definida como `true`, a publicação precisará ser iniciada manualmente em Actions com `publicar=true`.
+- A versão implantada antes desta correção era `@110`. A nova versão somente será registrada após confirmação do workflow de publicação.
