@@ -113,3 +113,17 @@ test("classificação do risco respeita os limites baixo, médio e alto", () => 
   assert.equal(classificar(101), null);
   assert.equal(classificar("inválido"), null);
 });
+
+
+test("K-NN rejeita modelo persistido com amostras em formato inválido", () => {
+  const contexto = {};
+  carregar(contexto, "KNNClassifier.js");
+  assert.throws(
+    () => contexto.KNNClassifier.prever({
+      algoritmo: "KNN",
+      configuracao: { k: 1, limiar: 0.5, features: ["hora"], pesos: { hora: 1 } },
+      amostras: 164
+    }, { hora: 9 }),
+    /Modelo K-NN não treinado/
+  );
+});
