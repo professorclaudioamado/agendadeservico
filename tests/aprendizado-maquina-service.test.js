@@ -94,7 +94,7 @@ test("treinamento seleciona K e limiar na validação antes de avaliar o teste",
   assert.equal(modeloSalvo.configuracao.k, 1);
   assert.equal(modeloSalvo.configuracao.limiar, 0.4);
   assert.ok(Array.isArray(modeloSalvo.amostras), "o K-NN deve preservar a lista de amostras");
-  assert.equal(modeloSalvo.amostras.length, 100);
+  assert.equal(modeloSalvo.amostras.length, 80, "o classificador é treinado com treino + validação");
   assert.equal(modeloSalvo.quantidadeAmostrasTreinamento, 100);
   const painel = contexto.AprendizadoMaquinaService.obterPainel("KNN");
   assert.equal(painel.modelo.amostras, 100, "o painel deve exibir a quantidade sem sobrescrever a lista");
