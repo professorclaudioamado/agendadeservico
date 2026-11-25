@@ -48,6 +48,16 @@ test("janelas usam somente os dias anteriores ao alvo", () => {
   assert.equal(resultado.amostras[0].quantidadeReal, 0);
 });
 
+test("escala de normalização pode ser limitada ao período de treino", () => {
+  const contexto = {};
+  carregar(contexto, "PrevisaoAgendamentosRules.js");
+  const serie = [1, 2, 3, 100].map((quantidade, i) => ({
+    chave: "2026-11-0" + (i + 1), quantidade
+  }));
+  const resultado = contexto.PrevisaoAgendamentosRules.criarJanelas(serie, 1, 2);
+  assert.equal(resultado.escala, Math.log1p(2));
+});
+
 test("validador rejeita parâmetros fora dos limites", () => {
   const contexto = {};
   carregar(contexto, "PrevisaoAgendamentosValidator.js");
