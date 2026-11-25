@@ -63,7 +63,7 @@ var PrevisaoAgendamentosService = (function() {
     var serie = PrevisaoAgendamentosRules.gerarSerieDiaria(registros);
     if (serie.length < MINIMO_DIAS) {
       throw new Error("Histórico insuficiente: são necessários pelo menos " + MINIMO_DIAS +
-        " dias corridos com Data_cadastro válida. Foram encontrados " + serie.length + ".");
+        " dias corridos desde o primeiro Data_cadastro válido. Foram encontrados " + serie.length + ".");
     }
 
     var total = serie.length - config.janelaDias;
