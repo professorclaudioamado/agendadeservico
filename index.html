@@ -2376,7 +2376,7 @@
         document.getElementById("pdResultadoTreinamento").innerHTML = "";
         if (Number(indicadores.diasHistoricos || 0) < Number(painel.minimoDias || 35)) {
           mostrarMensagemPrevisaoDemanda("Histórico insuficiente para treinamento. São necessários pelo menos " +
-            (painel.minimoDias || 35) + " dias corridos com Data_cadastro válida.", "erro");
+            (painel.minimoDias || 35) + " dias corridos desde o primeiro Data_cadastro válido.", "erro");
         } else {
           mostrarMensagemPrevisaoDemanda("Histórico carregado. Execute o treinamento para gerar a previsão.", "");
         }
