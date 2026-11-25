@@ -1381,3 +1381,68 @@ A publicação técnica da correção foi concluída. Ainda é necessário valid
 5. Conferir se a quantidade de amostras continua correta no painel e se Árvore de Decisão e Regressão Logística continuam funcionando.
 
 A versão **@114** está publicada; o retreinamento do K-NN ainda depende da ação do usuário na tela, pois a publicação não executa funções de treinamento nem altera os modelos armazenados na planilha.
+
+
+---
+
+## Previsão de demanda de novos agendamentos — implementação em validação
+
+### Objetivo
+
+Criar um dashboard independente da previsão de faltas, utilizando a coluna `Data_cadastro` da aba `AGENDA` para estimar a quantidade de novos agendamentos cadastrados nos próximos dez dias.
+
+### Implementação preparada na branch `feature/dashboard-previsao-agendamentos`
+
+- Criado `PrevisaoAgendamentosRepository.js`, responsável pela leitura de `Data_cadastro` e pela persistência das configurações, do modelo e dos experimentos nas abas técnicas `PREVISAO_CONFIGURACOES`, `PREVISAO_MODELO` e `PREVISAO_EXPERIMENTOS`.
+- Criado `PrevisaoAgendamentosRules.js`, responsável pela normalização de datas, contagem diária, preenchimento de dias sem cadastros com zero e preparação de janelas temporais.
+- Criado `PrevisaoAgendamentosValidator.js`, responsável pela validação dos parâmetros da rede neural.
+- Criado `RedeNeuralMLP.js`, com uma camada oculta tanh, saída linear e treinamento por retropropagação do erro.
+- Criado `PrevisaoAgendamentosService.js`, que coordena o treinamento, a avaliação temporal 70/15/15 e a previsão recursiva de dez dias.
+- Integrado novo dashboard ao `index.html`, sem substituir a tela existente de previsão de faltas.
+- Criados testes automatizados em `tests/previsao-agendamentos.test.js` e `tests/rede-neural-mlp.test.js`.
+- A normalização é limitada ao período de treino para evitar que a escala utilize valores futuros do conjunto de teste.
+- A interface não apresenta previsões artificiais: o gráfico futuro fica vazio até existir um modelo treinado.
+
+### Parâmetros iniciais
+
+- Janela histórica: 7 dias.
+- Neurônios ocultos: 12.
+- Máximo de épocas: 700.
+- Taxa de aprendizado: 0,015.
+- Horizonte de previsão: 10 dias.
+- Histórico mínimo: 35 dias corridos com datas válidas.
+
+### Estado e limitações
+
+- Implementação registrada em branch separada; ainda não integrada à `main`.
+- A execução dos testes pelo GitHub Actions e a revisão do resultado permanecem pendentes.
+- A validação funcional com a planilha real ainda é necessária para confirmar quantidade de histórico válido, permissões e comportamento com os dados existentes.
+- As previsões são estimativas experimentais de contagem diária, não garantias de novos cadastros.
+- O módulo não altera nem substitui os algoritmos de previsão de faltas.
+
+### Arquivos criados
+
+- `PrevisaoAgendamentosRepository.js`
+- `PrevisaoAgendamentosRules.js`
+- `PrevisaoAgendamentosValidator.js`
+- `PrevisaoAgendamentosService.js`
+- `RedeNeuralMLP.js`
+- `tests/previsao-agendamentos.test.js`
+- `tests/rede-neural-mlp.test.js`
+
+### Arquivos alterados
+
+- `index.html`
+- `PROJECT_STATUS.md`
+
+### Arquivos mantidos
+
+Todos os módulos de cadastro, agendamento, BOT, Gmail e previsão de faltas permanecem sem alteração nesta etapa.
+
+### Arquivos removidos
+
+Nenhum.
+
+### Próximo passo
+
+Executar e revisar o workflow de validação do GitHub Actions, corrigir eventuais falhas e, após aprovação, integrar a branch. Em seguida, atualizar a implantação Web App existente e testar o dashboard com a planilha real.
