@@ -88,9 +88,10 @@ var PrevisaoAgendamentosRules = (function() {
    * @param {number} janela Quantidade de dias usados como entrada.
    * @return {{amostras:Object[], escala:number}} Dados normalizados.
    */
-  function criarJanelas(serie, janela) {
+  function criarJanelas(serie, janela, diasParaEscala) {
     var maior = 0;
-    (serie || []).forEach(function(item) {
+    var limiteEscala = diasParaEscala == null ? (serie || []).length : Math.max(0, Math.min((serie || []).length, Number(diasParaEscala)));
+    (serie || []).slice(0, limiteEscala).forEach(function(item) {
       maior = Math.max(maior, Number(item.quantidade) || 0);
     });
     var escala = Math.max(1, Math.log1p(maior));
