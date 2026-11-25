@@ -1416,7 +1416,7 @@ Criar um dashboard independente da previsão de faltas, utilizando a coluna `Dat
 
 - PR #31 integrada à `main` no commit `c5701ae`.
 - GitHub Actions: sintaxe, testes automatizados e validação do manifesto aprovados no commit integrado.
-- Publicação no Google Apps Script concluída com sucesso pelo workflow #45525617646, incluindo envio dos arquivos e atualização da implantação Web App existente. A validação funcional com a planilha real ainda é necessária para confirmar quantidade de histórico válido e comportamento com os dados existentes.
+- Publicação no Google Apps Script concluída com sucesso pelo workflow #45525617646: 48 arquivos enviados e implantação Web App existente atualizada para a versão `@116`. A validação funcional com a planilha real ainda é necessária para confirmar quantidade de histórico válido e comportamento com os dados existentes.
 - As previsões são estimativas experimentais de contagem diária, não garantias de novos cadastros.
 - O módulo não altera nem substitui os algoritmos de previsão de faltas.
 
