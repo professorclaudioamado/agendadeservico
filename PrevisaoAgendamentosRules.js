@@ -14,7 +14,8 @@ var PrevisaoAgendamentosRules = (function() {
 
   /** Converte Date, DD/MM/AAAA ou AAAA-MM-DD em data local ao meio-dia. */
   function converterData(valor) {
-    if (valor instanceof Date && !isNaN(valor.getTime())) {
+    if (Object.prototype.toString.call(valor) === "[object Date]" &&
+        !isNaN(valor.getTime())) {
       return new Date(valor.getFullYear(), valor.getMonth(), valor.getDate(), 12);
     }
     var texto = String(valor || "").trim();
