@@ -1391,7 +1391,7 @@ A versão **@114** está publicada; o retreinamento do K-NN ainda depende da aç
 
 Criar um dashboard independente da previsão de faltas, utilizando a coluna `Data_cadastro` da aba `AGENDA` para estimar a quantidade de novos agendamentos cadastrados nos próximos dez dias.
 
-### Implementação preparada na branch `feature/dashboard-previsao-agendamentos`
+### Implementação integrada à `main` pela PR #31
 
 - Criado `PrevisaoAgendamentosRepository.js`, responsável pela leitura de `Data_cadastro` e pela persistência das configurações, do modelo e dos experimentos nas abas técnicas `PREVISAO_CONFIGURACOES`, `PREVISAO_MODELO` e `PREVISAO_EXPERIMENTOS`.
 - Criado `PrevisaoAgendamentosRules.js`, responsável pela normalização de datas, contagem diária, preenchimento de dias sem cadastros com zero e preparação de janelas temporais.
@@ -1414,9 +1414,9 @@ Criar um dashboard independente da previsão de faltas, utilizando a coluna `Dat
 
 ### Estado e limitações
 
-- Implementação registrada em branch separada; ainda não integrada à `main`.
-- A execução dos testes pelo GitHub Actions e a revisão do resultado permanecem pendentes.
-- A validação funcional com a planilha real ainda é necessária para confirmar quantidade de histórico válido, permissões e comportamento com os dados existentes.
+- PR #31 integrada à `main` no commit `c5701ae`.
+- GitHub Actions: sintaxe, testes automatizados e validação do manifesto aprovados no commit integrado.
+- Publicação no Google Apps Script concluída com sucesso pelo workflow #45525617646, incluindo envio dos arquivos e atualização da implantação Web App existente. A validação funcional com a planilha real ainda é necessária para confirmar quantidade de histórico válido e comportamento com os dados existentes.
 - As previsões são estimativas experimentais de contagem diária, não garantias de novos cadastros.
 - O módulo não altera nem substitui os algoritmos de previsão de faltas.
 
@@ -1443,6 +1443,9 @@ Todos os módulos de cadastro, agendamento, BOT, Gmail e previsão de faltas per
 
 Nenhum.
 
-### Próximo passo
+### Resultado e próximo passo
 
-Executar e revisar o workflow de validação do GitHub Actions, corrigir eventuais falhas e, após aprovação, integrar a branch. Em seguida, atualizar a implantação Web App existente e testar o dashboard com a planilha real.
+- PR #31 integrada à `main`.
+- Workflow de validação aprovado.
+- Publicação dos arquivos no Google Apps Script e atualização da implantação Web App existente concluídas com sucesso.
+- Próximo passo: abrir o Web App, acessar **Previsão de demanda**, conferir o histórico carregado e executar o primeiro treinamento com os dados reais.
