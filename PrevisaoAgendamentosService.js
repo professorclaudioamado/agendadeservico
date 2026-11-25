@@ -66,10 +66,14 @@ var PrevisaoAgendamentosService = (function() {
         " dias corridos com Data_cadastro válida. Foram encontrados " + serie.length + ".");
     }
 
-    var preparados = PrevisaoAgendamentosRules.criarJanelas(serie, config.janelaDias);
-    var amostras = preparados.amostras;
-    var total = amostras.length;
+    var total = serie.length - config.janelaDias;
     var fimTreino = Math.floor(total * 0.70);
+    // A escala é calculada somente com a parte disponível até o fim do treino.
+    // Assim, valores do período de teste não influenciam a normalização.
+    var preparados = PrevisaoAgendamentosRules.criarJanelas(
+      serie, config.janelaDias, config.janelaDias + fimTreino
+    );
+    var amostras = preparados.amostras;
     var fimValidacao = Math.floor(total * 0.85);
     if (fimTreino < 10 || fimValidacao - fimTreino < 3 || total - fimValidacao < 3) {
       throw new Error("Não há amostras suficientes para separar treino, validação e teste cronologicamente.");
