@@ -120,7 +120,7 @@ var RedeNeuralMLP = (function() {
 
     if (melhorPesos) modelo = melhorPesos;
     modelo.treinamento = {
-      epocasExecutadas: epocaFinal_(historico, epocas, paciencia),
+      epocasExecutadas: Math.min(epocas, epoca),
       melhorEpoca: melhorEpoca,
       erroValidacao: melhorErro,
       historico: historico
@@ -139,12 +139,6 @@ var RedeNeuralMLP = (function() {
     return soma / entradas.length;
   }
 
-  /** Estima a última época percorrida a partir do histórico e da parada antecipada. */
-  function epocaFinal_(historico, limite, paciencia) {
-    if (!historico.length) return Math.min(limite, 1);
-    var ultima = historico[historico.length - 1].epoca;
-    return paciencia >= 100 ? ultima : limite;
-  }
 
   /** Retorna a saída linear da rede para um vetor de entrada. */
   function prever(modelo, entrada) {
