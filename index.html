@@ -308,6 +308,49 @@
     .ml-explicacao-conteudo ul { margin:5px 0; padding-left:18px; }
     .ml-explicacao-conteudo li { margin:4px 0; line-height:1.4; overflow-wrap:anywhere; }
     @media (max-width:600px) { .ml-features { grid-template-columns:1fr; } }
+  
+    /* Dashboard de previsão de demanda: estilos isolados do módulo. */
+    .pd-cabecalho {display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap;margin-bottom:18px}
+    .pd-sobretitulo {font-size:11px;font-weight:800;letter-spacing:1.5px;color:#4f46e5;text-transform:uppercase;margin:0 0 7px}
+    .pd-cabecalho h2 {margin:0 0 7px;color:#172554;font-size:27px}
+    .pd-cabecalho p {margin:0;color:#64748b;font-size:13px;line-height:1.5}
+    .pd-grade-kpi {display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin:18px 0}
+    .pd-kpi {background:#fff;border:1px solid #e2e8f0;border-radius:14px;padding:17px;min-width:0}
+    .pd-kpi span {display:block;color:#64748b;font-size:12px;margin-bottom:8px}
+    .pd-kpi strong {display:block;color:#172554;font-size:25px;letter-spacing:-.5px}
+    .pd-kpi small {display:block;color:#94a3b8;font-size:11px;margin-top:5px}
+    .pd-duas-colunas {display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px}
+    .pd-cartao {background:#fff;border:1px solid #e2e8f0;border-radius:15px;padding:20px;margin-bottom:16px;min-width:0}
+    .pd-cartao h3 {font-size:16px;color:#172554;margin:0 0 5px}
+    .pd-cartao .pd-subtitulo {font-size:12px;color:#64748b;margin:0 0 18px;line-height:1.5}
+    .pd-grafico {display:flex;align-items:flex-end;gap:5px;height:190px;padding:12px 2px 0;border-bottom:1px solid #e2e8f0;overflow-x:auto}
+    .pd-barra-grupo {flex:1 0 15px;min-width:15px;height:100%;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;gap:6px}
+    .pd-barra {width:min(100%,24px);min-height:2px;background:#6366f1;border-radius:5px 5px 0 0;transition:height .2s}
+    .pd-barra.previsao {background:#0d9488}
+    .pd-barra-valor {font-size:9px;color:#64748b;white-space:nowrap}
+    .pd-barra-data {font-size:9px;color:#94a3b8;white-space:nowrap;writing-mode:vertical-rl;transform:rotate(180deg);height:38px}
+    .pd-legenda {display:flex;gap:16px;flex-wrap:wrap;margin-top:12px;font-size:11px;color:#64748b}
+    .pd-legenda span:before {content:"";display:inline-block;width:9px;height:9px;border-radius:2px;background:#6366f1;margin-right:6px}
+    .pd-legenda .pd-legenda-prev:before {background:#0d9488}
+    .pd-parametros {display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+    .pd-parametros label {font-size:12px;color:#475569}
+    .pd-parametros input {margin-top:5px}
+    .pd-acoes {display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+    .pd-status {padding:12px 14px;border-radius:9px;background:#f1f5f9;color:#475569;font-size:12px;line-height:1.5;margin:12px 0}
+    .pd-status.sucesso {background:#ecfdf5;color:#166534}
+    .pd-status.erro {background:#fef2f2;color:#991b1b}
+    .pd-metricas {display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-top:12px}
+    .pd-metrica {background:#f8fafc;border-radius:10px;padding:12px}
+    .pd-metrica strong {display:block;font-size:18px;color:#172554}
+    .pd-metrica span {font-size:11px;color:#64748b}
+    .pd-tabela-wrap {overflow-x:auto}
+    .pd-tabela {width:100%;border-collapse:collapse;font-size:12px}
+    .pd-tabela th,.pd-tabela td {padding:10px 8px;text-align:left;border-bottom:1px solid #e2e8f0;white-space:nowrap}
+    .pd-tabela th {color:#64748b;font-weight:700;background:#f8fafc}
+    .pd-vazio {color:#94a3b8;font-size:12px;padding:20px 8px;text-align:center}
+    @media(max-width:850px){.pd-grade-kpi{grid-template-columns:repeat(2,minmax(0,1fr))}.pd-parametros{grid-template-columns:repeat(2,minmax(0,1fr))}}
+    @media(max-width:650px){.pd-duas-colunas{grid-template-columns:1fr}.pd-metricas{grid-template-columns:1fr}.pd-cabecalho h2{font-size:23px}.pd-kpi strong{font-size:22px}}
+
   </style>
 </head>
 
@@ -338,6 +381,9 @@
 
     <button type="button" data-pagina="agenda"
       onclick="abrirPagina('agenda', this)">Agenda</button>
+
+    <button type="button" data-pagina="previsao-demanda"
+      onclick="abrirPagina('previsao-demanda', this); carregarPainelPrevisaoDemanda()">Previsão de demanda</button>
 
     <button type="button" data-pagina="aprendizado"
       onclick="abrirPagina('aprendizado', this); carregarPainelMLTela()">Previsão de faltas</button>
@@ -725,6 +771,64 @@
           </div>
         </div>
 
+      </div>
+    </section>
+
+
+    <!-- Entidade: PrevisaoAgendamentos | Camada: Interface | Dashboard de previsão de novos cadastros. -->
+    <section id="pagina-previsao-demanda" class="pagina">
+      <div class="pd-cabecalho">
+        <div>
+          <p class="pd-sobretitulo">Inteligência de dados</p>
+          <h2>Previsão de novos agendamentos</h2>
+          <p>Aprendizado com a data em que cada agendamento foi cadastrado. A previsão estima novos cadastros por dia, não a quantidade de atendimentos realizados.</p>
+        </div>
+        <button type="button" class="botao-atualizar-grade" onclick="carregarPainelPrevisaoDemanda()">Atualizar painel</button>
+      </div>
+
+      <div class="pd-grade-kpi">
+        <div class="pd-kpi"><span>Cadastros históricos</span><strong id="pdTotalHistorico">—</strong><small>Registros com Data_cadastro válida</small></div>
+        <div class="pd-kpi"><span>Média diária</span><strong id="pdMediaDiaria">—</strong><small>Inclui dias sem novos cadastros</small></div>
+        <div class="pd-kpi"><span>Dias analisados</span><strong id="pdDiasHistoricos">—</strong><small>Do primeiro cadastro até hoje</small></div>
+        <div class="pd-kpi"><span>Previsão em 10 dias</span><strong id="pdTotalPrevisto">—</strong><small id="pdPeriodoPrevisto">Disponível após treinamento</small></div>
+      </div>
+
+      <div class="pd-duas-colunas">
+        <div class="pd-cartao">
+          <h3>Histórico diário</h3>
+          <p class="pd-subtitulo">Quantidade de agendamentos criados por dia nos últimos 60 dias disponíveis.</p>
+          <div id="pdGraficoHistorico" class="pd-grafico"><div class="pd-vazio">Carregando histórico...</div></div>
+          <div class="pd-legenda"><span>Cadastros observados</span></div>
+        </div>
+        <div class="pd-cartao">
+          <h3>Próximos dez dias</h3>
+          <p class="pd-subtitulo">Estimativa diária calculada pela rede neural, usando as previsões anteriores como entrada.</p>
+          <div id="pdGraficoPrevisao" class="pd-grafico"><div class="pd-vazio">Treine o modelo para gerar a previsão.</div></div>
+          <div class="pd-legenda"><span class="pd-legenda-prev">Cadastros previstos</span></div>
+        </div>
+      </div>
+
+      <div class="pd-cartao">
+        <h3>Configuração da rede neural</h3>
+        <p class="pd-subtitulo">MLP — Perceptron Multicamadas, com uma camada oculta tanh e saída linear. A avaliação separa os dados cronologicamente em treino, validação e teste (70/15/15).</p>
+        <div class="pd-parametros">
+          <div><label for="pdJanela">Janela histórica (dias)</label><input type="number" id="pdJanela" min="3" max="30" step="1" value="7"></div>
+          <div><label for="pdNeuronios">Neurônios ocultos</label><input type="number" id="pdNeuronios" min="2" max="64" step="1" value="12"></div>
+          <div><label for="pdEpocas">Máximo de épocas</label><input type="number" id="pdEpocas" min="50" max="3000" step="50" value="700"></div>
+          <div><label for="pdTaxa">Taxa de aprendizado</label><input type="number" id="pdTaxa" min="0.0001" max="0.1" step="0.001" value="0.015"></div>
+        </div>
+        <div class="pd-acoes">
+          <button type="button" class="botao-principal" id="pdBtnTreinar" onclick="treinarModeloPrevisaoDemanda()">Treinar e prever 10 dias</button>
+          <button type="button" class="botao-atualizar-grade" onclick="salvarParametrosPrevisaoDemanda()">Salvar parâmetros</button>
+        </div>
+        <div id="pdMensagem" class="pd-status" role="status">Carregando informações da Agenda...</div>
+        <div id="pdResultadoTreinamento"></div>
+      </div>
+
+      <div class="pd-cartao">
+        <h3>Histórico de treinamentos</h3>
+        <p class="pd-subtitulo">Registro das avaliações realizadas e suas métricas de erro.</p>
+        <div id="pdExperimentos" class="pd-tabela-wrap"><div class="pd-vazio">Carregando experimentos...</div></div>
       </div>
     </section>
 
@@ -2230,6 +2334,171 @@
         mostrarMensagem("mensagemML", erro.message || "Falha no treinamento.", "erro");
         botao.disabled = false; botao.textContent = "Treinar e avaliar modelo";
       }).treinarAvaliarAprendizadoMaquina(algoritmo);
+    }
+
+
+    /** Carrega os dados reais do dashboard sem executar treinamento automaticamente. */
+    function carregarPainelPrevisaoDemanda() {
+      var mensagem = document.getElementById("pdMensagem");
+      if (mensagem) { mensagem.className = "pd-status"; mensagem.textContent = "Atualizando dados históricos..."; }
+      google.script.run.withSuccessHandler(function(painel) {
+        renderizarPainelPrevisaoDemanda(painel);
+      }).withFailureHandler(function(erro) {
+        mostrarMensagemPrevisaoDemanda(erro.message || "Não foi possível carregar o dashboard.", "erro");
+      }).obterPainelPrevisaoAgendamentos();
+    }
+
+    /** Apresenta indicadores, série histórica, previsão e experimentos recebidos do servidor. */
+    function renderizarPainelPrevisaoDemanda(painel) {
+      var indicadores = painel.indicadores || {};
+      document.getElementById("pdTotalHistorico").textContent = formatarInteiroPD(indicadores.totalHistorico);
+      document.getElementById("pdMediaDiaria").textContent = Number(indicadores.mediaDiaria || 0).toLocaleString("pt-BR", {maximumFractionDigits:2});
+      document.getElementById("pdDiasHistoricos").textContent = formatarInteiroPD(indicadores.diasHistoricos);
+      var config = painel.configuracao || {};
+      document.getElementById("pdJanela").value = config.janelaDias || 7;
+      document.getElementById("pdNeuronios").value = config.neuronios || 12;
+      document.getElementById("pdEpocas").value = config.epocas || 700;
+      document.getElementById("pdTaxa").value = config.taxaAprendizado == null ? 0.015 : config.taxaAprendizado;
+      renderizarGraficoPD("pdGraficoHistorico", painel.historico || [], false);
+      var modelo = painel.modelo;
+      if (modelo && modelo.previsao && modelo.previsao.length) {
+        renderizarGraficoPD("pdGraficoPrevisao", modelo.previsao, true);
+        var totalPrevisto = modelo.previsao.reduce(function(soma, item) { return soma + Number(item.quantidade || 0); }, 0);
+        document.getElementById("pdTotalPrevisto").textContent = formatarInteiroPD(totalPrevisto);
+        document.getElementById("pdPeriodoPrevisto").textContent = modelo.previsao[0].data + " a " + modelo.previsao[modelo.previsao.length - 1].data;
+        renderizarMetricasPD(modelo);
+        mostrarMensagemPrevisaoDemanda("Modelo treinado em " + (modelo.treinadoEm || "data não informada") +
+          ". As previsões são estimativas e devem ser comparadas com os resultados reais.", "sucesso");
+      } else {
+        document.getElementById("pdGraficoPrevisao").innerHTML = '<div class="pd-vazio">Ainda não existe previsão. Configure os parâmetros e treine o modelo.</div>';
+        document.getElementById("pdTotalPrevisto").textContent = "—";
+        document.getElementById("pdPeriodoPrevisto").textContent = "Disponível após treinamento";
+        document.getElementById("pdResultadoTreinamento").innerHTML = "";
+        if (Number(indicadores.diasHistoricos || 0) < Number(painel.minimoDias || 35)) {
+          mostrarMensagemPrevisaoDemanda("Histórico insuficiente para treinamento. São necessários pelo menos " +
+            (painel.minimoDias || 35) + " dias corridos desde o primeiro Data_cadastro válido.", "erro");
+        } else {
+          mostrarMensagemPrevisaoDemanda("Histórico carregado. Execute o treinamento para gerar a previsão.", "");
+        }
+      }
+      renderizarExperimentosPD(painel.experimentos || []);
+    }
+
+    /** Desenha barras HTML sem dependência de bibliotecas externas. */
+    function renderizarGraficoPD(id, itens, previsao) {
+      var caixa = document.getElementById(id);
+      caixa.innerHTML = "";
+      if (!itens.length) { caixa.innerHTML = '<div class="pd-vazio">Não há dados para exibir.</div>'; return; }
+      var maior = Math.max(1, ...itens.map(function(item) { return Number(item.quantidade || 0); }));
+      itens.forEach(function(item) {
+        var grupo = document.createElement("div"); grupo.className = "pd-barra-grupo";
+        var valor = document.createElement("span"); valor.className = "pd-barra-valor"; valor.textContent = item.quantidade;
+        var barra = document.createElement("div"); barra.className = previsao ? "pd-barra previsao" : "pd-barra";
+        barra.style.height = Math.max(2, Number(item.quantidade || 0) / maior * 145) + "px";
+        barra.title = item.data + ": " + item.quantidade + " cadastros";
+        var data = document.createElement("span"); data.className = "pd-barra-data";
+        data.textContent = String(item.data || "").slice(5).replace("-", "/");
+        grupo.appendChild(valor); grupo.appendChild(barra); grupo.appendChild(data); caixa.appendChild(grupo);
+      });
+    }
+
+    /** Exibe as métricas do último modelo, mantendo os valores em unidades de agendamentos. */
+    function renderizarMetricasPD(modelo) {
+      var metricas = modelo.metricas || {};
+      var divisao = modelo.divisao || {};
+      var treinamento = modelo.treinamento || {};
+      var caixa = document.getElementById("pdResultadoTreinamento");
+      caixa.innerHTML = "";
+      var metricasBox = document.createElement("div"); metricasBox.className = "pd-metricas";
+      [
+        ["MAE", Number(metricas.mae || 0).toLocaleString("pt-BR", {maximumFractionDigits:2}), "Erro absoluto médio (agendamentos)"],
+        ["RMSE", Number(metricas.rmse || 0).toLocaleString("pt-BR", {maximumFractionDigits:2}), "Raiz do erro quadrático médio"],
+        ["WAPE", metricas.wape == null ? "—" : (Number(metricas.wape) * 100).toFixed(1) + "%", "Erro percentual absoluto ponderado"]
+      ].forEach(function(item) {
+        var bloco = document.createElement("div"); bloco.className = "pd-metrica";
+        var valor = document.createElement("strong"); valor.textContent = item[1];
+        var rotulo = document.createElement("span"); rotulo.textContent = item[0] + " — " + item[2];
+        bloco.appendChild(valor); bloco.appendChild(rotulo); metricasBox.appendChild(bloco);
+      });
+      caixa.appendChild(metricasBox);
+      var info = document.createElement("p"); info.className = "observacao";
+      info.textContent = "Amostras: " + modelo.amostras + " | Treino: " + (divisao.treino || 0) +
+        " | Validação: " + (divisao.validacao || 0) + " | Teste: " + (divisao.teste || 0) +
+        " | Melhor época: " + (treinamento.melhorEpoca || "—") +
+        " | Último dia histórico: " + (modelo.ultimaDataHistorica || "—");
+      caixa.appendChild(info);
+    }
+
+    /** Renderiza a tabela de experimentos registrados no Repository. */
+    function renderizarExperimentosPD(itens) {
+      var caixa = document.getElementById("pdExperimentos"); caixa.innerHTML = "";
+      if (!itens.length) { caixa.innerHTML = '<div class="pd-vazio">Nenhum treinamento registrado.</div>'; return; }
+      var tabela = document.createElement("table"); tabela.className = "pd-tabela";
+      var thead = document.createElement("thead"); var cabecalho = document.createElement("tr");
+      ["Data","Janela","Neurônios","Épocas","Amostras","MAE","RMSE","WAPE"].forEach(function(titulo) {
+        var th = document.createElement("th"); th.textContent = titulo; cabecalho.appendChild(th);
+      });
+      thead.appendChild(cabecalho); tabela.appendChild(thead);
+      var tbody = document.createElement("tbody");
+      itens.forEach(function(item) {
+        var linha = document.createElement("tr");
+        [item.data, item.janelaDias, item.neuronios, item.epocas, item.amostras,
+          Number(item.mae || 0).toFixed(2), Number(item.rmse || 0).toFixed(2),
+          item.wape == null ? "—" : (Number(item.wape) * 100).toFixed(1) + "%"].forEach(function(valor) {
+          var td = document.createElement("td"); td.textContent = String(valor == null ? "" : valor); linha.appendChild(td);
+        });
+        tbody.appendChild(linha);
+      });
+      tabela.appendChild(tbody); caixa.appendChild(tabela);
+    }
+
+    /** Salva parâmetros validados no servidor. */
+    function salvarParametrosPrevisaoDemanda() {
+      var config = obterParametrosPrevisaoDemanda();
+      google.script.run.withSuccessHandler(function(resposta) {
+        mostrarMensagemPrevisaoDemanda(resposta.mensagem, "sucesso");
+        carregarPainelPrevisaoDemanda();
+      }).withFailureHandler(function(erro) {
+        mostrarMensagemPrevisaoDemanda(erro.message || "Não foi possível salvar os parâmetros.", "erro");
+      }).salvarConfiguracaoPrevisaoAgendamentos(config);
+    }
+
+    /** Lê os parâmetros da tela sem aplicar regras de negócio no navegador. */
+    function obterParametrosPrevisaoDemanda() {
+      return {
+        janelaDias: Number(document.getElementById("pdJanela").value),
+        neuronios: Number(document.getElementById("pdNeuronios").value),
+        epocas: Number(document.getElementById("pdEpocas").value),
+        taxaAprendizado: Number(document.getElementById("pdTaxa").value)
+      };
+    }
+
+    /** Executa o treinamento no servidor e atualiza todos os gráficos ao concluir. */
+    function treinarModeloPrevisaoDemanda() {
+      var botao = document.getElementById("pdBtnTreinar");
+      botao.disabled = true; botao.textContent = "Treinando rede neural...";
+      mostrarMensagemPrevisaoDemanda("Preparando histórico, treinando e avaliando o modelo...", "");
+      google.script.run.withSuccessHandler(function(resposta) {
+        botao.disabled = false; botao.textContent = "Treinar e prever 10 dias";
+        mostrarMensagemPrevisaoDemanda(resposta.mensagem + " Experimento: " + resposta.experimentoId, "sucesso");
+        carregarPainelPrevisaoDemanda();
+      }).withFailureHandler(function(erro) {
+        botao.disabled = false; botao.textContent = "Treinar e prever 10 dias";
+        mostrarMensagemPrevisaoDemanda(erro.message || "Falha no treinamento da rede neural.", "erro");
+      }).treinarPrevisaoAgendamentos(obterParametrosPrevisaoDemanda());
+    }
+
+    /** Exibe mensagens de sucesso, alerta ou erro do módulo de previsão. */
+    function mostrarMensagemPrevisaoDemanda(texto, tipo) {
+      var elemento = document.getElementById("pdMensagem");
+      if (!elemento) return;
+      elemento.className = "pd-status" + (tipo ? " " + tipo : "");
+      elemento.textContent = texto;
+    }
+
+    /** Formata quantidades inteiras na localidade pt-BR. */
+    function formatarInteiroPD(valor) {
+      return Math.round(Number(valor) || 0).toLocaleString("pt-BR");
     }
 
   </script>
