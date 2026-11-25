@@ -132,3 +132,19 @@ test("explicação clicável apresenta os componentes do cálculo logístico", (
   });
   assert.match(html, /Não é probabilidade calibrada/);
 });
+
+test("dashboard de previsão de demanda está integrado sem substituir a previsão de faltas", () => {
+  [
+    'data-pagina="previsao-demanda"',
+    'id="pagina-previsao-demanda"',
+    'id="pdGraficoHistorico"',
+    'id="pdGraficoPrevisao"',
+    'treinarModeloPrevisaoDemanda',
+    'obterPainelPrevisaoAgendamentos',
+    'treinarPrevisaoAgendamentos',
+    'data-pagina="aprendizado"',
+    'id="pagina-aprendizado"'
+  ].forEach(function(contrato) {
+    assert.ok(html.includes(contrato), "Contrato ausente no dashboard: " + contrato);
+  });
+});
